@@ -1,0 +1,6 @@
+[submodule "UnityTemplate/Assets/XIV"]
+	path = UnityTemplate/Assets/XIV
+	url = https://github.com/alimertcetin/XIV.git
+[submodule "UnityTemplate/Assets/XIVUnityIntegration"]
+	path = UnityTemplate/Assets/XIVUnityIntegration
+	url = https://github.com/alimertcetin/XIVUnityIntegration.git
