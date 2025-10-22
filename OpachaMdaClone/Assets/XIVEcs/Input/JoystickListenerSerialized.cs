@@ -13,10 +13,10 @@ namespace XIV.Ecs
     {
         [Header("You can leave it empty if you have a single joystick in the scene")]
         public JoystickSerialized[] joysticks; 
-        
-        public override object GetComponentData(World world)
+
+        public override void AddComponentForEntity(Entity entity)
         {
-            return new JoystickListenerComp
+            entity.AddComponent(new JoystickListenerComp
             {
                 joystickEntities = (joysticks == null || joysticks.Length == 0) 
                     ? null 
@@ -24,7 +24,7 @@ namespace XIV.Ecs
                 inputs = (joysticks == null || joysticks.Length == 0) ?
                     null :
                     new JoystickInputData[joysticks.Length]
-            };
+            });
         }
 
         [Button]

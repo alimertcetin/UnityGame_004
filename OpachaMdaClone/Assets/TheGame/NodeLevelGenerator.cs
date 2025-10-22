@@ -1,24 +1,25 @@
 ﻿using System;
-using System.Collections;
-using System.Diagnostics;
 using System.IO;
 using TheGame.Extensions;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UIElements;
 using XIV.Core.Algorithm;
 using XIV.Core.Collections;
 using XIV.Core.DataStructures;
-using XIV.Core.Extensions;
 using XIV.Core.Utils;
 using XIV.Core.XIVMath;
 using XIV.Ecs;
 using XIV.PoolSystem;
-using XIV.UnityEngineIntegration;
 using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame
 {
+    public struct LineRendererComp : IComponent
+    {
+        public LineRenderer lineRenderer;
+        public Vector3[] positions;
+    }
+    
     public class NodeLevelGenerator : XIV.Ecs.System
     {
         const float NODE_RADIUS = 0.5f;
@@ -201,12 +202,12 @@ namespace TheGame
                         // remove the longer link
                         int index = distAB > distAC ? i : j;
                         RemoveConnection(index, ref connectionCount);
-                        // Since we modified the lists, restart inner loop
                         break;
                     }
                 }
             }
-
+            
+            const int LINERENDERER_POSITION_COUNT = 64;
             for (int i = 0, j = 0; i < connectionCount; i++)
             {
                 var p0 = positionBuffer[conList1[i]];
@@ -218,10 +219,19 @@ namespace TheGame
                 {
                     var lineRenderer = new GameObject(j++ + "_" + ent1 + " - " + ent2).AddComponent<LineRenderer>();
                     lineRenderer.material = prefabReferences.connectionLineRendererMaterial;
-                    lineRenderer.positionCount = 64;
+                    
+                    lineRenderer.positionCount = LINERENDERER_POSITION_COUNT;
                     lineRenderer.XIVStraightLine(p0, p1);
                     lineRenderer.XIVSetWidth(0.05f);
-                    connectionDB.AssignLineRenderer(ent1, ent2, lineRenderer);
+                    var positions = new Vector3[LINERENDERER_POSITION_COUNT];
+                    lineRenderer.GetPositions(positions);
+                    var lineRendererEntity = world.NewEntity();
+                    lineRendererEntity.AddComponent<LineRendererComp>(new LineRendererComp
+                    {
+                        lineRenderer = lineRenderer,
+                        positions = positions,
+                    });
+                    connectionDB.AssignLineRenderer(ent1, ent2, lineRendererEntity);
                 }
             }
             

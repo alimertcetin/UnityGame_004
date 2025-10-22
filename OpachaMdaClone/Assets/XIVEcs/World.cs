@@ -11,7 +11,8 @@ namespace XIV.Ecs
         public List<Query> queries;
         public List<Filter> filters;
 
-        public DynamicArray<ComponentOperation> delayedComponentOperations;
+        public DynamicArray<EntityId> delayedComponentOperationEntityIds;
+        public DynamicArray<Action<EntityId>> delayedComponentOperations;
         public DynamicArray<TagOperation> delayedTagOperations;
         public DynamicArray<DestroyOperation> destroyedEntities;
         public DynamicArray<EntityId> changedEntities;
@@ -29,7 +30,8 @@ namespace XIV.Ecs
             filters = new List<Filter>();
 
             var capacity = entityCapacity / 2;
-            delayedComponentOperations = new DynamicArray<ComponentOperation>(capacity);
+            delayedComponentOperations = new DynamicArray<Action<EntityId>>(capacity);
+            delayedComponentOperationEntityIds = new DynamicArray<EntityId>(capacity);
             delayedTagOperations = new DynamicArray<TagOperation>(capacity);
             destroyedEntities = new DynamicArray<DestroyOperation>(capacity);
             changedEntities = new DynamicArray<EntityId>(capacity);
@@ -39,146 +41,6 @@ namespace XIV.Ecs
         {
             ref var entityData = ref entityDataList.Add(out var entityIdx);
             return new Entity(this, entityIdx, entityData.generationId);
-        }
-
-        /// Only use for entity creation 
-        public void AddComponents(EntityId id, IComponent[] componentValues)
-        {
-            ref var entityData = ref entityDataList[id.id];
-            // Debug.Assert(entityData.archetype == null);
-
-            foreach (var componentValue in componentValues)
-            {
-                int componentId = ComponentIdManager.GetComponentId(componentValue.GetType());
-                entityData.componentBitSet.SetBit1(componentId);
-            }
-
-            var newArchetype = archetypeMap.GetArchetype(entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
-            archetypeMap.ChangeArchetype(this, id, entityDataList, newArchetype);
-
-            // foreach (var componentValue in componentValues)
-            // {
-            //     int componentId = ComponentIdManager.GetComponentId(componentValue.GetType());
-            //     entityData.archetype.GetComponentPool(componentId).SetNewComponent(entityData.indexInArchetype, componentValue);
-            // }
-            foreach (var componentValue in componentValues)
-            {
-                int componentId = ComponentIdManager.GetComponentId(componentValue.GetType());
-                archetypeMap.InvokeBoxedSetNew(entityData.archetype, componentId, entityData.indexInArchetype, componentValue);
-            }
-
-            if (newArchetypeGenerated)
-            {
-                UpdateQueries(newArchetype);
-            }
-        }
-
-        /// Only use for entity creation 
-        public void AddComponents(EntityId id, object[] componentValues, int[] componentIds, Archetype archetype)
-        {
-            ref var entityData = ref entityDataList[id.id];
-            // Debug.Assert(entityData.archetype == null);
-
-            for (int i = 0; i < componentIds.Length; i++)
-            {
-                int componentId = componentIds[i];
-                entityData.componentBitSet.SetBit1(componentId);
-            }
-
-            archetypeMap.ChangeArchetype(this, id, entityDataList, archetype);
-
-            // for (int i = 0; i < componentIds.Length; i++)
-            // {
-            //     int componentId = componentIds[i];
-            //     entityData.archetype.GetComponentPool(componentId).SetNewComponent(entityData.indexInArchetype, componentValues[i]);
-            // }
-            for (int i = 0; i < componentIds.Length; i++)
-            {
-                int componentId = componentIds[i];
-                archetypeMap.InvokeBoxedSetNew(entityData.archetype, componentId, entityData.indexInArchetype, componentValues[i]);
-            }
-
-        }
-
-        /// Only use for entity creation 
-        public void AddComponentsAndTags(EntityId id,
-            object[] componentValues, int[] componentIds,
-            int[] tagIds)
-        {
-            ref var entityData = ref entityDataList[id.id];
-            // Debug.Assert(entityData.archetype == null);
-
-            for (int i = 0; i < componentIds.Length; i++)
-            {
-                try
-                {
-                    entityData.componentBitSet.SetBit1(componentIds[i]);
-                }
-                catch (Exception e)
-                {
-                    var str = "";
-                    foreach (var componentValue in componentValues) str += componentValue.ToString() + ", ";
-                    UnityEngine.Debug.LogError($"EntityId: {id}, ComponentValues: {str}, Exception: {e}");
-                }
-            }
-
-            for (int i = 0; i < tagIds.Length; i++)
-            {
-                entityData.tagBitSet.SetBit1(tagIds[i]);
-            }
-
-            var newArchetype = archetypeMap.GetArchetype(entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
-            archetypeMap.ChangeArchetype(this, id, entityDataList, newArchetype);
-
-            for (int i = 0; i < componentValues.Length; i++)
-            {
-                // entityData.archetype.GetComponentPool(componentIds[i])
-                //     .SetNewComponent(entityData.indexInArchetype, componentValues[i]);
-                archetypeMap.InvokeBoxedSetNew(entityData.archetype, componentIds[i], entityData.indexInArchetype, componentValues[i]);
-            }
-
-            if (newArchetypeGenerated)
-            {
-                UpdateQueries(newArchetype);
-            }
-        }
-
-
-        public void RemoveComponents(EntityId entityId, Type[] componentTypes)
-        {
-            ref var entityData = ref entityDataList[entityId.id];
-
-            if (entityData.archetype.lockCounter > 0)
-            {
-                foreach (var componentType in componentTypes)
-                {
-                    delayedComponentOperations.Add() = new ComponentOperation
-                    {
-                        componentId = ComponentIdManager.GetComponentId(componentType),
-                        componentValue = null,
-                        entityId = entityId
-                    };
-                }
-
-                return;
-            }
-
-
-            foreach (var componentType in componentTypes)
-            {
-                int removedComponentId = ComponentIdManager.GetComponentId(componentType);
-                entityData.componentBitSet.SetBit0(removedComponentId);
-            }
-
-            var newArchetype = archetypeMap.GetArchetype(
-                entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
-
-            archetypeMap.ChangeArchetype(this, entityId, entityDataList, newArchetype);
-
-            if (newArchetypeGenerated)
-            {
-                UpdateQueries(newArchetype);
-            }
         }
 
         public void UnlockComponentOperation()
@@ -211,32 +73,6 @@ namespace XIV.Ecs
             }
 
             changedEntities.Clear();
-            for (int i = 0; i < delayedComponentOperations.Count; i++)
-            {
-                ref var operation = ref delayedComponentOperations[i];
-                ref var entityData = ref entityDataList[operation.entityId.id];
-
-                if (operation.entityId.generation != entityData.generationId)
-                {
-                    // Operation on destroyed entity
-                    continue;
-                }
-
-                int componentId = operation.componentId;
-
-                if (operation.componentValue != null)
-                {
-                    // Add
-                    entityData.componentBitSet.SetBit1(componentId);
-                }
-                else if (entityData.componentBitSet.IsBit1(componentId))
-                {
-                    // Remove
-                    entityData.componentBitSet.SetBit0(componentId);
-                }
-
-                changedEntities.Add() = operation.entityId;
-            }
 
             for (int i = 0; i < delayedTagOperations.Count; i++)
             {
@@ -289,31 +125,14 @@ namespace XIV.Ecs
             // Update Data
             for (int i = 0; i < delayedComponentOperations.Count; i++)
             {
+                ref var entityId = ref delayedComponentOperationEntityIds[i];
                 ref var operation = ref delayedComponentOperations[i];
-                ref var entityData = ref entityDataList[operation.entityId.id];
-                int componentId = operation.componentId;
-
-                // if (operation.componentValue != null)
-                // {
-                //     // Add
-                //     if (entityData.componentBitSet.IsBit1(componentId))
-                //     {
-                //         entityData.archetype.GetComponentPool(componentId).SetNewComponent(entityData.indexInArchetype, operation.componentValue);
-                //     }
-                // }
-                if (operation.componentValue != null)
-                {
-                    // Add
-                    if (entityData.componentBitSet.IsBit1(componentId))
-                    {
-                        archetypeMap.InvokeBoxedSetNew(entityData.archetype, componentId, entityData.indexInArchetype, operation.componentValue);
-                    }
-                }
-
+                operation.Invoke(entityId);
             }
 
             delayedTagOperations.Clear();
             delayedComponentOperations.Clear();
+            delayedComponentOperationEntityIds.Clear();
             destroyedEntities.Clear();
         }
 
@@ -371,44 +190,42 @@ namespace XIV.Ecs
 
             if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
             {
-                delayedComponentOperations.Add() = new ComponentOperation
+                delayedComponentOperationEntityIds.Add() = entityId;
+                delayedComponentOperations.Add() = (EntityId entityId) =>
                 {
-                    componentId = ComponentIdManager.GetComponentId<T>(),
-                    componentValue = componentValue,
-                    entityId = new EntityId(entityId.id, entityId.generation)
+                    AddCompFunc<T>(entityId, componentValue, entityDataList);
                 };
                 return;
             }
 
-            int newComponentId = ComponentIdManager.GetComponentId<T>();
+            AddCompFunc<T>(entityId, componentValue, entityDataList);
 
-            // if (entityData.componentBitSet.IsBit1(newComponentId))
-            // {
-            //     // Already has the component
-            //     entityData.archetype.GetComponentPool(newComponentId).Set(entityData.indexInArchetype, componentValue);
-            //     return;
-            // }
-            if (entityData.componentBitSet.IsBit1(newComponentId))
+            void AddCompFunc<T1>(EntityId entityId1, T component, EntityDataList entityDataList) where T1 : struct, IComponent
             {
-                // Already has the component
-                entityData.archetype.GetComponentPool<T>().Set(entityData.indexInArchetype, in componentValue);
-                return;
-            }
+                ref var entityData = ref entityDataList[entityId1.id];
+                var componentId = ComponentIdManager.GetComponentId<T>();
+                if (entityData.componentBitSet.IsBit1(componentId))
+                {
+                    // Already has the component
+                    entityData.archetype.GetComponentPool<T>().Set(entityData.indexInArchetype, in component);
+                    return;
+                }
 
 
-            entityData.componentBitSet.SetBit1(newComponentId);
+                entityData.componentBitSet.SetBit1(componentId);
 
-            var newArchetype = archetypeMap.GetArchetype(
-                entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
+                var newArchetype = archetypeMap.GetArchetype(
+                    entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
 
-            archetypeMap.ChangeArchetype(this, entityId, entityDataList, newArchetype);
+                archetypeMap.ChangeArchetype(this, entityId1, entityDataList, newArchetype);
 
-            // entityData.archetype.GetComponentPool(newComponentId).SetNewComponent(entityData.indexInArchetype, componentValue);
-            entityData.archetype.GetComponentPool<T>().SetNewComponent(entityData.indexInArchetype, in componentValue);
+                // entityData.archetype.GetComponentPool(newComponentId).SetNewComponent(entityData.indexInArchetype, componentValue);
+                entityData.archetype.GetComponentPool<T>().SetNewComponent(entityData.indexInArchetype, in component);
 
-            if (newArchetypeGenerated)
-            {
-                UpdateQueries(newArchetype);
+                if (newArchetypeGenerated)
+                {
+                    UpdateQueries(newArchetype);
+                }
             }
         }
 
@@ -449,9 +266,11 @@ namespace XIV.Ecs
         
         public void RemoveTag<T>(EntityId entityId) where T : struct, ITag
         {
-            // Debug.Assert(IsEntityAlive(entityId));
-
-            int removedTagId = TagIdManager.GetTagId<T>();
+            RemoveTag(entityId, TagIdManager.GetTagId<T>());
+        }
+        
+        public void RemoveTag(EntityId entityId, int removedTagId)
+        {
             ref var entityData = ref entityDataList[entityId.id];
 
             if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
@@ -483,112 +302,48 @@ namespace XIV.Ecs
                 UpdateQueries(newArchetype);
             }
         }
-
-        public void RemoveTags(EntityId entityId, Type[] tagTypes)
-        {
-            ref var entityData = ref entityDataList[entityId.id];
-
-            if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
-            {
-                foreach (var tagType in tagTypes)
-                {
-                    delayedTagOperations.Add() = new TagOperation()
-                    {
-                        tagId = -(TagIdManager.GetTagId(tagType) + 1),
-                        entityId = entityId
-                    };
-                }
-
-                return;
-            }
-
-
-            foreach (var tagType in tagTypes)
-            {
-                int removedComponentId = TagIdManager.GetTagId(tagType);
-                entityData.tagBitSet.SetBit0(removedComponentId);
-            }
-
-            var newArchetype = archetypeMap.GetArchetype(
-                entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
-
-            archetypeMap.ChangeArchetype(this, entityId, entityDataList, newArchetype);
-
-            if (newArchetypeGenerated)
-            {
-                UpdateQueries(newArchetype);
-            }
-        }
-
-        public void AddTags(EntityId entityId, Type[] tagTypes)
-        {
-            ref var entityData = ref entityDataList[entityId.id];
-            // Debug.Assert(entityData.archetype == null); // TODO only for creation?
-
-            // if (entityData.archetype.lockCounter > 0)
-            // {
-            //     foreach (var tagType in tagTypes)
-            //     {
-            //         delayedTagOperations.Add() = new TagOperation()
-            //         {
-            //             tagId =  TagIdManager.GetTagId(tagType),
-            //             entityId = entityId
-            //         };
-            //     }
-            //     return;
-            // }
-
-            foreach (var tagType in tagTypes)
-            {
-                int componentId = TagIdManager.GetTagId(tagType);
-                entityData.tagBitSet.SetBit1(componentId);
-            }
-
-            var newArchetype = archetypeMap.GetArchetype(
-                entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
-
-            archetypeMap.ChangeArchetype(this, entityId, entityDataList, newArchetype);
-
-            if (newArchetypeGenerated)
-            {
-                UpdateQueries(newArchetype);
-            }
-        }
         
         public void RemoveComponent<T>(EntityId entityId) where T : struct, IComponent
         {
+            RemoveComponent(entityId, ComponentIdManager.GetComponentId<T>());
+        }
+        
+        public void RemoveComponent(EntityId entityId, int componentId)
+        {
             // Debug.Assert(IsEntityAlive(entityId));
-            ref var entityData = ref entityDataList[entityId.id];
 
+            ref var entityData = ref entityDataList[entityId.id];
             if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
             {
-                delayedComponentOperations.Add() = new ComponentOperation()
+                delayedComponentOperationEntityIds.Add() = entityId;
+                delayedComponentOperations.Add() = RemoveCompFunc;
+                return;
+            }
+
+            RemoveCompFunc(entityId);
+
+            void RemoveCompFunc(EntityId entityId)
+            {
+                ref var entityData = ref entityDataList[entityId.id];
+                int removedComponentId = componentId;
+
+                if (!entityData.componentBitSet.IsBit1(removedComponentId))
                 {
-                    componentId = ComponentIdManager.GetComponentId<T>(),
-                    entityId = new EntityId(entityId.id, entityId.generation),
-                    componentValue = null
-                };
-                return;
-            }
+                    // Already removed
+                    return;
+                }
 
-            int removedComponentId = ComponentIdManager.GetComponentId<T>();
+                entityData.componentBitSet.SetBit0(removedComponentId);
 
-            if (!entityData.componentBitSet.IsBit1(removedComponentId))
-            {
-                // Already removed
-                return;
-            }
+                var newArchetype = archetypeMap.GetArchetype(
+                    entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
 
-            entityData.componentBitSet.SetBit0(removedComponentId);
+                archetypeMap.ChangeArchetype(this, entityId, entityDataList, newArchetype);
 
-            var newArchetype = archetypeMap.GetArchetype(
-                entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
-
-            archetypeMap.ChangeArchetype(this, entityId, entityDataList, newArchetype);
-
-            if (newArchetypeGenerated)
-            {
-                UpdateQueries(newArchetype);
+                if (newArchetypeGenerated)
+                {
+                    UpdateQueries(newArchetype);
+                }
             }
         }
 
@@ -684,17 +439,6 @@ namespace XIV.Ecs
             return entityData.archetype;
         }
 
-        public Archetype CreateArchetype(Bitset componentBitSet, Bitset tagBitSet)
-        {
-            var archetype = archetypeMap.GetArchetype(componentBitSet, tagBitSet, out var newArchetypeGenerated);
-            if (newArchetypeGenerated)
-            {
-                UpdateQueries(archetype);
-            }
-
-            return archetype;
-        }
-
         public bool IsEntityAlive(EntityId entity)
         {
             return entityDataList[entity.id].generationId == entity.generation;
@@ -760,4 +504,48 @@ namespace XIV.Ecs
             return nEntity;
         }
     }
+    //
+    // public class ComponentOperationManager
+    // {
+    //     public List<Action<Entity>> componentOperations
+    // }
+    //
+    // public struct OperationWrapper<T> where T : struct, IComponent
+    // {
+    //     public T componentValue;
+    //
+    //     public void AddComponent(Entity entity)
+    //     {
+    //         if (entity.IsAlive() == false) return;
+    //
+    //         var entityDataList = entity.world.entityDataList;
+    //         var archetypeMap = entity.world.archetypeMap;
+    //         var entityId = entity.entityId;
+    //         
+    //         ref var entityData = ref entityDataList[entityId.id];
+    //         int newComponentId = ComponentIdManager.GetComponentId<T>();
+    //         if (entityData.componentBitSet.IsBit1(newComponentId))
+    //         {
+    //             // Already has the component
+    //             entityData.archetype.GetComponentPool<T>().Set(entityData.indexInArchetype, in componentValue);
+    //             return;
+    //         }
+    //
+    //
+    //         entityData.componentBitSet.SetBit1(newComponentId);
+    //
+    //         var newArchetype = archetypeMap.GetArchetype(
+    //             entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
+    //
+    //         archetypeMap.ChangeArchetype(entity.world, entityId, entityDataList, newArchetype);
+    //
+    //         // entityData.archetype.GetComponentPool(newComponentId).SetNewComponent(entityData.indexInArchetype, componentValue);
+    //         entityData.archetype.GetComponentPool<T>().SetNewComponent(entityData.indexInArchetype, in componentValue);
+    //
+    //         if (newArchetypeGenerated)
+    //         {
+    //             entity.world.UpdateQueries(newArchetype);
+    //         }
+    //     }
+    // }
 }

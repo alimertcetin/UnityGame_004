@@ -23,7 +23,7 @@ namespace TheGame
         readonly Filter<TransformComp, NodeComp, NodeResourceCollisionComp> nodeResourceCollisionFilter = null;
         readonly Filter<TransformComp, NodeComp, OccupiedNodeComp, SendResourceComp> sendResourceFilter = null;
         readonly Filter<NodeComp, OccupiedNodeComp, SendResourceContinuouslyComp> sendResourceContinuouslyFilter = null;
-        readonly Filter<OccupiedNodeComp> occupiedNodeFilter = null;
+        readonly Filter<LineRendererComp> lineRendererFilter = null;
         readonly PrefabReferences prefabReferences = null;
         readonly ConnectionDB connectionDB = null;
         readonly Queue<GameObject> resourcePool = new Queue<GameObject>();
@@ -34,7 +34,7 @@ namespace TheGame
             resourceFilter.ForEach(HandleResourceMovement);
             sendResourceFilter.ForEach(SendResource);
             sendResourceContinuouslyFilter.ForEach(SendResourceContinuously);
-            occupiedNodeFilter.ForEach(FixLineRenderers);
+            lineRendererFilter.ForEach(FixLineRenderers);
         }
 
         void HandleResourceCollision(Entity nodeEntity, ref TransformComp transformComp, ref NodeComp nodeComp, ref NodeResourceCollisionComp nodeResourceCollisionComp)
@@ -85,8 +85,7 @@ namespace TheGame
             transformComp.transform.position = pos;
 
             ConnectionDB.Pair pair = connectionDB.GetPair(startEntity, targetEntity);
-            var lineRenderer = pair.lineRenderer;
-            HandleLineRendererVisual(lineRenderer, targetTransformPosition - startTransformPosition, pos);
+            HandleLineRendererVisual(pair.lineRendererEntity, targetTransformPosition - startTransformPosition, pos);
 
             if (Vector3.Distance(pos, targetTransformPosition) < 0.02f == false) return;
                 
@@ -138,27 +137,25 @@ namespace TheGame
             entity.RemoveComponent<SendResourceComp>();
         }
 
-        void FixLineRenderers(Entity nodeEntity, ref OccupiedNodeComp comp0)
+        void FixLineRenderers(Entity nodeEntity, ref LineRendererComp lineRendererComp)
         {
             // slowly fix line renderers
             using var dispose = ArrayUtils.GetBuffer(out ConnectionDB.Pair[] pairBuffer, connectionDB.Count);
-            int len = connectionDB.GetPairs(nodeEntity, pairBuffer);
-            for (int i = 0; i < len; i++)
+            
+            var lineRenderer = lineRendererComp.lineRenderer;
+            var positionCount = lineRendererComp.positions.Length;
+            var startPos = lineRenderer.GetPosition(0);
+            var endPos = lineRenderer.GetPosition(positionCount - 1);
+            
+            for (int i = 0; i < positionCount; i++)
             {
-                ref var pair = ref pairBuffer[i];
-                var lineRenderer = pair.lineRenderer;
-                var startPos = pair.entity1.GetTransform().position;
-                var endPos = pair.entity2.GetTransform().position;
-                var positionCount = lineRenderer.positionCount;
-                for (int j = 0; j < positionCount; j++)
-                {
-                    var t = (float)j / positionCount;
-                    var actualPosition = Vector3.Lerp(startPos, endPos, t);
-                    var currentPos = lineRenderer.GetPosition(j);
-                    var movedPosition = Vector3.MoveTowards(currentPos, actualPosition, 0.01f * XTime.deltaTime);
-                    lineRenderer.SetPosition(j, movedPosition);
-                }
+                var t = (float)i / positionCount;
+                var targetPos = Vector3.Lerp(startPos, endPos, t);
+                var currentPos = lineRendererComp.positions[i];
+                var newPos = Vector3.MoveTowards(currentPos, targetPos, 0.01f * XTime.deltaTime);
+                lineRendererComp.positions[i] = newPos;
             }
+            lineRenderer.SetPositions(lineRendererComp.positions);
         }
 
         void SendResourceContinuously(Entity nodeEntity, ref NodeComp nodeComp, ref OccupiedNodeComp comp1, ref SendResourceContinuouslyComp sendResourceContinuouslyComp)
@@ -191,15 +188,17 @@ namespace TheGame
             });
         }
 
-        void HandleLineRendererVisual(LineRenderer lineRenderer, Vector3 movementDirection, Vector3 position)
+        void HandleLineRendererVisual(Entity lineRendererEntity, Vector3 movementDirection, Vector3 position)
         {
-            int pointCount = lineRenderer.positionCount;
+            ref var lineRendererComp = ref lineRendererEntity.GetComponent<LineRendererComp>();
+            
+            int pointCount = lineRendererComp.positions.Length;
             const float stepOffset = 0.3f;
             const float scale = 0.075f;
             const float frequency = 0.75f;
 
-            Vector3 lineStart = lineRenderer.GetPosition(0);
-            Vector3 lineEnd = lineRenderer.GetPosition(pointCount - 1);
+            Vector3 lineStart = lineRendererComp.lineRenderer.GetPosition(0);
+            Vector3 lineEnd = lineRendererComp.lineRenderer.GetPosition(pointCount - 1);
             Vector3 direction = (lineEnd - lineStart).normalized;
 
             float totalDistance = Vector3.Distance(lineStart, lineEnd);
@@ -219,21 +218,20 @@ namespace TheGame
             for (int i = 1; i < pointCount - 1; i++)
             {
                 float tt = (float)(i - 1) / pointCount;
-                Vector3 basePos = Vector3.Lerp(lineStart, lineEnd, tt);
+                Vector3 basePos = Vector3.LerpUnclamped(lineStart, lineEnd, tt);
                 var d = Vector3.Dot(movementDirection, position - basePos);
                 if (d < 0.5f) continue;
                 
                 // Distortion falloff based on distance from projection
                 float dist = projectedT - tt;
-                float weight = Mathf.Clamp01(1f - Mathf.Abs(dist) * 4f); // Falloff multiplier controls width
+                float weight = XIVMathf.Clamp01(1f - XIVMathf.Abs(dist) * 4f); // Falloff multiplier controls width
 
-                if (weight <= 0f)
-                    continue;
+                if (weight <= 0f) continue;
 
                 float sin = XIVMathf.Sin(dist + stepOffset + (frequency * i)) * scale;
                 basePos += normal * (sin * weight);
 
-                lineRenderer.SetPosition(i, basePos);
+                lineRendererComp.positions[i] = basePos;
             }
         }
 
@@ -243,13 +241,16 @@ namespace TheGame
             var go = resourcePool.Dequeue();
             go.transform.position = transformPosition;
             go.transform.rotation = transformRotation;
+            go.SetActive(true);
             return GameObjectEntity.BindGameObjectToEntityWithDependencies(world, go.GetComponent<GameObjectEntity>());
         }
 
         void ReleaseResource(Entity resourceEntity)
         {
-            resourcePool.Enqueue(resourceEntity.GetTransform().gameObject);
+            var gameObject = resourceEntity.GetTransform().gameObject;
+            resourcePool.Enqueue(gameObject);
             resourceEntity.Unbind();
+            gameObject.SetActive(false);
         }
         
     }

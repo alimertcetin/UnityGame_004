@@ -12,7 +12,9 @@ namespace XIV.Ecs
     public abstract class SerializedComponent : MonoBehaviour
     {
         public bool add = true;
-        public abstract object GetComponentData(World world);
+
+        public abstract void AddComponentForEntity(Entity entity);
+        
         public abstract int GetComponentId();
 
         void Reset()
@@ -40,9 +42,9 @@ namespace XIV.Ecs
     {
         public TComponentType component;
 
-        public override object GetComponentData(World world)
+        public override void AddComponentForEntity(Entity entity)
         {
-            return component;
+            entity.AddComponent<TComponentType>(component);
         }
 
         public sealed override int GetComponentId()

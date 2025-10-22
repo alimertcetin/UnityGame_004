@@ -67,21 +67,20 @@ namespace XIV.Ecs
         public RectTransform knob;
         public JoystickComp.JoystickType joystickType;
         
-        public override object GetComponentData(World world)
+        public override void AddComponentForEntity(Entity entity)
         {
             if (joystickType != JoystickComp.JoystickType.Static)
             {
                 knobContainer.gameObject.SetActive(false);
             }
-            
-            return new JoystickComp
+            entity.AddComponent(new JoystickComp
             {
                 knobContainerContainer = knobContainerContainer,
                 knobContainer = knobContainer,
                 knob = knob,
                 joystickType = joystickType,
                 screenSpaceOverlay = knobContainerContainer.GetComponentInParent<Canvas>().renderMode == RenderMode.ScreenSpaceOverlay
-            };
+            });
         }
 
         [Button]

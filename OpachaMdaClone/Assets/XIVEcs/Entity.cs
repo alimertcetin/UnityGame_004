@@ -31,16 +31,6 @@ namespace XIV.Ecs
             world.RemoveComponent<T>(entityId);
         }
 
-        public void AddComponents(params IComponent[] componentValues)
-        {
-            world.AddComponents(entityId, componentValues);
-        }
-
-        public void RemoveComponents(params Type[] componentTypes)
-        {
-            world.RemoveComponents(entityId, componentTypes);
-        }
-
         public ref T GetComponent<T>() where T : struct, IComponent
         {
             return ref world.GetComponent<T>(entityId);
@@ -66,18 +56,6 @@ namespace XIV.Ecs
         {
             return world.HasTag<T>(entityId);
         }
-
-        public void AddTags(params Type[] tagTypes)
-        {
-            world.AddTags(entityId, tagTypes);
-        }
-
-        public void RemoveTags(params Type[] tagTypes)
-        {
-            world.RemoveTags(entityId, tagTypes);
-        }
-
-
         public void DisableComponent<T>() where T : struct, IComponent
         {
             world.DisableComponent<T>(entityId);
@@ -98,31 +76,7 @@ namespace XIV.Ecs
             world.DestroyEntity(entityId);
         }
 
-        public void AddTagAndComponents(object[] componentValues, int[] componentIds, int[] tagIds)
-        {
-            world.AddComponentsAndTags(entityId, componentValues, componentIds, tagIds);
-        }
-
         public Archetype GetArchetype() => world.GetArchetype(entityId);
-
-        public void AddTagAndComponents(object[] componentValues, Type[] tagTypes)
-        {
-            // TODO array pool
-            int[] componentIds = new int[componentValues.Length];
-            int[] tagIds = new int[tagTypes.Length];
-
-            for (int i = 0; i < componentValues.Length; i++)
-            {
-                componentIds[i] = ComponentIdManager.GetComponentId(componentValues[i].GetType());
-            }
-
-            for (int i = 0; i < tagTypes.Length; i++)
-            {
-                tagIds[i] = TagIdManager.GetTagId(tagTypes[i]);
-            }
-
-            world.AddComponentsAndTags(entityId, componentValues, componentIds, tagIds);
-        }
 
         public override string ToString()
         {

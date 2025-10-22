@@ -8,12 +8,13 @@
     public class DestroyTogetherSerialized : SerializedComponent<DestroyTogetherComp>
     {
         public GameObjectEntity gameObjectEntity;
-        public override object GetComponentData(World world)
+
+        public override void AddComponentForEntity(Entity entity)
         {
-            return new DestroyTogetherComp()
+            entity.AddComponent(new DestroyTogetherComp()
             {
                 entity = gameObjectEntity.entity
-            };
+            });
         }
     }
 }

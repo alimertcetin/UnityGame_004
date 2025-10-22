@@ -68,18 +68,18 @@ namespace XIV.Ecs
     {
         public Animator animator;
         
-        public override object GetComponentData(World world)
+        public override void AddComponentForEntity(Entity entity)
         {
             if (animator == null)
             {
                 Debug.LogError("Please attach an animator to , " + gameObject.name + "'s view");
-                return component;
+                entity.AddComponent(component);
             }
 
             component.animator = animator;
             component.animatorListener = animator.gameObject.AddComponent<AnimatorListenerMono>();
             component.animationEvents = new HashSet<string>();
-            return component;
+            entity.AddComponent(component);
         }
 
         void OnValidate()

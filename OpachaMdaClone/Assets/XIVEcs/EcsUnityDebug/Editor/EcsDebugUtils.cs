@@ -55,7 +55,7 @@ namespace XIV.Ecs
                 EditorGUILayout.LabelField(TagIdManager.GetTagName(tagId));
                 if (GUILayout.Button("Remove Tag"))
                 {
-                    entity.RemoveTags(TagIdManager.GetTagType(tagId));
+                    entity.world.RemoveTag(entity.entityId, tagId);
                     return;
                 }
             }
@@ -75,7 +75,7 @@ namespace XIV.Ecs
                 EditorGUILayout.LabelField("---" + componentType.Name + "---");
                 if (GUILayout.Button("Remove Component"))
                 {
-                    entity.RemoveComponents(componentType);
+                    entity.world.RemoveComponent(entity.entityId, ComponentIdManager.GetComponentId(componentType));
                     return;
                 }
                 
@@ -171,14 +171,6 @@ namespace XIV.Ecs
                         {
                             EditorGUILayout.LabelField("NULL");
                         }
-                    
-                        // if (EditorUtils.GUIButton("Show"))
-                        // {
-                        //     foreach (var o in value)
-                        //     {
-                        //         EditorUtils.GUILabel(o.ToString());
-                        //     }
-                        // }
                     }
                     else if (info.FieldType.IsSubclassOf(typeof(UnityEngine.Object)))
                     {

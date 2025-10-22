@@ -150,32 +150,25 @@ namespace XIV.Ecs
             // 8 kb gc allocation, get components and get transform
             goEntity.entity = e;
 
-            goEntity.GetComponents<SerializedComponent>(serializedComponentBuffer);
-
-            cachedPrefabData.componentBuffer[0] = new TransformComp()
+            goEntity.GetComponents<SerializedComponent>(serializedComponentBuffer); ;
+            goEntity.entity.AddComponent(new TransformComp()
             {
                 gameObjectEntity = goEntity,
                 transform = goEntity.transform,
-            };
+            });
 
-            int cIdx = 1;
 #if UNITY_EDITOR
-            cIdx = 2;
-            cachedPrefabData.componentBuffer[1] = new DebugNameComp()
+            goEntity.entity.AddComponent(new DebugNameComp()
             {
                 name = goEntity.name
-            };
+            });
 #endif
 
             foreach (var serializedComponent in serializedComponentBuffer)
             {
                 if (!serializedComponent.add) continue;
-                cachedPrefabData.componentBuffer[cIdx++] = serializedComponent.GetComponentData(world);
+                serializedComponent.AddComponentForEntity(goEntity.entity);
             }
-
-            Debug.Assert(cachedPrefabData.componentBuffer.Length == cIdx);
-
-            goEntity.entity.AddTagAndComponents(cachedPrefabData.componentBuffer, cachedPrefabData.componentIds, cachedPrefabData.tagIds);
 
             var serializedActions = goEntity.GetComponents<SerializedAction>();
             foreach (var action in serializedActions)

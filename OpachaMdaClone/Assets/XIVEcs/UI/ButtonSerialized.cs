@@ -16,7 +16,7 @@ namespace XIV.Ecs
     {
         public Button[] buttons;
 
-        public override object GetComponentData(World world)
+        public override void AddComponentForEntity(Entity entity)
         {
             var buttonMono = gameObject.AddComponent<ButtonMono>();
             foreach (var button in buttons)
@@ -24,10 +24,10 @@ namespace XIV.Ecs
                 button.onClick.AddListener(() => buttonMono.clicked = true);
             }
             
-            return new ButtonComp
+            entity.AddComponent(new ButtonComp
             {
                 buttonMono = buttonMono
-            };
+            });
         }
 
         void OnValidate()

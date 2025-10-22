@@ -11,13 +11,13 @@ namespace TheGame
         {
             public Entity entity1;
             public Entity entity2;
-            public LineRenderer lineRenderer;
+            public Entity lineRendererEntity;
 
-            public Pair(Entity entity1, Entity entity2, LineRenderer lineRenderer)
+            public Pair(Entity entity1, Entity entity2, Entity lineRendererEntity)
             {
                 this.entity1 = entity1;
                 this.entity2 = entity2;
-                this.lineRenderer = lineRenderer;
+                this.lineRendererEntity = lineRendererEntity;
             }
 
             public bool Contains(Entity entity)
@@ -47,12 +47,12 @@ namespace TheGame
             return true;
         }
 
-        public void AssignLineRenderer(Entity entity1, Entity entity2, LineRenderer lineRenderer)
+        public void AssignLineRenderer(Entity entity1, Entity entity2, Entity lineRendererEntity)
         {
             int idx = connections.Exists(p => p.Contains(entity1) && p.Contains(entity2));
             if (idx == -1) throw new InvalidOperationException("This connection doesn't exists");
             ref var pair = ref connections[idx];
-            pair.lineRenderer = lineRenderer;
+            pair.lineRendererEntity = lineRendererEntity;
         }
 
         public void RemoveConnection(Entity entity1, Entity entity2)
@@ -93,7 +93,7 @@ namespace TheGame
         public Pair GetPair(Entity ent1, Entity ent2)
         {
             int idx = GetConnectionIndex(ent1, ent2);
-            if (idx == -1) return new Pair(Entity.Invalid, Entity.Invalid, null);
+            if (idx == -1) return new Pair(Entity.Invalid, Entity.Invalid, Entity.Invalid);
             return connections[idx];
         }
     }
