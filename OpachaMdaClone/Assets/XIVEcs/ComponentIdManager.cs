@@ -46,13 +46,13 @@ namespace XIV.Ecs
 
                 var componentIdType = typeof(ComponentId<>).MakeGenericType(componentType);
                 componentIdType.XIVSetField("id", componentIdType, componentId);
-                // componentIdType.DalSet(null, "entityId", componentId);
             }
         }
 
-        static Type GetComponentType(int componentId) => idToType[componentId];
-        public static int GetComponentId(Type type) => typeToId.GetId(type);
+        [Obsolete]
         public static Type GetComponentPoolType(int componentId) => idToCompPoolType[componentId];
+        public static Type GetComponentPoolType<T>() where T : struct, IComponent => idToCompPoolType[ComponentId<T>.id];
+        public static int GetComponentId(Type type) => typeToId.GetId(type);
         public static int GetComponentId<T>() where T : struct, IComponent => ComponentId<T>.id;
 
         public static string GetComponentNames(IEnumerable<int> componentIds, StringBuilder builder)
@@ -67,5 +67,6 @@ namespace XIV.Ecs
             return builder.ToString();
         }
 
+        static Type GetComponentType(int componentId) => idToType[componentId];
     }
 }

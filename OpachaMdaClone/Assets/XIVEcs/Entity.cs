@@ -13,8 +13,8 @@ namespace XIV.Ecs
             this.entityId = new EntityId(id, generationId);
             this.world = world;
         }
-        
-        
+
+
         /// Returns false if entity is null or destroyed
         public bool IsAlive()
         {
@@ -23,9 +23,9 @@ namespace XIV.Ecs
 
         public void AddComponent<T>(T componentValue) where T : struct, IComponent
         {
-            world.AddComponent(entityId,componentValue);
+            world.AddComponent(entityId, componentValue);
         }
-        
+
         public void RemoveComponent<T>() where T : struct, IComponent
         {
             world.RemoveComponent<T>(entityId);
@@ -33,19 +33,19 @@ namespace XIV.Ecs
 
         public void AddComponents(params IComponent[] componentValues)
         {
-            world.AddComponents(entityId,componentValues);
+            world.AddComponents(entityId, componentValues);
         }
-        
+
         public void RemoveComponents(params Type[] componentTypes)
         {
-            world.RemoveComponents(entityId,componentTypes);
+            world.RemoveComponents(entityId, componentTypes);
         }
 
         public ref T GetComponent<T>() where T : struct, IComponent
         {
             return ref world.GetComponent<T>(entityId);
         }
-        
+
         public bool HasComponent<T>() where T : struct, IComponent
         {
             return world.HasComponent<T>(entityId);
@@ -61,20 +61,20 @@ namespace XIV.Ecs
         {
             world.RemoveTag<T>(entityId);
         }
-        
+
         public bool HasTag<T>() where T : struct, ITag
         {
             return world.HasTag<T>(entityId);
         }
-        
+
         public void AddTags(params Type[] tagTypes)
         {
-            world.AddTags(entityId,tagTypes);
+            world.AddTags(entityId, tagTypes);
         }
-        
+
         public void RemoveTags(params Type[] tagTypes)
         {
-            world.RemoveTags(entityId,tagTypes);
+            world.RemoveTags(entityId, tagTypes);
         }
 
 
@@ -98,14 +98,14 @@ namespace XIV.Ecs
             world.DestroyEntity(entityId);
         }
 
-        public void AddTagAndComponents(object[] componentValues, int[] componentIds,int[] tagIds)
+        public void AddTagAndComponents(object[] componentValues, int[] componentIds, int[] tagIds)
         {
-            world.AddComponentsAndTags(entityId,componentValues,componentIds,tagIds);
+            world.AddComponentsAndTags(entityId, componentValues, componentIds, tagIds);
         }
 
         public Archetype GetArchetype() => world.GetArchetype(entityId);
 
-        public void AddTagAndComponents(object[] componentValues,Type[] tagTypes)
+        public void AddTagAndComponents(object[] componentValues, Type[] tagTypes)
         {
             // TODO array pool
             int[] componentIds = new int[componentValues.Length];
@@ -121,7 +121,7 @@ namespace XIV.Ecs
                 tagIds[i] = TagIdManager.GetTagId(tagTypes[i]);
             }
 
-            world.AddComponentsAndTags(entityId,componentValues,componentIds,tagIds);
+            world.AddComponentsAndTags(entityId, componentValues, componentIds, tagIds);
         }
 
         public override string ToString()
@@ -130,25 +130,25 @@ namespace XIV.Ecs
             {
                 return this == Entity.Invalid ? "Invalid Entity" : "Undefined Entity";
             }
-            
+
             if (IsAlive() && HasComponent<DebugNameComp>())
             {
-                return $"{GetComponent<DebugNameComp>().name} {entityId.id},{entityId.generation}"; 
+                return $"{GetComponent<DebugNameComp>().name} {entityId.id},{entityId.generation}";
             }
-            
+
             return $"Id:{entityId.id}, Generation:{entityId.generation}";
         }
 
         public void SetName(string name)
         {
-            AddComponent(new DebugNameComp(){name = name});
+            AddComponent(new DebugNameComp() { name = name });
         }
 
         public string GetName()
         {
             return HasComponent<DebugNameComp>() ? GetComponent<DebugNameComp>().name : "NoName_" + ToString();
         }
-        
+
         public bool Equals(Entity other)
         {
             return entityId.id == other.entityId.id && entityId.generation == other.entityId.generation;
@@ -172,7 +172,7 @@ namespace XIV.Ecs
         {
             return e1.entityId.id == e2.entityId.id && e1.entityId.generation == e2.entityId.generation;
         }
-        
+
         public static bool operator !=(Entity e1, Entity e2)
         {
             return !(e1 == e2);

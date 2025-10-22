@@ -8,7 +8,7 @@ namespace XIV.Ecs
         // and when an entity is destroyed generationId becomes negative until EntityData is reused
         public int generationId;
         public Archetype archetype;
-        public int archetypeIdx;
+        public int indexInArchetype;
 
         public Bitset componentBitSet;
         public Bitset tagBitSet;

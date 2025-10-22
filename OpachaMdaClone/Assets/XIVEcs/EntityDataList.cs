@@ -54,7 +54,7 @@ namespace XIV.Ecs
             // Negative positive generation entityId swapping so we can detect if an entity is freed
             entityData.generationId = -(entityData.generationId + 1);
             entityData.archetype = null;
-            entityData.archetypeIdx = -1;
+            entityData.indexInArchetype = -1;
 
             entityData.componentBitSet.Clear();
             entityData.tagBitSet.Clear();
