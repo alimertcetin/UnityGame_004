@@ -31,18 +31,6 @@ namespace XIV.Ecs
         {
             components[idx] = (T)value;
         }
-        
-        [Obsolete]
-        public override void SetNewComponent(int idx, object value)
-        {
-            if (customAssign != null)
-            {
-                customAssign(ref components[idx], (T)value);
-                return;
-            }
-        
-            components[idx] = (T)value;
-        }
 
         // typed accessor (hot-path)
         public ref T GetRef(int idx) => ref components[idx];
@@ -63,86 +51,8 @@ namespace XIV.Ecs
             }
             components[idx] = value;
         }
-        
-        //
-        // void IComponentPool.SwapRemoveMovedComponent(int idx)
-        // {
-        //     components[idx] = components.RemoveLast();
-        // }
-        //
-        // void IComponentPool.SwapRemoveComponent(int idx)
-        // {
-        //     customReset?.Invoke(ref components[idx]);
-        //     components[idx] = components.RemoveLast();
-        // }
-        //
-        // void IComponentPool.IncreaseCapacity(int amount)
-        // {
-        //     components.IncreaseCapacity(amount);
-        // }
-        //
-        // void IComponentPool.AddComponent()
-        // {
-        //     components.Add();
-        // }
-        //
-        // object IComponentPool.Get(int idx)
-        // {
-        //     return components[idx];
-        // }
-        //
-        // void IComponentPool.Set(int idx, object value)
-        // {
-        //     components[idx] = (T)value;
-        // }
-        //
-        // void IComponentPool.SetNewComponent(int idx, object value)
-        // {
-        //     if (customAssign != null)
-        //     {
-        //         customAssign(ref components[idx], (T)value);
-        //         return;
-        //     }
-        //
-        //     components[idx] = (T)value;
-        // }
-        //
-        // void IComponentPool.SetCustomReset(object resetFunc)
-        // {
-        //     customReset = (CustomReset<T>)resetFunc;
-        // }
-        //
-        // void IComponentPool.SetCustomAssign(object assignFunc)
-        // {
-        //     customAssign = (CustomAssign<T>)assignFunc;
-        // }
-        //
-        // void IComponentPool.RemoveAll()
-        // {
-        //     if (customReset != null)
-        //     {
-        //         for (int i = 0; i < components.Count; i++)
-        //         {
-        //             customReset(ref components[i]);
-        //         }
-        //     }
-        //     else
-        //     {
-        //         for (int i = 0; i < components.Count; i++)
-        //         {
-        //             components[i] = default;
-        //         }
-        //     }
-        //     
-        //     components.Clear();
-        // }
 
         public override Type ComponentType => typeof(T);
-
-        public override void IncreaseCapacity(int amount)
-        {
-            components.IncreaseCapacity(amount);
-        }
         
         public override void AddComponent()
         {
@@ -176,7 +86,7 @@ namespace XIV.Ecs
             customAssign = (CustomAssign<T>)assignFunc;
         }
         
-        public override void RemoveAll()
+        public void RemoveAll()
         {
             if (customReset != null)
             {
@@ -194,11 +104,6 @@ namespace XIV.Ecs
             }
         
             components.Clear();
-        }
-
-        public override void SwapRemoveMovedComponent(int idx)
-        {
-            components[idx] = components.RemoveLast();
         }
         
         public override void SwapRemoveComponentAtIndex(int idx, bool reset = true)

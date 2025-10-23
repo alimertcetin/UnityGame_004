@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using XIV.Core.Collections;
+using XIV.Core.Utils;
 
 namespace XIV.Ecs
 {
@@ -15,7 +16,6 @@ namespace XIV.Ecs
         public DynamicArray<Action<EntityId>> delayedComponentOperations;
         public DynamicArray<TagOperation> delayedTagOperations;
         public DynamicArray<DestroyOperation> destroyedEntities;
-        public DynamicArray<EntityId> changedEntities;
 
         public World(int entityCapacity = 64)
         {
@@ -34,7 +34,6 @@ namespace XIV.Ecs
             delayedComponentOperationEntityIds = new DynamicArray<EntityId>(capacity);
             delayedTagOperations = new DynamicArray<TagOperation>(capacity);
             destroyedEntities = new DynamicArray<DestroyOperation>(capacity);
-            changedEntities = new DynamicArray<EntityId>(capacity);
         }
 
         public Entity NewEntity()
@@ -45,35 +44,39 @@ namespace XIV.Ecs
 
         public void UnlockComponentOperation()
         {
+            HandleDestroyOperations();
+            HandleTagOperations();
+
+            // Update Data
+            for (int i = 0; i < delayedComponentOperations.Count; i++)
+            {
+                ref var entityId = ref delayedComponentOperationEntityIds[i];
+                ref var operation = ref delayedComponentOperations[i];
+                operation.Invoke(entityId);
+            }
+
+            delayedTagOperations.Clear();
+            delayedComponentOperations.Clear();
+            delayedComponentOperationEntityIds.Clear();
+        }
+
+        void HandleDestroyOperations()
+        {
             for (int i = 0; i < destroyedEntities.Count; i++)
             {
                 ref var destroyOperation = ref destroyedEntities[i];
                 ref var entityData = ref entityDataList[destroyOperation.entityId.id];
-
-                var archetype = entityData.archetype;
-                int archetypeIdx = entityData.indexInArchetype;
-
-                // Swap and Remove
-                // TODO change generation entityId immediately after entity.Destroy() call so we can detect this error immediately
-                // Debug.Assert(archetype != null, "You might be destroy an entity twice");
-                archetype.RemoveEntity(archetypeIdx);
-
-                for (int c = 0; c < archetype.componentPools.Length; c++)
-                {
-                    archetype.GetPoolByIndex(c).SwapRemoveComponentAtIndex(archetypeIdx);
-                }
-
-                if (archetype.entities.Count != archetypeIdx)
-                {
-                    var effectedEntity = archetype.entities[archetypeIdx];
-                    entityDataList[effectedEntity.entityId.id].indexInArchetype = archetypeIdx;
-                }
+                entityData.archetype.RemoveEntityAndComponents(entityData.indexInArchetype, entityDataList);
 
                 entityDataList.Free(destroyOperation.entityId.id);
             }
+            destroyedEntities.Clear();
+        }
 
-            changedEntities.Clear();
-
+        void HandleTagOperations()
+        {
+            using var dispose = ArrayUtils.GetBuffer(out EntityId[] buffer, delayedComponentOperations.Count);
+            int bufferTrack = 0;
             for (int i = 0; i < delayedTagOperations.Count; i++)
             {
                 ref var operation = ref delayedTagOperations[i];
@@ -97,19 +100,15 @@ namespace XIV.Ecs
                     entityData.tagBitSet.SetBit0(tagId);
                 }
 
-                changedEntities.Add() = operation.entityId;
+                buffer[bufferTrack++] = operation.entityId;
             }
-
-
-
+            
             // Update archetypes
-            for (int i = 0; i < changedEntities.Count; i++)
+            for (int i = 0; i < bufferTrack; i++)
             {
-                var entityId = changedEntities[i];
+                var entityId = buffer[i];
                 ref var entityData = ref entityDataList[entityId.id];
-
-                var newArchetype = archetypeMap.GetArchetype(
-                    entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
+                var newArchetype = archetypeMap.GetArchetype(entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
 
                 if (newArchetype != entityData.archetype)
                 {
@@ -121,31 +120,13 @@ namespace XIV.Ecs
                     UpdateQueries(newArchetype);
                 }
             }
-
-            // Update Data
-            for (int i = 0; i < delayedComponentOperations.Count; i++)
-            {
-                ref var entityId = ref delayedComponentOperationEntityIds[i];
-                ref var operation = ref delayedComponentOperations[i];
-                operation.Invoke(entityId);
-            }
-
-            delayedTagOperations.Clear();
-            delayedComponentOperations.Clear();
-            delayedComponentOperationEntityIds.Clear();
-            destroyedEntities.Clear();
         }
 
         public void DestroyEntity(EntityId entityId)
         {
             // Debug.Assert(IsEntityAlive(entityId));
-
-            // Free entity data for IsEntityAlive to work
-            // so we can detect wrong component operations
             ref var entityData = ref entityDataList[entityId.id];
             var archetype = entityData.archetype;
-
-
             if (archetype == null)
             {
                 entityDataList.Free(entityId.id);
@@ -161,21 +142,7 @@ namespace XIV.Ecs
                 return;
             }
 
-
-            // Swap and Remove
-            int archetypeIdx = entityData.indexInArchetype;
-            archetype.RemoveEntity(archetypeIdx);
-
-            for (int c = 0; c < archetype.componentPools.Length; c++)
-            {
-                archetype.GetPoolByIndex(c).SwapRemoveComponentAtIndex(archetypeIdx);
-            }
-
-            if (archetype.entities.Count != archetypeIdx)
-            {
-                var effectedEntity = archetype.entities[archetypeIdx];
-                entityDataList[effectedEntity.entityId.id].indexInArchetype = archetypeIdx;
-            }
+            archetype.RemoveEntityAndComponents(entityData.indexInArchetype, entityDataList);
 
             entityDataList.Free(entityId.id);
 
@@ -210,18 +177,10 @@ namespace XIV.Ecs
                     entityData.archetype.GetComponentPool<T>().Set(entityData.indexInArchetype, in component);
                     return;
                 }
-
-
                 entityData.componentBitSet.SetBit1(componentId);
-
-                var newArchetype = archetypeMap.GetArchetype(
-                    entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
-
+                var newArchetype = archetypeMap.GetArchetype(entityData.componentBitSet, entityData.tagBitSet, out var newArchetypeGenerated);
                 archetypeMap.ChangeArchetype(this, entityId1, entityDataList, newArchetype);
-
-                // entityData.archetype.GetComponentPool(newComponentId).SetNewComponent(entityData.indexInArchetype, componentValue);
-                entityData.archetype.GetComponentPool<T>().SetNewComponent(entityData.indexInArchetype, in component);
-
+                archetypeMap.SetNewComponent<T>(entityData, in component);
                 if (newArchetypeGenerated)
                 {
                     UpdateQueries(newArchetype);

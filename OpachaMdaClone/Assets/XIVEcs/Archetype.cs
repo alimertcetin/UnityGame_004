@@ -33,10 +33,8 @@ namespace XIV.Ecs
             }
         }
 
-        [Obsolete("Use GetComponentPool<T>() instead for type safety.")]
         public ComponentPoolBase GetPoolByIndex(int index) => componentPools[index];
 
-        [Obsolete("Use GetComponentPool<T>() instead for type safety.")]
         public int GetComponentIdByIndex(int index) => componentIds[index];
 
         public ComponentPoolBase GetComponentPool(int componentId)
@@ -62,9 +60,7 @@ namespace XIV.Ecs
             return (ComponentPoolBase)GetComponentPool(id);
         }
 
-        // 🔥 New generic fast-path API for direct manipulation
-
-        public void MoveTo(Archetype other, int oldEntityArchetypeIndex, int newEntityArchetypeIndex)
+        public void MoveTo(Archetype other, int oldEntityArchetypeIndex, int newEntityArchetypeIndex, EntityDataList entityDataList)
         {
             int newIdx = 0, oldIdx = 0;
 
@@ -102,6 +98,14 @@ namespace XIV.Ecs
                 this.GetPoolByIndex(oldIdx).SwapRemoveComponentAtIndex(oldEntityArchetypeIndex);
                 oldIdx++;
             }
+            
+            entities[oldEntityArchetypeIndex] = entities.RemoveLast();
+            
+            if (this.entities.Count != oldEntityArchetypeIndex)
+            {
+                var effectedEntity = this.entities[oldEntityArchetypeIndex];
+                entityDataList[effectedEntity.entityId.id].indexInArchetype = oldEntityArchetypeIndex;
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -136,28 +140,35 @@ namespace XIV.Ecs
             return $"Comp({components}) - Tag({tags})";
         }
 
-        // public void RemoveEntity(int index, EntityDataList entityDataList)
-        // {
-        //     entities[index] = entities.RemoveLast();
-        //
-        //     for (int c = 0; c < this.componentPools.Length; c++)
-        //     {
-        //         this.GetPoolByIndex(c).SwapRemoveComponentAtIndex(index);
-        //     }
-        //
-        //     if (this.entities.Count != index)
-        //     {
-        //         var effectedEntity = this.entities[index];
-        //         entityDataList[effectedEntity.entityId.id].indexInArchetype = index;
-        //     }
-        // }
-
-        public void RemoveEntity(int index)
+        public void RemoveEntityAndComponents(int archetypeIdx, EntityDataList entityDataList)
         {
-            entities[index] = entities.RemoveLast();
+            entities[archetypeIdx] = entities.RemoveLast();
+
+            for (int c = 0; c < componentPools.Length; c++)
+            {
+                GetPoolByIndex(c).SwapRemoveComponentAtIndex(archetypeIdx);
+            }
+
+            if (entities.Count != archetypeIdx)
+            {
+                var effectedEntity = entities[archetypeIdx];
+                entityDataList[effectedEntity.entityId.id].indexInArchetype = archetypeIdx;
+            }
         }
 
         public Bitset GetComponentBitSet() => componentBitSet;
         public Bitset GetTagBitset() => tagBitSet;
+
+        public void AddEntity(World world, ref EntityId entityId, ref EntityData entityData)
+        {
+            entities.Add() = new Entity(world, entityId.id, entityId.generation);
+            entityData.archetype = this;
+            entityData.indexInArchetype = entities.Count - 1;
+            var newArchetypeComponentPoolLength = componentPools.Length;
+            for (int i = 0; i < newArchetypeComponentPoolLength; i++)
+            {
+                componentPools[i].AddComponent();
+            }
+        }
     }
 }

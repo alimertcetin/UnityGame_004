@@ -145,47 +145,31 @@ namespace XIV.Ecs
         }
 
 
-        public Archetype GetArchetype(Bitset componentBitSet, Bitset tagBitSet, out bool newArchetypeGenerated)
+        public Archetype GetArchetype(Bitset componentBitset, Bitset tagBitset, out bool newArchetypeGenerated)
         {
-            if (cachedArchetype != null
-                && cachedArchetype.GetComponentBitSet().Equals(ref componentBitSet)
-                && cachedArchetype.GetTagBitset().Equals(ref tagBitSet))
+            newArchetypeGenerated = false;
+            if (cachedArchetype != null && IsArchetypeCompatible(cachedArchetype))
             {
-                newArchetypeGenerated = false;
                 return cachedArchetype;
             }
 
-            int hash = HashCode.Combine(componentBitSet.GetHashCode(), tagBitSet.GetHashCode());
-            if (hash < 0)
-            {
-                hash = -hash;
-            }
-
+            var hash = GetHash();
             int bucketIdx = hash % buckets.Length;
             var node = buckets[bucketIdx];
 
             Archetype archetype = null;
-            newArchetypeGenerated = false;
-
 
             if (node == null)
             {
                 // Create New Archetype
-                archetype = new Archetype(Bitset.Copy(ref componentBitSet), Bitset.Copy(ref tagBitSet));
                 newArchetypeGenerated = true;
-
-                buckets[bucketIdx] = new Node()
-                {
-                    archetype = archetype,
-                    next = null
-                };
+                archetype = CreateNewArchetype(componentBitset, tagBitset, ref node);
             }
             else
             {
                 while (true)
                 {
-                    if (node.archetype.GetComponentBitSet().Equals(ref componentBitSet)
-                        && node.archetype.GetTagBitset().Equals(ref tagBitSet))
+                    if (IsArchetypeCompatible(node.archetype))
                     {
                         archetype = node.archetype;
                         break;
@@ -193,15 +177,8 @@ namespace XIV.Ecs
 
                     if (node.next == null)
                     {
-                        // Create New Archetype
-                        archetype = new Archetype(Bitset.Copy(ref componentBitSet), Bitset.Copy(ref tagBitSet));
                         newArchetypeGenerated = true;
-
-                        node.next = new Node()
-                        {
-                            archetype = archetype,
-                            next = null
-                        };
+                        archetype = CreateNewArchetype(componentBitset, tagBitset, ref node.next);
                         break;
                     }
 
@@ -232,6 +209,29 @@ namespace XIV.Ecs
 
             cachedArchetype = archetype;
             return cachedArchetype;
+
+            bool IsArchetypeCompatible(Archetype archetype)
+            {
+                return archetype.GetComponentBitSet().Equals(ref componentBitset) && archetype.GetTagBitset().Equals(ref tagBitset);
+            }
+
+            int GetHash()
+            {
+                int v = HashCode.Combine(componentBitset.GetHashCode(), tagBitset.GetHashCode());
+                if (v < 0) v = -v;
+                return v;
+            }
+        }
+
+        static Archetype CreateNewArchetype(Bitset componentBitset, Bitset tagBitset, ref Node node)
+        {
+            var archetype = new Archetype(Bitset.Copy(ref componentBitset), Bitset.Copy(ref tagBitset));
+            node = new Node()
+            {
+                archetype = archetype,
+                next = null
+            };
+            return archetype;
         }
 
         public void ChangeArchetype(World world, EntityId entityId, EntityDataList entityDataList, Archetype newArchetype)
@@ -244,42 +244,18 @@ namespace XIV.Ecs
             if (oldArchetype == newArchetype) return;
 
             // 1) Add & reserve slots in new archetype
-            AddEntityToNewArchetype(world, newArchetype, ref entityId, ref entityData);
+            newArchetype.AddEntity(world, ref entityId, ref entityData);
 
             // 2) If there was no old archetype, we're done
             if (oldArchetype == null) return;
 
             // 3) Merge/copy/remove components
-            oldArchetype.MoveTo(newArchetype, oldEntityArchetypeIndex, entityData.indexInArchetype);
-
-            // 4) Remove entity from the old archetype and fix indices
-            RemoveEntityFromOldArchetype(oldArchetype, entityDataList, oldEntityArchetypeIndex);
+            oldArchetype.MoveTo(newArchetype, oldEntityArchetypeIndex, entityData.indexInArchetype, entityDataList);
         }
 
-        void AddEntityToNewArchetype(World world, Archetype newArchetype, ref EntityId entityId, ref EntityData entityData)
+        public void SetNewComponent<T>(EntityData entityData, in T component) where T : struct, IComponent
         {
-            newArchetype.entities.Add() = new Entity(world, entityId.id, entityId.generation);
-            entityData.archetype = newArchetype;
-            entityData.indexInArchetype = newArchetype.entities.Count - 1;
-            var newArchetypeComponentPoolLength = newArchetype.componentPools.Length;
-            for (int i = 0; i < newArchetypeComponentPoolLength; i++)
-            {
-                newArchetype.GetPoolByIndex(i).AddComponent();
-            }
+            entityData.archetype.GetComponentPool<T>().SetNewComponent(entityData.indexInArchetype, in component);
         }
-
-        void RemoveEntityFromOldArchetype(Archetype oldA, EntityDataList entityDataList, int oldIndex)
-        {
-            oldA.RemoveEntity(oldIndex);
-            // if not last entity
-            if (oldA.entities.Count != oldIndex)
-            {
-                // entity slot has been changed, get the entity in the changed slot
-                ref var effected = ref oldA.entities[oldIndex];
-                // set its index to point to correct location
-                entityDataList[effected.entityId.id].indexInArchetype = oldIndex;
-            }
-        }
-
     }
 }
