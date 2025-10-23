@@ -163,7 +163,8 @@ namespace XIV.Ecs
             {
                 // Create New Archetype
                 newArchetypeGenerated = true;
-                archetype = CreateNewArchetype(componentBitset, tagBitset, ref node);
+                archetype = CreateNewArchetype(componentBitset, tagBitset, out var newNode);
+                buckets[bucketIdx] = newNode;
             }
             else
             {
@@ -178,7 +179,8 @@ namespace XIV.Ecs
                     if (node.next == null)
                     {
                         newArchetypeGenerated = true;
-                        archetype = CreateNewArchetype(componentBitset, tagBitset, ref node.next);
+                        archetype = CreateNewArchetype(componentBitset, tagBitset, out var newNode);
+                        node.next = newNode;
                         break;
                     }
 
@@ -223,10 +225,10 @@ namespace XIV.Ecs
             }
         }
 
-        static Archetype CreateNewArchetype(Bitset componentBitset, Bitset tagBitset, ref Node node)
+        static Archetype CreateNewArchetype(Bitset componentBitset, Bitset tagBitset, out Node newNode)
         {
             var archetype = new Archetype(Bitset.Copy(ref componentBitset), Bitset.Copy(ref tagBitset));
-            node = new Node()
+            newNode = new Node()
             {
                 archetype = archetype,
                 next = null
