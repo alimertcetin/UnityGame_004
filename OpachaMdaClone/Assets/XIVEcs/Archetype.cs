@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Text;
 using XIV.Core.Collections;
@@ -33,16 +34,37 @@ namespace XIV.Ecs
             }
         }
 
-        public ComponentPoolBase GetPoolByIndex(int index) => componentPools[index];
+        public void SetCustomReset(IReadOnlyDictionary<int, Delegate> customResetMap)
+        {
+            int len = componentIds.Length;
+            for (int i = 0; i < len; i++)
+            {
+                if (customResetMap.TryGetValue(componentIds[i], out var customReset))
+                {
+                    componentPools[i].SetCustomReset(customReset);
+                }
+            }
+        }
 
-        public int GetComponentIdByIndex(int index) => componentIds[index];
+        public void SetCustomAssign(IReadOnlyDictionary<int, Delegate> customAssignMap)
+        {
+            int len = componentIds.Length;
+            for (int i = 0; i < len; i++)
+            {
+                if (customAssignMap.TryGetValue(componentIds[i], out var customAssign))
+                {
+                    componentPools[i].SetCustomAssign(customAssign);
+                }
+            }
+        }
+
+        public ComponentPoolBase GetPoolByIndex(int index) => componentPools[index];
 
         public ComponentPoolBase GetComponentPool(int componentId)
         {
             for (int i = 0; i < componentIds.Length; i++)
             {
-                if (componentIds[i] == componentId)
-                    return componentPools[i];
+                if (componentIds[i] == componentId) return componentPools[i];
             }
 
             return null;
@@ -66,8 +88,8 @@ namespace XIV.Ecs
 
             while (oldIdx < this.componentIds.Length && newIdx < other.componentIds.Length)
             {
-                int oldComponentId = this.GetComponentIdByIndex(oldIdx);
-                int newComponentId = other.GetComponentIdByIndex(newIdx);
+                int oldComponentId = this.componentIds[oldIdx];
+                int newComponentId = other.componentIds[newIdx];
 
                 // Remove Component from old, new archetype doesn't store this component type
                 if (oldComponentId < newComponentId)

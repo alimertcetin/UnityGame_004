@@ -10,8 +10,8 @@ namespace XIV.Ecs
         public Archetype archetype;
         public int indexInArchetype;
 
-        public Bitset componentBitSet;
-        public Bitset tagBitSet;
-        public DynamicArray<DisabledComponent> disabledComponents;
+        public Bitset componentBitset;
+        public Bitset tagBitset;
+        public Bitset disabledComponentBitset;
     }
 }

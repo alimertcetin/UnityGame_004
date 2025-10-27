@@ -60,13 +60,11 @@ namespace XIV.Ecs
             builder.Clear();
             foreach (var id in componentIds)
             {
-                builder.Append(GetComponentType(id).Name);
-                builder.Append(",");
+                builder.Append(idToType[id].Name);
+                builder.Append(',');
             }
 
             return builder.ToString();
         }
-
-        static Type GetComponentType(int componentId) => idToType[componentId];
     }
 }

@@ -191,22 +191,8 @@ namespace XIV.Ecs
             if (newArchetypeGenerated)
             {
                 archetypes.Add(archetype);
-
-                var componentIdsLength = archetype.componentIds.Length;
-                for (int i = 0; i < componentIdsLength; i++)
-                {
-                    int componentId = archetype.GetComponentIdByIndex(i);
-
-                    if (customResetMap.TryGetValue(componentId, out var customReset))
-                    {
-                        archetype.GetPoolByIndex(i).SetCustomReset(customReset);
-                    }
-
-                    if (customAssignMap.TryGetValue(componentId, out var customAssign))
-                    {
-                        archetype.GetPoolByIndex(i).SetCustomAssign(customAssign);
-                    }
-                }
+                archetype.SetCustomReset(customResetMap);
+                archetype.SetCustomAssign(customAssignMap);
             }
 
             cachedArchetype = archetype;

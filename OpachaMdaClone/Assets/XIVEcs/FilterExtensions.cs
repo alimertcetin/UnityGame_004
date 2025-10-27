@@ -84,7 +84,7 @@ namespace XIV.Ecs
 
         /// Don't mutate entities inside condition
         static readonly List<Entity> buffer = new List<Entity>();
-        public static Entity[] Match(this Filter filter, Condition condition)
+        public static XIVMemory<Entity> Match(this Filter filter, Condition condition)
         {
             buffer.Clear();
             filter.ForEachWithoutLock((entity =>
@@ -94,7 +94,7 @@ namespace XIV.Ecs
                     buffer.Add(entity);
                 }
             } ));
-            return buffer.ToArray();
+            return buffer.AsXIVMemory();
         }
         
         /// Don't mutate entities inside condition

@@ -17,7 +17,7 @@ namespace XIV.Ecs
 
             for (int i = 0; i < gameObjectEntities.Length; i++)
             {
-                GameObjectEntity.SetupEntity(world,entities[i],  gameObjectEntities[i], GameObjectEntity.GetPrefabData(gameObjectEntities[i]));
+                GameObjectEntity.SetupEntity(world,entities[i],  gameObjectEntities[i]);
             }
 
 #if UNITY_EDITOR

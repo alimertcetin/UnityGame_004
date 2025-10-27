@@ -7,7 +7,7 @@ namespace XIV.Ecs
         public ref EntityData this[int i] => ref items[i];
         public readonly DynamicArray<EntityData> items;
         public readonly DynamicArray<int> freeIndices;
-
+        public int entityCount;
 
         public EntityDataList(int initCapacity, int freeIndicesInitCapacity)
         {
@@ -17,14 +17,15 @@ namespace XIV.Ecs
             for (int i = 0; i < initCapacity; i++)
             {
                 ref var entityData = ref items[i];
-                entityData.componentBitSet = BitSetFactory.CreateComponentBitSet();
-                entityData.tagBitSet = BitSetFactory.CreateTagBitSet();
-                entityData.disabledComponents = new DynamicArray<DisabledComponent>();
+                entityData.componentBitset = BitSetFactory.CreateComponentBitSet();
+                entityData.tagBitset = BitSetFactory.CreateTagBitSet();
+                entityData.disabledComponentBitset = BitSetFactory.CreateComponentBitSet();
             }
         }
 
         public ref EntityData Add(out int idx)
         {
+            entityCount++;
             if (freeIndices.Count > 0)
             {
                 idx = freeIndices.RemoveLast();
@@ -34,11 +35,11 @@ namespace XIV.Ecs
 
             // Create New Entity Data
             ref var entityData = ref items.Add();
-            if (entityData.disabledComponents == null)
+            if (entityData.componentBitset.buckets == null)
             {
-                entityData.componentBitSet = BitSetFactory.CreateComponentBitSet();
-                entityData.tagBitSet = BitSetFactory.CreateTagBitSet();
-                entityData.disabledComponents = new DynamicArray<DisabledComponent>();
+                entityData.componentBitset = BitSetFactory.CreateComponentBitSet();
+                entityData.tagBitset = BitSetFactory.CreateTagBitSet();
+                entityData.disabledComponentBitset = BitSetFactory.CreateComponentBitSet();
             }
 
             idx = items.Count - 1;
@@ -47,6 +48,7 @@ namespace XIV.Ecs
 
         public void Free(int idx)
         {
+            entityCount--;
             freeIndices.Add() = idx;
 
             // Reset Entity Data
@@ -56,9 +58,9 @@ namespace XIV.Ecs
             entityData.archetype = null;
             entityData.indexInArchetype = -1;
 
-            entityData.componentBitSet.Clear();
-            entityData.tagBitSet.Clear();
-            entityData.disabledComponents.Clear();
+            entityData.componentBitset.Clear();
+            entityData.tagBitset.Clear();
+            entityData.disabledComponentBitset.Clear();
         }
     }
 }

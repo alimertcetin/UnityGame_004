@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Text;
-using UnityEngine;
 
 namespace XIV.Ecs
 {
@@ -57,8 +56,7 @@ namespace XIV.Ecs
 
         protected void Lock()
         {
-            lockCounter++;
-            bufferIdx = lockCounter - 1;
+            bufferIdx = lockCounter++;
 
             if (lockCounter >= numberOfEntitiesBuffer.Length)
             {
@@ -72,7 +70,6 @@ namespace XIV.Ecs
             
             if (numberOfEntitiesBuffer[bufferIdx].Length < query.archetypes.Count)
             {
-                Debug.Log($"[Egemen] Don't you think you have too many archetypes: {query} : {query.archetypes.Count}");
                 Array.Resize(ref numberOfEntitiesBuffer[bufferIdx], query.archetypes.Count * 2);
             }
             
@@ -88,7 +85,6 @@ namespace XIV.Ecs
             lockCounter--;
             foreach (var archetype in query.archetypes) archetype.lockCounter--;
 
-            Debug.Assert(lockCounter >= 0);
             if (lockCounter == 0)
             {
                 world.UnlockComponentOperation();
