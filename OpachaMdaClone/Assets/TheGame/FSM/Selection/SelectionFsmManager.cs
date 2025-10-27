@@ -60,9 +60,13 @@ namespace TheGame
         public bool TryGetSecondFromInput(ref InputData input, out Entity entity)
         {
             // first requires OccupiedNodeComp but second doesn't need it.
-            // Besides second requires a connection to first
+            // Second requires a connection to first
             if (TryGetEntityFromInput(ref input, out entity) == false) return false;
-            return connectionDB.IsConnected(first, entity);
+            return IsConnected(first, entity);
+        }
+        bool IsConnected(Entity ent1, Entity ent2)
+        {
+            return connectionDB.IsConnected(ent1, ent2);
         }
 
         public bool TryGetEntityFromInput(ref InputData input, out Entity entity)
@@ -84,15 +88,16 @@ namespace TheGame
             if (first.IsAlive() == false) return Entity.Invalid;
             
             var dotProduct = 0f;
-            using var entityBufferDispose = ArrayUtils.GetBuffer(out ConnectionDB.Pair[] pairBuffer, connectionDB.Count);
-            int connectionCount = connectionDB.GetPairs(first, pairBuffer);
-            var selectedNodeEntityPosition = first.GetTransform().position;
+            var firstNodeEntityTransformPosition = first.GetComponent<TransformComp>().transform.position;
             Entity closestEntity = Entity.Invalid;
-            for (int i = 0; i < connectionCount; i++)
+            using var dispose = ArrayUtils.GetBuffer(out ConnectionPair[] pairBuffer, connectionDB.Count);
+            int len = connectionDB.GetPairs(first, pairBuffer);
+            for (var i = 0; i < len; i++)
             {
-                var connectedEntity = pairBuffer[i].GetOpposite(first);
+                ref var pair = ref pairBuffer[i];
+                var connectedEntity = pair.GetOpposite(first);
                 var connectedEntityPos = connectedEntity.GetTransform().position;
-                var dirToConnected = (Vector2)(connectedEntityPos - selectedNodeEntityPosition);
+                var dirToConnected = (Vector2)(connectedEntityPos - firstNodeEntityTransformPosition);
                 // Use dot product to define the possible target direction
                 var dot = Vector2.Dot(swipeDirection.normalized, dirToConnected.normalized);
                 if (dotProduct < dot)
@@ -114,35 +119,25 @@ namespace TheGame
 
         public void TransferOnce(bool allResource = true)
         {
-            if (first.IsAlive() == false || second.IsAlive() == false || connectionDB.IsConnected(first, second) == false) return;
+            if (first.IsAlive() == false || second.IsAlive() == false || IsConnected(first, second) == false) return;
             var total = (int)first.GetComponent<NodeComp>().resourceQuantity;
-            var send = allResource ? total : total / 2f;
-
-            var pair = connectionDB.GetPair(first, second);
-            if (pair.entity1.IsAlive() == false || pair.entity2.IsAlive() == false)
-            {
-                Debug.Log("TransferOnce");
-                var t1 = pair.entity1.GetTransform();
-                var t2 = pair.entity2.GetTransform();
-                t1.position = t1.position.SetZ(-10);
-                t2.position = t2.position.SetZ(-10);
-                Debug.Break();
-            }
+            var send = allResource ? total : total * 0.5f;
             
             first.AddComponent(new SendResourceComp
             {
-                toNode = second,
+                toEntity = second,
                 resourceQuantity = (int)send,
             });
         }
 
         public void StartContinuousTransfer()
         {
-            if (first.IsAlive() == false || second.IsAlive() == false || connectionDB.IsConnected(first, second) == false) return;
+            if (first.IsAlive() == false || second.IsAlive() == false || IsConnected(first, second) == false) return;
+            
             first.AddComponent(new SendResourceContinuouslyComp
             {
-                toNode = second,
-                duration = first.GetComponent<OccupiedNodeComp>().unitEntity.GetComponent<UnitComp>().configs[0].duration,
+                toEntity = second,
+                duration = first.GetComponent<OccupiedNodeComp>().unitEntity.GetComponent<UnitComp>().generationConfigs[0].duration,
                 currentDuration = 0f
             });
         }

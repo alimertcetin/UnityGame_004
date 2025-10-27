@@ -8,15 +8,15 @@ namespace TheGame
 {
     public struct SendResourceComp : IComponent
     {
-        public Entity toNode;
         public int resourceQuantity;
+        public Entity toEntity;
     }
 
     public struct SendResourceContinuouslyComp : IComponent
     {
-        public Entity toNode;
         public float duration;
         public float currentDuration;
+        public Entity toEntity;
     }
 
     public struct DoubleTapComp : IComponent
@@ -28,12 +28,12 @@ namespace TheGame
     {
         readonly Filter<UnitComp, InputListenerComp> nodeSelectorFilter = null;
         readonly Filter<DoubleTapComp> doubleTapFilter = null;
-        readonly ConnectionDB connectionDb = null;
-        SelectionFsmManager selectionFsmManager;
+        readonly ConnectionDB connectionDB = null;
+        SelectionFsmManager selectionFsmManager = null;
 
         public override void Awake()
         {
-            selectionFsmManager = new SelectionFsmManager(connectionDb);
+            selectionFsmManager = new SelectionFsmManager(connectionDB);
         }
 
         public override void Update()
@@ -44,10 +44,12 @@ namespace TheGame
                 if (doubleTapComp.duration <= 0) entity.RemoveComponent<DoubleTapComp>();
             });
 
+            InputData input = default;
             nodeSelectorFilter.ForEach((Entity selectorEntity, ref UnitComp unitComp, ref InputListenerComp listener) =>
             {
-                selectionFsmManager.Run(ref listener.input);
+                input = listener.input;
             });
+            selectionFsmManager.Run(ref input);
         }
     }
 }

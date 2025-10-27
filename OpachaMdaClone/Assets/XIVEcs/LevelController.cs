@@ -45,6 +45,7 @@ namespace XIV.Ecs
             manager.Inject(prefabReferences);
             manager.Inject(new LevelState());
             manager.Inject(new ConnectionDB());
+            manager.Inject(new LineRendererPositionData());
             
             // Set start state to Game and don't instantiate startUI if you don't have a start menu
             manager.ChangeState(States.Start);
@@ -62,10 +63,15 @@ namespace XIV.Ecs
             // Game
             manager.AddSystem(new NodeLevelGenerator(), States.Start);
             manager.AddSystem(new NodeInitializeSystem(), States.Game);
+            
             manager.AddSystem(new NodeResourceGenerateSystem(), States.Game);
             manager.AddSystem(new UnitNodeSelectionSystem(), States.Game);
+            
             manager.AddSystem(new NodeHighlightSystem(), States.Game);
+            
             manager.AddSystem(new ResourceTransferSystem(), States.Game);
+            
+            manager.AddSystem(new ConnectionLineRenderSystem(), States.Game);
             manager.AddSystem(new ShieldRenderSystem(), States.Game);
             manager.AddSystem(new NodeDebugSystem(), States.Game);
             

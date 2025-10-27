@@ -171,10 +171,7 @@ MonoBehaviour:
   add: 1
   component:
     unitType: 0
-    configs:
-    - {fileID: 11400000, guid: 21fc82e2514c0f14eaecc5ebfb7572b2, type: 2}
-    - {fileID: 11400000, guid: 2c3ee8692509ced40810efd3a1de6225, type: 2}
-    - {fileID: 11400000, guid: 5edb1dcef10e4f84e8e83a503c519310, type: 2}
+    generationConfigs: []
 --- !u!114 &582540362
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -361,6 +358,10 @@ MonoBehaviour:
   nodeEntity: {fileID: 8735968371559727592, guid: efc1c64c11b49ad42a50fd1605474648, type: 3}
   shieldLineRendererMaterial: {fileID: 2100000, guid: 5a818ebc708f7e14a869b686b4139763, type: 2}
   connectionLineRendererMaterial: {fileID: 2100000, guid: e3a751fe06bc034438b793f3df3ae370, type: 2}
+  generationConfigs:
+  - {fileID: 11400000, guid: 21fc82e2514c0f14eaecc5ebfb7572b2, type: 2}
+  - {fileID: 11400000, guid: 2c3ee8692509ced40810efd3a1de6225, type: 2}
+  - {fileID: 11400000, guid: 5edb1dcef10e4f84e8e83a503c519310, type: 2}
 --- !u!1 &963194225
 GameObject:
   m_ObjectHideFlags: 0
@@ -504,7 +505,7 @@ GameObject:
   - component: {fileID: 1580297718}
   - component: {fileID: 1580297719}
   m_Layer: 0
-  m_Name: LevelSettings
+  m_Name: LevelSettingsMono
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -538,6 +539,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   levelSettings:
+    timeScale: 1
     seed: 1
     scale: 2.6
     frequency: 90

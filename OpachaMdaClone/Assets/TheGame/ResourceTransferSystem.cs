@@ -1,5 +1,8 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using TheGame.Extensions;
 using UnityEngine;
 using XIV.Core.TweenSystem;
@@ -14,27 +17,50 @@ namespace TheGame
     {
         public Entity unitEntity;
         public Entity startNodeEntity;
-        public Entity targetNodeEntity;
+        public Entity endNodeEntity;
+        public Vector3 resourcePosition;
         public int quantity;
     }
+
     public class ResourceTransferSystem : XIV.Ecs.System
     {
         readonly Filter<TransformComp, ResourceComp> resourceFilter = null;
         readonly Filter<TransformComp, NodeComp, NodeResourceCollisionComp> nodeResourceCollisionFilter = null;
         readonly Filter<TransformComp, NodeComp, OccupiedNodeComp, SendResourceComp> sendResourceFilter = null;
         readonly Filter<NodeComp, OccupiedNodeComp, SendResourceContinuouslyComp> sendResourceContinuouslyFilter = null;
-        readonly Filter<LineRendererComp> lineRendererFilter = null;
         readonly PrefabReferences prefabReferences = null;
-        readonly ConnectionDB connectionDB = null;
         readonly Queue<GameObject> resourcePool = new Queue<GameObject>();
+        readonly ConnectionDB connectionDB = null;
+        readonly LineRendererPositionData lineRendererPositionData = null;
+        
+        readonly Action<Entity> releaseResourceAction;
+        
+        public ResourceTransferSystem() : base()
+        {
+            releaseResourceAction = ReleaseResource;
+        }
+
+        public override void Start()
+        {
+            const int PREWARM_COUNT = 250;
+            using var dispose = ArrayUtils.GetBuffer(out Entity[] entityBuffer, PREWARM_COUNT);
+            for (int i = 0; i < PREWARM_COUNT; i++)
+            {
+                entityBuffer[i] = GetResource(Vector3.zero, Quaternion.identity);
+            }
+
+            for (int i = 0; i < PREWARM_COUNT; i++)
+            {
+                ReleaseResource(entityBuffer[i]);
+            }
+        }
 
         public override void Update()
         {
             nodeResourceCollisionFilter.ForEach(HandleResourceCollision);
-            resourceFilter.ForEach(HandleResourceMovement);
+            resourceFilter.ForEach(MoveResourceAlongLine);
             sendResourceFilter.ForEach(SendResource);
             sendResourceContinuouslyFilter.ForEach(SendResourceContinuously);
-            lineRendererFilter.ForEach(FixLineRenderers);
         }
 
         void HandleResourceCollision(Entity nodeEntity, ref TransformComp transformComp, ref NodeComp nodeComp, ref NodeResourceCollisionComp nodeResourceCollisionComp)
@@ -62,7 +88,7 @@ namespace TheGame
                         unitEntity = unitEntity,
                     });
                 }
-                nodeComp.txt_quantity.text = ((int)nodeComp.resourceQuantity).ToString();
+                nodeComp.txt_quantity.WriteScoreText((int)nodeComp.resourceQuantity);
             }
 
             transformComp.transform.CancelTween();
@@ -72,26 +98,25 @@ namespace TheGame
             nodeEntity.RemoveComponent<NodeResourceCollisionComp>();
         }
 
-        void HandleResourceMovement(Entity resourceEntity, ref TransformComp transformComp, ref ResourceComp resourceComp)
+        void MoveResourceAlongLine(Entity resourceEntity, ref TransformComp transformComp, ref ResourceComp resourceComp)
         {
-            var pos = transformComp.transform.position;
-            var targetEntity = resourceComp.targetNodeEntity;
-            var startEntity = resourceComp.startNodeEntity;
-            var startTransform = startEntity.GetTransform();
-            var startTransformPosition = startTransform.position;
-            var targetTransform = targetEntity.GetComponent<TransformComp>().transform;
-            var targetTransformPosition = targetTransform.position;
-            pos = Vector3.MoveTowards(pos, targetTransformPosition, 2f * XTime.deltaTime);
-            transformComp.transform.position = pos;
+            int idx = connectionDB.GetConnectionIndex(resourceComp.startNodeEntity, resourceComp.endNodeEntity);
+            ref ConnectionPair connectionPairComp = ref connectionDB[idx];
+            
+            GetStartAndTargetPositions(ref resourceComp, ref connectionPairComp, out var startTransformPosition, out var targetTransformPosition);
+            resourceComp.resourcePosition = Vector3.MoveTowards(resourceComp.resourcePosition, targetTransformPosition, 2f * XTime.deltaTime);
+            var movementDirection = targetTransformPosition - startTransformPosition;
+            
+            lineRendererPositionData.connectionIndices.Add() = idx;
+            lineRendererPositionData.movementPositions.Add() = resourceComp.resourcePosition;
+            lineRendererPositionData.movementDirections.Add() = movementDirection;
+            transformComp.transform.position = resourceComp.resourcePosition;
 
-            ConnectionDB.Pair pair = connectionDB.GetPair(startEntity, targetEntity);
-            HandleLineRendererVisual(pair.lineRendererEntity, targetTransformPosition - startTransformPosition, pos);
-
-            if (Vector3.Distance(pos, targetTransformPosition) < 0.02f == false) return;
-                
+            if (Vector3.Distance(resourceComp.resourcePosition, targetTransformPosition) < 0.02f == false) return;
+            
             // lineRenderer.XIVStraightLine(startTransformPosition, targetTransformPosition);
                 
-            targetEntity.AddComponent(new NodeResourceCollisionComp
+            connectionPairComp.GetOpposite(resourceComp.startNodeEntity).AddComponent(new NodeResourceCollisionComp
             {
                 unitEntity = resourceComp.unitEntity,
                 quantity = resourceComp.quantity,
@@ -100,8 +125,8 @@ namespace TheGame
             resourceEntity.RemoveComponent<ResourceComp>();
             resourceEntity.AddComponent(new CallLaterComp
             {
-                action = ReleaseResource,
-                timer = 0.15f,
+                action = releaseResourceAction,
+                timer = 0.1f,
             });
         }
 
@@ -111,54 +136,28 @@ namespace TheGame
             var transformPosition = transform.position;
             var transformRotation = transform.rotation;
             var resourceEntity = GetResource(transformPosition, transformRotation);
-#if UNITY_EDITOR
-            var pair = connectionDB.GetPair(entity, sendResourceComp.toNode);
-            if (pair.entity1.IsAlive() == false || pair.entity2.IsAlive() == false)
-            {
-                Camera.main.transform.position = transformPosition.SetZ(-10);
-                var t1 = entity.GetTransform();
-                var t2 = sendResourceComp.toNode.GetTransform();
-                t1.position = t1.position.SetZ(-10);
-                t2.position = t2.position.SetZ(-10);
-                Debug.Break();
-            }
-#endif
+            // if we process collision before sending the resource it may get negative
+            sendResourceComp.resourceQuantity = XIVMathInt.Clamp(sendResourceComp.resourceQuantity, 0, (int)nodeComp.resourceQuantity);
             
             var resourceComp = new ResourceComp
             {
                 unitEntity = occupiedNodeComp.unitEntity,
                 startNodeEntity = entity,
-                targetNodeEntity = sendResourceComp.toNode,
+                endNodeEntity = sendResourceComp.toEntity,
                 quantity = sendResourceComp.resourceQuantity,
+                resourcePosition = transformPosition,
             };
+            
             resourceEntity.AddComponent(resourceComp);
             resourceEntity.GetComponent<TextComp>().txt.text = resourceComp.quantity.ToString();
+            
+            var resourceEntityRenderer = resourceEntity.GetComponent<TransformComp>().transform.GetComponent<Renderer>();
+            resourceEntityRenderer.material.color = UnitIdLookup.GetColor(nodeComp.unitType);
             nodeComp.resourceQuantity -= sendResourceComp.resourceQuantity;
             entity.RemoveComponent<SendResourceComp>();
         }
 
-        void FixLineRenderers(Entity nodeEntity, ref LineRendererComp lineRendererComp)
-        {
-            // slowly fix line renderers
-            using var dispose = ArrayUtils.GetBuffer(out ConnectionDB.Pair[] pairBuffer, connectionDB.Count);
-            
-            var lineRenderer = lineRendererComp.lineRenderer;
-            var positionCount = lineRendererComp.positions.Length;
-            var startPos = lineRenderer.GetPosition(0);
-            var endPos = lineRenderer.GetPosition(positionCount - 1);
-            
-            for (int i = 0; i < positionCount; i++)
-            {
-                var t = (float)i / positionCount;
-                var targetPos = Vector3.Lerp(startPos, endPos, t);
-                var currentPos = lineRendererComp.positions[i];
-                var newPos = Vector3.MoveTowards(currentPos, targetPos, 0.01f * XTime.deltaTime);
-                lineRendererComp.positions[i] = newPos;
-            }
-            lineRenderer.SetPositions(lineRendererComp.positions);
-        }
-
-        void SendResourceContinuously(Entity nodeEntity, ref NodeComp nodeComp, ref OccupiedNodeComp comp1, ref SendResourceContinuouslyComp sendResourceContinuouslyComp)
+        void SendResourceContinuously(Entity nodeEntity, ref NodeComp nodeComp, ref OccupiedNodeComp occupiedNodeComp, ref SendResourceContinuouslyComp sendResourceContinuouslyComp)
         {
             sendResourceContinuouslyComp.currentDuration -= XTime.deltaTime;
             if (sendResourceContinuouslyComp.currentDuration > 0) return;
@@ -168,70 +167,26 @@ namespace TheGame
                 sendResourceContinuouslyComp.currentDuration = sendResourceContinuouslyComp.duration;
                 return;
             }
-            
-            var pair = connectionDB.GetPair(nodeEntity, sendResourceContinuouslyComp.toNode);
-            if (pair.entity1.IsAlive() == false || pair.entity2.IsAlive() == false)
-            {
-                Debug.Log("SendResourceContinuously");
-                var t1 = pair.entity1.GetTransform();
-                var t2 = pair.entity2.GetTransform();
-                t1.position = t1.position.SetZ(-10);
-                t2.position = t2.position.SetZ(-10);
-                Debug.Break();
-            }
 
             sendResourceContinuouslyComp.currentDuration = sendResourceContinuouslyComp.duration;
             nodeEntity.AddComponent(new SendResourceComp
             {
                 resourceQuantity = (int)nodeComp.resourceQuantity,
-                toNode = sendResourceContinuouslyComp.toNode,
+                toEntity = sendResourceContinuouslyComp.toEntity,
             });
         }
 
-        void HandleLineRendererVisual(Entity lineRendererEntity, Vector3 movementDirection, Vector3 position)
+        static void GetStartAndTargetPositions(ref ResourceComp resourceComp, ref ConnectionPair connectionPairComp, out Vector3 startTransformPosition, out Vector3 targetTransformPosition)
         {
-            ref var lineRendererComp = ref lineRendererEntity.GetComponent<LineRendererComp>();
-            
-            int pointCount = lineRendererComp.positions.Length;
-            const float stepOffset = 0.3f;
-            const float scale = 0.075f;
-            const float frequency = 0.75f;
-
-            Vector3 lineStart = lineRendererComp.lineRenderer.GetPosition(0);
-            Vector3 lineEnd = lineRendererComp.lineRenderer.GetPosition(pointCount - 1);
-            Vector3 direction = (lineEnd - lineStart).normalized;
-
-            float totalDistance = Vector3.Distance(lineStart, lineEnd);
-            if (totalDistance < Mathf.Epsilon) return;
-
-            // Project position onto the line segment (direction-agnostic)
-            Vector3 lineVector = lineEnd - lineStart;
-            Vector3 toPosition = position - lineStart;
-            float projectedLength = Vector3.Dot(toPosition, lineVector.normalized);
-            float projectedT = projectedLength / lineVector.magnitude;
-            projectedT = Mathf.Clamp01(projectedT); // Clamp to valid range
-
-            // int affectedIndex = Mathf.Clamp((int)(projectedT * (pointCount - 1)), 1, pointCount - 2);
-
-            Vector3 normal = Vector3.Cross(Vector3.forward, direction); // Perpendicular in XY
-
-            for (int i = 1; i < pointCount - 1; i++)
+            if (resourceComp.startNodeEntity == connectionPairComp.entity1)
             {
-                float tt = (float)(i - 1) / pointCount;
-                Vector3 basePos = Vector3.LerpUnclamped(lineStart, lineEnd, tt);
-                var d = Vector3.Dot(movementDirection, position - basePos);
-                if (d < 0.5f) continue;
-                
-                // Distortion falloff based on distance from projection
-                float dist = projectedT - tt;
-                float weight = XIVMathf.Clamp01(1f - XIVMathf.Abs(dist) * 4f); // Falloff multiplier controls width
-
-                if (weight <= 0f) continue;
-
-                float sin = XIVMathf.Sin(dist + stepOffset + (frequency * i)) * scale;
-                basePos += normal * (sin * weight);
-
-                lineRendererComp.positions[i] = basePos;
+                startTransformPosition = connectionPairComp.startPosition;
+                targetTransformPosition = connectionPairComp.endPosition;
+            }
+            else
+            {
+                startTransformPosition = connectionPairComp.endPosition;
+                targetTransformPosition = connectionPairComp.startPosition;
             }
         }
 

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using UnityEngine;
 using XIV.Core.Collections;
 using XIV.Core.Extensions;
 using XIV.Core.Utils;
@@ -16,13 +18,32 @@ namespace TheGame
     public class NodeResourceGenerateSystem : XIV.Ecs.System
     {
         readonly Filter<NodeComp, OccupiedNodeComp> occupiedNodeCompFilter = null;
+        // DynamicArray<string> stringMap = new DynamicArray<string>();
+        //
+        // public override void Awake()
+        // {
+        //     var l = 1024;
+        //     for (int i = 0; i < l; i++)
+        //     {
+        //         stringMap.Add() = i.ToString();
+        //     }
+        // }
 
         public override void Update()
         {
-            occupiedNodeCompFilter.ForEach((ref NodeComp nodeComp, ref OccupiedNodeComp occupiedNodeComp) =>
+            occupiedNodeCompFilter.ForEach((Entity e, ref NodeComp nodeComp, ref OccupiedNodeComp occupiedNodeComp) =>
             {
                 nodeComp.resourceQuantity += (XTime.deltaTime * occupiedNodeComp.resourceGenerationSpeed);
-                nodeComp.txt_quantity.text = ((int)nodeComp.resourceQuantity).ToString();
+                // var q = ((int)nodeComp.resourceQuantity);
+                //
+                // if (stringMap.Count <= q)
+                // {
+                //     for (int i = stringMap.Count; i <= q; i++)
+                //     {
+                //         stringMap.Add() = i.ToString();
+                //     }
+                // }
+                nodeComp.txt_quantity.WriteScoreText((int)nodeComp.resourceQuantity);
                 // TODO : NodeResourceGenerateSystem -> add occupiedNodeComp.shieldGenerationSpeed
                 var distance = XIVMathf.Abs(nodeComp.totalShieldPoints - nodeComp.shieldPoints);
                 nodeComp.shieldPoints += distance * XTime.deltaTime + 0.01f;

@@ -14,12 +14,6 @@ using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame
 {
-    public struct LineRendererComp : IComponent
-    {
-        public LineRenderer lineRenderer;
-        public Vector3[] positions;
-    }
-    
     public class NodeLevelGenerator : XIV.Ecs.System
     {
         const float NODE_RADIUS = 0.5f;
@@ -207,32 +201,37 @@ namespace TheGame
                 }
             }
             
-            const int LINERENDERER_POSITION_COUNT = 64;
-            for (int i = 0, j = 0; i < connectionCount; i++)
+            const int LINERENDERER_POSITION_COUNT = 32;
+            
+            bool TryAddConnection(int connectionIndex, Entity ent1, Entity ent2)
             {
-                var p0 = positionBuffer[conList1[i]];
-                var p1 = positionBuffer[conList2[i]];
+                ref var connectionPairComp = ref connectionDB.TryAddConnection(ent1, ent2, out var isAdded);
+                if (isAdded == false) return false;
+                
+                var p0 = positionBuffer[conList1[connectionIndex]];
+                var p1 = positionBuffer[conList2[connectionIndex]];
+                var lineRenderer = new GameObject(connectionDB.Count + " - " + ent1 + " <-> " + ent2).AddComponent<LineRenderer>();
+                lineRenderer.material = prefabReferences.connectionLineRendererMaterial;
+                lineRenderer.positionCount = LINERENDERER_POSITION_COUNT;
+                lineRenderer.XIVStraightLine(p0, p1);
+                lineRenderer.XIVSetWidth(0.05f);
+                var positions = new Vector3[LINERENDERER_POSITION_COUNT];
+                lineRenderer.GetPositions(positions);
+
+                connectionPairComp.entity1 = ent1;
+                connectionPairComp.entity2 = ent2;
+                connectionPairComp.startPosition = p0;
+                connectionPairComp.endPosition = p1;
+                connectionPairComp.positions = positions;
+                connectionPairComp.lineRenderer = lineRenderer;
+                return true;
+            }
+            
+            for (int i = 0; i < connectionCount; i++)
+            {
                 var ent1 = entityBuffer[conList1[i]];
                 var ent2 = entityBuffer[conList2[i]];
-                
-                if (connectionDB.TryAddConnection(ent1, ent2))
-                {
-                    var lineRenderer = new GameObject(j++ + "_" + ent1 + " - " + ent2).AddComponent<LineRenderer>();
-                    lineRenderer.material = prefabReferences.connectionLineRendererMaterial;
-                    
-                    lineRenderer.positionCount = LINERENDERER_POSITION_COUNT;
-                    lineRenderer.XIVStraightLine(p0, p1);
-                    lineRenderer.XIVSetWidth(0.05f);
-                    var positions = new Vector3[LINERENDERER_POSITION_COUNT];
-                    lineRenderer.GetPositions(positions);
-                    var lineRendererEntity = world.NewEntity();
-                    lineRendererEntity.AddComponent<LineRendererComp>(new LineRendererComp
-                    {
-                        lineRenderer = lineRenderer,
-                        positions = positions,
-                    });
-                    connectionDB.AssignLineRenderer(ent1, ent2, lineRendererEntity);
-                }
+                TryAddConnection(i, ent1, ent2);
             }
             
             XIVPoolSystem.ReleaseItem(conList1);

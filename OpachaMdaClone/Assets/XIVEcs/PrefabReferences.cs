@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using TheGame;
+using UnityEngine;
 
 namespace XIV.Ecs
 {
@@ -9,5 +10,6 @@ namespace XIV.Ecs
         public GameObject nodeEntity;
         public Material shieldLineRendererMaterial;
         public Material connectionLineRendererMaterial;
+        public GenerationStepSO[] generationConfigs;
     }
 }
