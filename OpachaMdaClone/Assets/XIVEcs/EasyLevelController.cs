@@ -31,13 +31,16 @@ namespace XIV.Ecs
             manager.PreAwake();
             manager.Awake();
             XTime.fixedDeltaTime = Time.fixedDeltaTime;
+            XTime.timeScale = Time.timeScale;
         }
 
         void Start()
         {
             manager.Start();
 #if UNITY_EDITOR
-            if (world.GetNumberOfEntities() == 0)
+            var numberOfEntities = world.GetNumberOfEntities();
+            Debug.Log($"Number of entities: {numberOfEntities}");
+            if (numberOfEntities == 0)
             {
                 Debug.LogError("There are no entities in the scene make sure you have a loading system");
             }
@@ -46,19 +49,19 @@ namespace XIV.Ecs
 
         void Update()
         {
-            XTime.deltaTime = Time.deltaTime;
+            XTime.deltaTime = Time.deltaTime * XTime.timeScale;
             manager.Update();
         }
 
         void FixedUpdate()
         {
-            XTime.deltaTime = XTime.fixedDeltaTime;
+            XTime.deltaTime = XTime.fixedDeltaTime * XTime.timeScale;
             manager.FixedUpdate();
         }
 
         void LateUpdate()
         {
-            XTime.deltaTime = Time.deltaTime;
+            XTime.deltaTime = Time.deltaTime * XTime.timeScale;
             manager.LateUpdate();
         }
         
