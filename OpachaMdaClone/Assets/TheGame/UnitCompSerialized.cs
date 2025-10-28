@@ -8,8 +8,6 @@ namespace TheGame
     public struct UnitComp : IComponent
     {
         public UnitIdLookup.UnitType unitType;
-        // TODO : UnitComp -> Remove GenerationStepSO[]
-        public GenerationStepSO[] generationConfigs;
         [NonSerialized] public DynamicArray<Entity> occupiedNodeEntities;
         [NonSerialized] public int totalPower;
     }

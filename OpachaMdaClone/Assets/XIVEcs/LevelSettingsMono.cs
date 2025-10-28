@@ -4,23 +4,30 @@ using XIV.UnityEngineIntegration;
 
 namespace XIV.Ecs
 {
+    public enum MapSize
+    {
+        Small = 0,
+        Medium = 1,
+        Big = 2,
+        Large = 3,
+        Giant = 4,
+        NumberOfItems
+    }
     [Serializable]
     public class LevelSettings
     {
-        [Range(0f, 10f), OnValueChanged("ChangeTimeScale", true)]
+        [Range(0f, 10f), OnValueChanged(nameof(ChangeTimeScale), true)]
         public float timeScale = 1f;
-        
-        public int seed = 1;
-        public float scale = 0.25f;
-        [Min(0.01f)] public float frequency = 0.25f;
-        [Range(0, 4)] public int octaves = 2;
-        public int gridSizeX = 128;
-        public int gridSizeY = 128;
-        [Min(0)]
-        public float noiseSaturation;
+        public MapSize mapSize = MapSize.Giant;
+        [Range(0f, 1f), Tooltip("Higher values generates more strict nodes")]
+        public float tightness = 0f;
+        [Range(0f, 1f), Tooltip("Cuts the generated links in similar directions. Higher the value lesser the link")]
+        public float sameDirectionCutThreshold = 0.8f;
 
-        [Range(0f, 1f)]
-        public float animationSpeed = 0.1f;
+        void ChangeTimeScale()
+        {
+            XTime.timeScale = timeScale;
+        }
     }
     
     public class LevelSettingsMono : MonoBehaviour

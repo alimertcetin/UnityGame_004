@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-using TheGame.Extensions;
-using UnityEditor;
+﻿using TheGame.Extensions;
 using UnityEngine;
 using XIV.Core.Algorithm;
 using XIV.Core.Collections;
@@ -14,48 +11,54 @@ using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame
 {
-    public class NodeLevelGenerator : XIV.Ecs.System
+    public class LevelGenerator
     {
-        const float NODE_RADIUS = 0.5f;
-        const float MULTIPLIER = 4;
-        const float TARGET_DISTANCE_BETWEEN_NODES = MULTIPLIER * NODE_RADIUS;
-        const float LINK_DISTANCE = (MULTIPLIER * 2) * NODE_RADIUS;
-        readonly LevelSettings levelSettings = null;
-        readonly PrefabReferences prefabReferences = null;
-        readonly ConnectionDB connectionDB = null;
+        /// <summary>
+        /// Returns how many tries take to generate the level
+        /// </summary>
+        public int tryCount { get; private set; }
 
-        public override void Start()
+        LevelGenerationSettings generationSettings;
+        readonly World world;
+        readonly PrefabReferences prefabReferences;
+        readonly ConnectionDB connectionDB;
+
+        public LevelGenerator(LevelGenerationSettings generationSettings, World world, PrefabReferences prefabReferences, ConnectionDB connectionDB)
         {
-            // TODO : NodeLevelGenerator -> add seed variable
-            int seedInt = 790;
-            // int seedInt = DateTime.Now.Millisecond;
-            XIVRandom.InitState(seedInt);
-            var seedStr = DateTime.Now.ToShortTimeString() + " - Seed:" + seedInt.ToString() + Environment.NewLine;
-            var path = Path.Combine("Assets", "GenerationSeeds");
-            Directory.CreateDirectory(path);
-            File.AppendAllText(Path.Combine(path, "Seed.txt"), seedStr);
-            AssetDatabase.Refresh();
+            this.generationSettings = generationSettings;
+            this.world = world;
+            this.prefabReferences = prefabReferences;
+            this.connectionDB = connectionDB;
+        }
+
+        public void GenerateLevel()
+        {
+            var prevSeed = XIVRandom.seed;
+            XIVRandom.InitState(generationSettings.seed);
             
-            // TODO : NodeLevelGenerator -> add map size variable
-            int bufferLen = GetNodeQuantity(4);
+            // TODO : NodeLevelGeneratorSystem -> add map size variable
+            int bufferLen = generationSettings.GetNodeQuantity();
             using var entityBufferDispose = ArrayUtils.GetBuffer(out Entity[] entityBuffer, bufferLen);
             using var positionBufferDispose = ArrayUtils.GetBuffer(out Vector2[] positionBuffer, bufferLen);
-            var center = Vector2.zero;
+            var pivot = new Vector2(-5f, -5f);
             FillPositions(positionBuffer, bufferLen);
-            MovePositionsToCenter(positionBuffer, bufferLen, center);
+            MovePositionsToPivot(positionBuffer, bufferLen, pivot);
             CreateNodes(entityBuffer, bufferLen, positionBuffer, bufferLen);
             LinkNodes(entityBuffer, bufferLen, positionBuffer, bufferLen);
+            
+            XIVRandom.InitState(prevSeed);
         }
 
         void FillPositions(Vector2[] positionBuffer, int bufferLen)
         {
             PoissonDiscSampler poissonDiscSampler = new PoissonDiscSampler();
-            var regionSize = new Vec2(levelSettings.gridSizeX, levelSettings.gridSizeY);
-            var points = poissonDiscSampler.GeneratePoints(TARGET_DISTANCE_BETWEEN_NODES, 100, regionSize);
+            tryCount = 1;
+            var points = poissonDiscSampler.GeneratePoints(generationSettings.targetDistanceBetweenNodes, 100, generationSettings.regionSize);
             while (points.Length < bufferLen)
             {
-                regionSize += Vec2.one;
-                points = poissonDiscSampler.GeneratePoints(TARGET_DISTANCE_BETWEEN_NODES, 100, regionSize);
+                tryCount++;
+                var newRegionSize = Vec2.one * tryCount;
+                points = poissonDiscSampler.GeneratePoints(generationSettings.targetDistanceBetweenNodes, 100, newRegionSize);
             }
 
             for (int i = 0; i < bufferLen; i++)
@@ -64,20 +67,19 @@ namespace TheGame
             }
         }
 
-        void MovePositionsToCenter(Vector2[] positionBuffer, int bufferLen, Vector2 center)
+        void MovePositionsToPivot(Vector2[] positionBuffer, int bufferLen, Vector2 pivot)
         {
             GetMinAndMax(positionBuffer, bufferLen, out Vector2 min, out Vector2 max);
 
             float px = (min.x + max.x) / 2;
             float py = (min.y + max.y) / 2;
-            float dx = center.x - px;
-            float dy = center.y - py;
+            float dx = pivot.x - px;
+            float dy = pivot.y - py;
             for (int i = 0; i < bufferLen; i++)
             {
-                var pos = positionBuffer[i];
+                ref var pos = ref positionBuffer[i];
                 pos.x += dx;
                 pos.y += dy;
-                positionBuffer[i] = pos;
             }
         }
 
@@ -88,22 +90,8 @@ namespace TheGame
                 var pos = new Vector3(positionBuffer[i].x, positionBuffer[i].y, 0f);
                 entityBuffer[i] = GameObjectEntity.CreateEntity(world, prefabReferences.nodeEntity, pos, Quaternion.identity);
             }
-        }
-
-        void GetMinAndMax(Vector2[] positionBuffer, int bufferLen, out Vector2 min, out Vector2 max)
-        {
-            min = Vector2.zero;
-            max = Vector2.zero;
-            for (int i = 0; i < bufferLen; i++)
-            {
-                var entityPos = positionBuffer[i];
-                min.x = XIVMathf.Min(min.x, entityPos.x);
-                min.y = XIVMathf.Min(min.y, entityPos.y);
-                max.x = XIVMathf.Max(max.x, entityPos.x);
-                max.y = XIVMathf.Max(max.y, entityPos.y);
-            }
-        }
-
+        }        
+        
         void LinkNodes(Entity[] entityBuffer, int entityBufferLen, Vector2[] positionBuffer, int positionBufferLen)
         {
             var conList1 = XIVPoolSystem.GetItem<DynamicArray<int>>();
@@ -134,7 +122,7 @@ namespace TheGame
                     var nextNodeEntityPos = positionBuffer[j];
 
                     var distance = Vector3.Distance(currentNodeEntityPos, nextNodeEntityPos);
-                    if (distance > LINK_DISTANCE) continue;
+                    if (distance > generationSettings.linkDistance) continue;
                     AddConnection(i, j, ref connectionCount);
                 }
             }
@@ -165,8 +153,8 @@ namespace TheGame
                     }
                 }
             }
-            const float DOT_THRESHOLD = 0.8f;
-
+            
+            // Remove connections made in similar directions
             for (int i = connectionCount - 1; i >= 0; i--)
             {
                 var nodeAIdx = conList1[i];
@@ -191,7 +179,7 @@ namespace TheGame
                     var distAC = dirAc.sqrMagnitude;
 
                     float dot = Vector2.Dot(dirAbNormalized, dirAcNormalized);
-                    if (dot > DOT_THRESHOLD)
+                    if (dot > generationSettings.sameDirectionCutThreshold)
                     {
                         // remove the longer link
                         int index = distAB > distAC ? i : j;
@@ -201,15 +189,17 @@ namespace TheGame
                 }
             }
             
-            const int LINERENDERER_POSITION_COUNT = 32;
-            
-            bool TryAddConnection(int connectionIndex, Entity ent1, Entity ent2)
+            const int LINERENDERER_POSITION_COUNT = 32; // link detail
+            for (int connectionIdx = 0; connectionIdx < connectionCount; connectionIdx++)
             {
-                ref var connectionPairComp = ref connectionDB.TryAddConnection(ent1, ent2, out var isAdded);
-                if (isAdded == false) return false;
+                var ent1 = entityBuffer[conList1[connectionIdx]];
+                var ent2 = entityBuffer[conList2[connectionIdx]];
                 
-                var p0 = positionBuffer[conList1[connectionIndex]];
-                var p1 = positionBuffer[conList2[connectionIndex]];
+                ref var connectionPairComp = ref connectionDB.AddConnection(ent1, ent2, out var isAdded);
+                if (isAdded == false) continue;
+                
+                var p0 = positionBuffer[conList1[connectionIdx]];
+                var p1 = positionBuffer[conList2[connectionIdx]];
                 var lineRenderer = new GameObject(connectionDB.Count + " - " + ent1 + " <-> " + ent2).AddComponent<LineRenderer>();
                 lineRenderer.material = prefabReferences.connectionLineRendererMaterial;
                 lineRenderer.positionCount = LINERENDERER_POSITION_COUNT;
@@ -224,30 +214,24 @@ namespace TheGame
                 connectionPairComp.endPosition = p1;
                 connectionPairComp.positions = positions;
                 connectionPairComp.lineRenderer = lineRenderer;
-                return true;
-            }
-            
-            for (int i = 0; i < connectionCount; i++)
-            {
-                var ent1 = entityBuffer[conList1[i]];
-                var ent2 = entityBuffer[conList2[i]];
-                TryAddConnection(i, ent1, ent2);
             }
             
             XIVPoolSystem.ReleaseItem(conList1);
             XIVPoolSystem.ReleaseItem(conList2);
         }
-        
-        static int GetNodeQuantity(int mapSize)
+
+
+        static void GetMinAndMax(Vector2[] positionBuffer, int bufferLen, out Vector2 min, out Vector2 max)
         {
-            switch (mapSize)
+            min = Vector2.zero;
+            max = Vector2.zero;
+            for (int i = 0; i < bufferLen; i++)
             {
-                case 0: return 7;
-                case 1: return 12;
-                case 2: return 17;
-                case 3: return 25;
-                case 4: return 61;
-                default: return 7;
+                ref var p = ref positionBuffer[i];
+                min.x = XIVMathf.Min(min.x, p.x);
+                min.y = XIVMathf.Min(min.y, p.y);
+                max.x = XIVMathf.Max(max.x, p.x);
+                max.y = XIVMathf.Max(max.y, p.y);
             }
         }
     }
