@@ -12,15 +12,17 @@ namespace TheGame
     public class SelectionFsmManager
     {
         readonly ConnectionDB connectionDB;
+        readonly PrefabReferences prefabReferences;
         public SelectionState currentState;
         public Entity first;
         public Entity second;
         public SwipeDetector swipeDetector = SwipeDetector.New();
         Dictionary<Type, SelectionState> states = new();
 
-        public SelectionFsmManager(ConnectionDB connectionDB)
+        public SelectionFsmManager(ConnectionDB connectionDB, PrefabReferences prefabReferences)
         {
             this.connectionDB = connectionDB;
+            this.prefabReferences = prefabReferences;
             ChangeState<SelectionStateIdle>();
         }
 
@@ -137,7 +139,7 @@ namespace TheGame
             first.AddComponent(new SendResourceContinuouslyComp
             {
                 toEntity = second,
-                duration = first.GetComponent<OccupiedNodeComp>().unitEntity.GetComponent<UnitComp>().generationConfigs[0].duration,
+                duration = prefabReferences.generationConfigs[0].duration,
                 currentDuration = 0f
             });
         }

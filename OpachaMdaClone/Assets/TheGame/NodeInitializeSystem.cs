@@ -25,8 +25,7 @@ namespace TheGame
             
             InitializeNodes();
 
-            var bufferLen = XIVMathInt.NextPowerOfTwo(nodeCompFilter.NumberOfEntities);
-            using var dispose = ArrayUtils.GetBuffer(out Entity[] nodeEntityBuffer, bufferLen);
+            using var dispose = ArrayUtils.GetBuffer(out Entity[] nodeEntityBuffer, nodeCompFilter.NumberOfEntities);
             var nodeEntityCount = nodeCompFilter.EntitiesNonAlloc(nodeEntityBuffer);
             if (nodeEntityCount < 3) throw new InvalidOperationException();
 
@@ -44,7 +43,6 @@ namespace TheGame
             {
                 var entity = startingUnitNodeEntityBuffer[index++];
                 unitComp.occupiedNodeEntities = new DynamicArray<Entity>();
-                unitComp.generationConfigs = prefabReferences.generationConfigs;
                 entity.AddComponent(new NodeOccupyComp
                 {
                     unitEntity = e,
@@ -63,16 +61,16 @@ namespace TheGame
                 nodeEntity.AddComponent(new OccupiedNodeComp
                 {
                     unitEntity = unitEntity,
-                    resourceGenerationSpeed = unitComp.generationConfigs[0].generationSpeed, // the default config on unitComp
+                    resourceGenerationSpeed = prefabReferences.generationConfigs[0].generationSpeed, // the default config on unitComp
                 });
-                var renderer = transformComp.transform.GetComponent<Renderer>();
-                var ca = renderer.material.color;
+                var renderer = transformComp.transform.GetComponent<SpriteRenderer>();
+                var ca = renderer.color;
                 var cb = UnitIdLookup.GetColor(nodeComp.unitType);
                 renderer.CancelTween();
                 renderer.XIVTween()
                     .ScaleBounceOnce()
                     .And()
-                    .RendererColor(ca, cb, 0.25f, EasingFunction.EaseInOutBack)
+                    .SpriteRendererColor(ca, cb, 0.5f, EasingFunction.SmoothStop3)
                     .Start();
                 nodeEntity.RemoveComponent<NodeOccupyComp>();
             });
@@ -88,8 +86,8 @@ namespace TheGame
                 nodeComp.shieldPoints = 7;
                 nodeComp.totalShieldPoints = 7;
                 nodeComp.unitType = UnitIdLookup.UnitType.Black;
-                var renderer = transformComp.transform.GetComponent<Renderer>();
-                renderer.material.color = UnitIdLookup.GetColor(nodeComp.unitType);
+                var renderer = transformComp.transform.GetComponent<SpriteRenderer>();
+                renderer.color = UnitIdLookup.GetColor(nodeComp.unitType);
             }));
         }
     }

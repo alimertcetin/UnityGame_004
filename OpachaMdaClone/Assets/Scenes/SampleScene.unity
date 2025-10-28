@@ -171,7 +171,6 @@ MonoBehaviour:
   add: 1
   component:
     unitType: 0
-    generationConfigs: []
 --- !u!114 &582540362
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -503,7 +502,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1580297717}
   - component: {fileID: 1580297718}
-  - component: {fileID: 1580297719}
   m_Layer: 0
   m_Name: LevelSettingsMono
   m_TagString: Untagged
@@ -540,44 +538,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelSettings:
     timeScale: 1
-    seed: 1
-    scale: 2.6
-    frequency: 90
-    octaves: 1
-    gridSizeX: 30
-    gridSizeY: 30
-    noiseSaturation: 0.65
-    animationSpeed: 0.987
---- !u!114 &1580297719
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1580297716}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bcdca1f3ecec401cbc2ab97771d03384, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  settings1d:
-    seed: 1
-    x: 426
-    y: 118
-    frequency: 0.001
-    octaves: 4
-    persistence: 0.848
-    scale: 3.86
-  settings2d:
-    seed: 2
-    x: 33
-    y: 84
-    frequency: 0.097
-    octaves: 3
-    persistence: 0.376
-    scale: 0.94
-  mode: 1
-  saturate: 0
-  saturation: 0.369
-  gridSizeX: 128
-  gridSizeY: 128
+    mapSize: 4
+    tightness: 1
+    sameDirectionCutThreshold: 0.6

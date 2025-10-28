@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using TheGame.Extensions;
 using UnityEngine;
+using XIV.Core.DataStructures;
 using XIV.Core.TweenSystem;
 using XIV.Core.Utils;
 using XIV.Core.XIVMath;
@@ -22,6 +23,12 @@ namespace TheGame
         public int quantity;
     }
 
+    public struct PooledComp : IComponent
+    {
+        public Func<Vector3, Quaternion, Entity> getFromPoolAction;
+        public Action<Entity> releaseToPoolAction;
+    }
+
     public class ResourceTransferSystem : XIV.Ecs.System
     {
         readonly Filter<TransformComp, ResourceComp> resourceFilter = null;
@@ -34,9 +41,11 @@ namespace TheGame
         readonly LineRendererPositionData lineRendererPositionData = null;
         
         readonly Action<Entity> releaseResourceAction;
+        readonly Func<Vector3, Quaternion, Entity> getResourceAction;
         
         public ResourceTransferSystem() : base()
         {
+            getResourceAction = GetResource;
             releaseResourceAction = ReleaseResource;
         }
 
@@ -151,8 +160,8 @@ namespace TheGame
             resourceEntity.AddComponent(resourceComp);
             resourceEntity.GetComponent<TextComp>().txt.text = resourceComp.quantity.ToString();
             
-            var resourceEntityRenderer = resourceEntity.GetComponent<TransformComp>().transform.GetComponent<Renderer>();
-            resourceEntityRenderer.material.color = UnitIdLookup.GetColor(nodeComp.unitType);
+            var resourceEntityRenderer = resourceEntity.GetComponent<TransformComp>().transform.GetComponent<SpriteRenderer>();
+            resourceEntityRenderer.color = UnitIdLookup.GetColor(nodeComp.unitType);
             nodeComp.resourceQuantity -= sendResourceComp.resourceQuantity;
             entity.RemoveComponent<SendResourceComp>();
         }
@@ -192,12 +201,25 @@ namespace TheGame
 
         Entity GetResource(Vector3 transformPosition, Quaternion transformRotation)
         {
-            if (resourcePool.Count == 0) return GameObjectEntity.CreateEntity(world, prefabReferences.resourceEntity, transformPosition, transformRotation);
-            var go = resourcePool.Dequeue();
-            go.transform.position = transformPosition;
-            go.transform.rotation = transformRotation;
-            go.SetActive(true);
-            return GameObjectEntity.BindGameObjectToEntityWithDependencies(world, go.GetComponent<GameObjectEntity>());
+            Entity entity;
+            if (resourcePool.Count == 0)
+            {
+                entity = GameObjectEntity.CreateEntity(world, prefabReferences.resourceEntity, transformPosition, transformRotation);
+            }
+            else
+            {
+                var go = resourcePool.Dequeue();
+                go.transform.position = transformPosition;
+                go.transform.rotation = transformRotation;
+                go.SetActive(true);
+                entity = GameObjectEntity.BindGameObjectToEntityWithDependencies(world, go.GetComponent<GameObjectEntity>());
+            }
+            entity.AddComponent(new PooledComp
+            {
+                getFromPoolAction = getResourceAction,
+                releaseToPoolAction = releaseResourceAction,
+            });
+            return entity;
         }
 
         void ReleaseResource(Entity resourceEntity)

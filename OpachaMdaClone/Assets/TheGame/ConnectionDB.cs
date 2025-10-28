@@ -7,7 +7,7 @@ namespace TheGame
 {
     public struct ConnectionPair
     {
-        public static ConnectionPair invalidConnectionPairComp = new ConnectionPair { entity1 = Entity.Invalid, entity2 = Entity.Invalid };
+        public static ConnectionPair invalidConnectionPair = new ConnectionPair { entity1 = Entity.Invalid, entity2 = Entity.Invalid };
         public Entity entity1;
         public Entity entity2;
         public Vector3 startPosition;
@@ -15,15 +15,9 @@ namespace TheGame
         public Vector3[] positions;
         public LineRenderer lineRenderer;
 
-        public bool Contains(Entity entity)
-        {
-            return entity1 == entity || entity2 == entity;
-        }
+        public bool Contains(Entity entity) => entity1 == entity || entity2 == entity;
 
-        public Entity GetOpposite(Entity entity)
-        {
-            return entity2 == entity ? entity1 : entity1 == entity ? entity2 : Entity.Invalid;
-        }
+        public Entity GetOpposite(Entity entity) => entity == entity1 ? entity2 : entity == entity2 ? entity1 : Entity.Invalid;
     }
     
     public class ConnectionDB
@@ -47,13 +41,11 @@ namespace TheGame
             return count;
         }
 
-        public bool IsConnected(Entity ent1, Entity ent2)
-        {
-            return GetConnectionIndex(ent1, ent2) != -1;
-        }
+        public bool IsConnected(Entity ent1, Entity ent2) => GetConnectionIndex(ent1, ent2) != -1;
 
         public int GetConnectionIndex(Entity ent1, Entity ent2)
         {
+            // TODO : ConnectionDb -> Faster connection index lookup
             int len = connections.Count;
             for (int i = 0; i < len; i++)
             {
@@ -64,19 +56,12 @@ namespace TheGame
             return -1;
         }
 
-        public ref ConnectionPair GetPair(Entity ent1, Entity ent2)
+        public ref ConnectionPair AddConnection(Entity ent1, Entity ent2, out bool isAdded)
         {
-            int idx = GetConnectionIndex(ent1, ent2);
-            if (idx == -1) return ref ConnectionPair.invalidConnectionPairComp;
-            return ref connections[idx];
-        }
-
-        public ref ConnectionPair TryAddConnection(Entity ent1, Entity ent2, out bool isAdded)
-        {
-            isAdded = connections.Exists(p => p.Contains(ent1) && p.Contains(ent2)) == -1;
+            isAdded = GetConnectionIndex(ent1, ent2) == -1;
             if (isAdded) return ref connections.Add();
             
-            return ref ConnectionPair.invalidConnectionPairComp;
+            return ref ConnectionPair.invalidConnectionPair;
         }
     }
 }

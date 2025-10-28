@@ -10,6 +10,7 @@ namespace TheGame
         // readonly Filter<TransformComp, NodeComp, OccupiedNodeComp> occupiedNodeFilter = new Filter<TransformComp, NodeComp, OccupiedNodeComp>().Exclude<SendResourceContinuouslyComp>();
         readonly Filter<TransformComp, NodeComp, OccupiedNodeComp> occupiedNodeFilter = null;
         readonly ConnectionDB connectionDB = null;
+        readonly PrefabReferences prefabReferences = null;
 
         public override void Update()
         {
@@ -29,7 +30,7 @@ namespace TheGame
 
             void SendResource(Entity ent1, Entity ent2)
             {
-                var duration = ent1.GetComponent<OccupiedNodeComp>().unitEntity.GetComponent<UnitComp>().generationConfigs[0].duration;
+                var duration = prefabReferences.generationConfigs[0].duration;
                 ent1.AddComponent(new SendResourceContinuouslyComp
                 {
                     currentDuration = duration,

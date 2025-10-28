@@ -13,13 +13,17 @@ namespace TheGame
         {
             Thread resourceThread = new Thread(p =>
             {
+#if UNITY_EDITOR
                 bool continueThread = true;
                 while (continueThread)
+#else
+                while (true)
+#endif
                 {
                     var connectionIndices = lineRendererPositionData.connectionIndices;
                     var movementDirections = lineRendererPositionData.movementDirections;
                     var movementPositions = lineRendererPositionData.movementPositions;
-                    // I dont know how it happened but somehow movementPositions were less than others while connectionIndices and movementDirections were exactly has the same amount of item in it.
+                    // I dont know how it happened but somehow movementPositions were less than others while connectionIndices and movementDirections were exactly has the same amount of items in it.
                     int count = XIVMathInt.Min(XIVMathInt.Min(connectionIndices.Count, movementDirections.Count), movementPositions.Count);
                     for (int i = count - 1; i >= 0; i--)
                     {
@@ -48,6 +52,7 @@ namespace TheGame
             int count = connectionDB.Count;
             for (int i = 0; i < count; i++)
             {
+                // Perf : Skip unmodified lineRenderers
                 ref ConnectionPair connectionPair = ref connectionDB[i];
                 connectionPair.lineRenderer.SetPositions(connectionPair.positions);
             }
