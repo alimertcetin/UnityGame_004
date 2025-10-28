@@ -83,7 +83,7 @@ namespace XIV.Ecs
             var archetype = entity.GetArchetype();
             IComponent[] components = new IComponent[archetype.componentIds.Length];
             ref var entityData = ref entity.world.entityDataList[entity.entityId.id];
-            int archetypeIdx = entityData.indexInArchetype;
+            int archetypeIdx = entityData.archetypeIndex;
 
             for (int i = 0; i < components.Length; i++)
             {

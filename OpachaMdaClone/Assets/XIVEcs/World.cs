@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using XIV.Core.Collections;
-using XIV.Core.Utils;
 
 namespace XIV.Ecs
 {
@@ -12,7 +11,6 @@ namespace XIV.Ecs
         public List<Query> queries;
         public List<Filter> filters;
 
-        public DynamicArray<TagOperation> delayedTagOperations;
         public DynamicArray<DestroyOperation> destroyedEntities;
 
         public World(int entityCapacity = 64)
@@ -29,7 +27,6 @@ namespace XIV.Ecs
             filters = new List<Filter>();
 
             var capacity = entityCapacity / 2;
-            delayedTagOperations = new DynamicArray<TagOperation>(capacity);
             destroyedEntities = new DynamicArray<DestroyOperation>(capacity);
         }
 
@@ -46,8 +43,6 @@ namespace XIV.Ecs
             ComponentOperationIndex.ExecuteRemoveTagActions(this);
             ComponentOperationIndex.ExecuteAddComponentActions(this);
             ComponentOperationIndex.ExecuteRemoveComponentActions(this);
-            
-            delayedTagOperations.Clear();
         }
 
         void HandleDestroyOperations()
@@ -56,7 +51,7 @@ namespace XIV.Ecs
             {
                 ref var destroyOperation = ref destroyedEntities[i];
                 ref var entityData = ref entityDataList[destroyOperation.entityId.id];
-                entityData.archetype.RemoveEntityAndComponents(entityData.indexInArchetype, entityDataList);
+                entityData.archetype.RemoveEntityAndComponents(entityData.archetypeIndex, entityDataList);
 
                 entityDataList.Free(destroyOperation.entityId.id);
             }
@@ -83,7 +78,7 @@ namespace XIV.Ecs
                 return;
             }
 
-            archetype.RemoveEntityAndComponents(entityData.indexInArchetype, entityDataList);
+            archetype.RemoveEntityAndComponents(entityData.archetypeIndex, entityDataList);
 
             entityDataList.Free(entityId.id);
 
@@ -222,11 +217,10 @@ namespace XIV.Ecs
         public ref T GetComponent<T>(EntityId entity) where T : struct, IComponent
         {
             // Debug.Assert(IsEntityAlive(entity));
-            // Debug.Assert(HasComponent<T>(entity));
+            if (HasComponent<T>(entity) == false) throw new Exception($"Entity does not have component {typeof(T).Name} - Entity: {entity}");
 
             ref var entityData = ref entityDataList[entity.id];
-            int componentId = ComponentIdManager.GetComponentId<T>();
-            return ref ((ComponentPool<T>)entityData.archetype.GetComponentPool(componentId)).components[entityData.indexInArchetype];
+            return ref entityData.archetype.GetComponent<T>(entityData.archetypeIndex);
         }
 
         public Archetype GetArchetype(EntityId entity)
@@ -255,14 +249,12 @@ namespace XIV.Ecs
         public void SetCustomReset<T>(CustomReset<T> customReset) where T : struct, IComponent
         {
             int componentId = ComponentIdManager.GetComponentId<T>();
-            // Debug.Assert(archetypeMap.customResetMap.Get(componentId) == null);
             archetypeMap.customResetMap[componentId] = customReset;
         }
 
         public void SetCustomAssign<T>(CustomAssign<T> customAssign) where T : struct, IComponent
         {
             int componentId = ComponentIdManager.GetComponentId<T>();
-            // Debug.Assert(archetypeMap.customAssignMap.Get(componentId) == null);
             archetypeMap.customAssignMap[componentId] = customAssign;
         }
 

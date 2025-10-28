@@ -10,5 +10,10 @@
             this.id = id;
             this.generation = generation;
         }
+
+        public override string ToString()
+        {
+            return $"Id: {id}, Generation: {generation}";
+        }
     }
 }

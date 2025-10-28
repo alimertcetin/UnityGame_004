@@ -36,7 +36,7 @@ namespace XIV.Ecs
                 if (entityData.componentBitset.IsBit1(componentId))
                 {
                     // Already has the component
-                    entityData.archetype.GetComponentPool<T>().Set(entityData.indexInArchetype, in component);
+                    entityData.archetype.GetComponentPool<T>().Set(entityData.archetypeIndex, in component);
                     continue;
                 }
                 entityData.componentBitset.SetBit1(componentId);

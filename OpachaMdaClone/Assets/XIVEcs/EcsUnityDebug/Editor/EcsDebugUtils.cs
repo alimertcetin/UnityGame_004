@@ -64,7 +64,7 @@ namespace XIV.Ecs
             EditorGUILayout.LabelField("--- COMPONENTS ---",greenText);
 
             var archetype = entityData.archetype;
-            int archetypeIdx = entityData.indexInArchetype;
+            int archetypeIdx = entityData.archetypeIndex;
             
             for (int componentPoolIdx = 0; componentPoolIdx < entityData.archetype.componentPools.Length; componentPoolIdx++)
             {

@@ -226,7 +226,7 @@ namespace XIV.Ecs
         {
             ref var entityData = ref entityDataList[entityId.id];
             var oldArchetype = entityData.archetype;
-            int oldEntityArchetypeIndex = entityData.indexInArchetype;
+            int oldEntityArchetypeIndex = entityData.archetypeIndex;
 
             // Early exit: same archetype -> nothing to do
             if (oldArchetype == newArchetype) return;
@@ -238,12 +238,12 @@ namespace XIV.Ecs
             if (oldArchetype == null) return;
 
             // 3) Merge/copy/remove components
-            oldArchetype.MoveTo(newArchetype, oldEntityArchetypeIndex, entityData.indexInArchetype, entityDataList);
+            oldArchetype.MoveTo(newArchetype, oldEntityArchetypeIndex, entityData.archetypeIndex, entityDataList);
         }
 
         public void SetNewComponent<T>(EntityData entityData, in T component) where T : struct, IComponent
         {
-            entityData.archetype.GetComponentPool<T>().SetNewComponent(entityData.indexInArchetype, in component);
+            entityData.archetype.GetComponentPool<T>().SetNewComponent(entityData.archetypeIndex, in component);
         }
     }
 }

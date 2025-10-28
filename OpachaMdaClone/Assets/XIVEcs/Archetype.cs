@@ -126,7 +126,7 @@ namespace XIV.Ecs
             if (this.entities.Count != oldEntityArchetypeIndex)
             {
                 var effectedEntity = this.entities[oldEntityArchetypeIndex];
-                entityDataList[effectedEntity.entityId.id].indexInArchetype = oldEntityArchetypeIndex;
+                entityDataList[effectedEntity.entityId.id].archetypeIndex = oldEntityArchetypeIndex;
             }
         }
 
@@ -174,7 +174,7 @@ namespace XIV.Ecs
             if (entities.Count != archetypeIdx)
             {
                 var effectedEntity = entities[archetypeIdx];
-                entityDataList[effectedEntity.entityId.id].indexInArchetype = archetypeIdx;
+                entityDataList[effectedEntity.entityId.id].archetypeIndex = archetypeIdx;
             }
         }
 
@@ -185,7 +185,7 @@ namespace XIV.Ecs
         {
             entities.Add() = new Entity(world, entityId.id, entityId.generation);
             entityData.archetype = this;
-            entityData.indexInArchetype = entities.Count - 1;
+            entityData.archetypeIndex = entities.Count - 1;
             var newArchetypeComponentPoolLength = componentPools.Length;
             for (int i = 0; i < newArchetypeComponentPoolLength; i++)
             {
