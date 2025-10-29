@@ -8,6 +8,9 @@ namespace XIV.Ecs
 {
     public static class ComponentOperationIndex
     {
+        // TODO : ComponentOperationIndex -> Just call the necessary operations
+        // We are currently executing all actions once execute called. Would be much efficient to call the functions that needs to be executed?
+        // What if we store the actions once the call like AddComponent<T> has been made?
         static List<Action<World>> addComponentActions;
         static List<Action<World>> removeComponentActions;
         
