@@ -355,8 +355,8 @@ MonoBehaviour:
   resourceEntity: {fileID: 3735238918031788996, guid: 43509784008f0ae47a54b4dc94fc175a, type: 3}
   nodeHighlightEntity: {fileID: 2974852330470575658, guid: fa78a782c805955438a1f93f24bcdf5f, type: 3}
   nodeEntity: {fileID: 8735968371559727592, guid: efc1c64c11b49ad42a50fd1605474648, type: 3}
+  connectionLineRendererPrefab: {fileID: 4355267556086761308, guid: f0e091bdaf5b24240b8cd139769b0239, type: 3}
   shieldLineRendererMaterial: {fileID: 2100000, guid: 5a818ebc708f7e14a869b686b4139763, type: 2}
-  connectionLineRendererMaterial: {fileID: 2100000, guid: e3a751fe06bc034438b793f3df3ae370, type: 2}
   generationConfigs:
   - {fileID: 11400000, guid: 21fc82e2514c0f14eaecc5ebfb7572b2, type: 2}
   - {fileID: 11400000, guid: 2c3ee8692509ced40810efd3a1de6225, type: 2}

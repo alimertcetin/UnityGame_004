@@ -195,25 +195,28 @@ namespace TheGame
                 var ent1 = entityBuffer[conList1[connectionIdx]];
                 var ent2 = entityBuffer[conList2[connectionIdx]];
                 
-                ref var connectionPairComp = ref connectionDB.AddConnection(ent1, ent2, out var isAdded);
+                ref var connectionPair = ref connectionDB.AddConnection(ent1, ent2, out var isAdded);
                 if (isAdded == false) continue;
                 
                 var p0 = positionBuffer[conList1[connectionIdx]];
                 var p1 = positionBuffer[conList2[connectionIdx]];
-                var lineRenderer = new GameObject(connectionDB.Count + " - " + ent1 + " <-> " + ent2).AddComponent<LineRenderer>();
-                lineRenderer.material = prefabReferences.connectionLineRendererMaterial;
+                var lineRenderer = Object.Instantiate(prefabReferences.connectionLineRendererPrefab).GetComponent<LineRenderer>();
+#if UNITY_EDITOR
+                lineRenderer.gameObject.name = connectionDB.Count + " - " + ent1 + " <-> " + ent2;
+#endif
+                lineRenderer.transform.localScale = ent1.GetComponent<TransformComp>().transform.localScale;
                 lineRenderer.positionCount = LINERENDERER_POSITION_COUNT;
                 lineRenderer.XIVStraightLine(p0, p1);
-                lineRenderer.XIVSetWidth(0.05f);
+                lineRenderer.XIVSetWidth(0.1f);
                 var positions = new Vector3[LINERENDERER_POSITION_COUNT];
                 lineRenderer.GetPositions(positions);
 
-                connectionPairComp.entity1 = ent1;
-                connectionPairComp.entity2 = ent2;
-                connectionPairComp.startPosition = p0;
-                connectionPairComp.endPosition = p1;
-                connectionPairComp.positions = positions;
-                connectionPairComp.lineRenderer = lineRenderer;
+                connectionPair.entity1 = ent1;
+                connectionPair.entity2 = ent2;
+                connectionPair.startPosition = p0;
+                connectionPair.endPosition = p1;
+                connectionPair.positions = positions;
+                connectionPair.lineRenderer = lineRenderer;
             }
             
             XIVPoolSystem.ReleaseItem(conList1);

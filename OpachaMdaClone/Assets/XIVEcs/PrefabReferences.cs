@@ -8,8 +8,8 @@ namespace XIV.Ecs
         public GameObject resourceEntity;
         public GameObject nodeHighlightEntity;
         public GameObject nodeEntity;
+        public GameObject connectionLineRendererPrefab;
         public Material shieldLineRendererMaterial;
-        public Material connectionLineRendererMaterial;
         public GenerationStepSO[] generationConfigs;
     }
 }

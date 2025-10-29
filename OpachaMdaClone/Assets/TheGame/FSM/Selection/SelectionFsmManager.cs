@@ -56,7 +56,7 @@ namespace TheGame
         {
             // first requires OccupiedNodeComp but second doesn't need it.
             if (TryGetEntityFromInput(ref input, out entity) == false) return false;
-            return entity.HasComponent<OccupiedNodeComp>();
+            return entity.HasComponent<OccupiedNodeComp>() && entity.GetComponent<NodeComp>().unitType == UnitIdLookup.UnitType.Green;
         }
 
         public bool TryGetSecondFromInput(ref InputData input, out Entity entity)
@@ -66,6 +66,7 @@ namespace TheGame
             if (TryGetEntityFromInput(ref input, out entity) == false) return false;
             return IsConnected(first, entity);
         }
+        
         bool IsConnected(Entity ent1, Entity ent2)
         {
             return connectionDB.IsConnected(ent1, ent2);
@@ -78,7 +79,7 @@ namespace TheGame
             if (hitCount > 0)
             {
                 entity = hits[0].collider.XIVGetEntity();
-                return entity.IsAlive();
+                return entity.IsAlive() && entity.HasComponent<NodeComp>();
             }
 
             entity = Entity.Invalid;
@@ -98,7 +99,7 @@ namespace TheGame
             {
                 ref var pair = ref pairBuffer[i];
                 var connectedEntity = pair.GetOpposite(first);
-                var connectedEntityPos = connectedEntity.GetTransform().position;
+                var connectedEntityPos = connectedEntity.GetComponent<TransformComp>().transform.position;
                 var dirToConnected = (Vector2)(connectedEntityPos - firstNodeEntityTransformPosition);
                 // Use dot product to define the possible target direction
                 var dot = Vector2.Dot(swipeDirection.normalized, dirToConnected.normalized);

@@ -54,6 +54,7 @@ namespace TheGame
 
                 if (ent1.HasComponent<OccupiedNodeComp>() == false) return false;
                 ref var ent1UnitComp = ref ent1.GetComponent<OccupiedNodeComp>().unitEntity.GetComponent<UnitComp>();
+                // if (ent1UnitComp.unitType == UnitIdLookup.UnitType.Green) return false; // if this is player
                 if (ent2.HasComponent<OccupiedNodeComp>() == false) return true;
                 ref var ent2UnitComp = ref ent2.GetComponent<OccupiedNodeComp>().unitEntity.GetComponent<UnitComp>();
                 return ent1UnitComp.unitType != ent2UnitComp.unitType;

@@ -97,7 +97,6 @@ namespace TheGame
                         unitEntity = unitEntity,
                     });
                 }
-                nodeComp.txt_quantity.WriteScoreText((int)nodeComp.resourceQuantity);
             }
 
             transformComp.transform.CancelTween();

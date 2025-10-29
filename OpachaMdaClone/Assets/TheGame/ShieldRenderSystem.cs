@@ -43,7 +43,7 @@ namespace XIV.Ecs
 
         static void DrawCircle(LineRenderer lineRenderer, Vec3 entityPosition)
         {
-            var radius = 0.375f;
+            var radius = lineRenderer.transform.localScale.y * 0.5f + lineRenderer.startWidth;
             int detail = lineRenderer.positionCount - 1;
             var rotation = Quaternion.FromToRotation(Vec3.forward, Vec3.forward);
             // var startPoint = (Vector3)entityPosition + rotation * Vec3.right * radius;

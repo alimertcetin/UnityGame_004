@@ -14,6 +14,15 @@ namespace TheGame
         readonly Filter<TransformComp, NodeComp> disableHighlightFilter = new Filter<TransformComp, NodeComp>().Tag<DisableHighlightTag>();
         readonly Filter<HighlightComp> highlightFilter = new Filter<HighlightComp>();
         readonly PrefabReferences prefabReferences;
+        Entity nodeHighlightEntity;
+        Transform highlightEntityTransform;
+
+        public override void Awake()
+        {
+            nodeHighlightEntity = GameObjectEntity.CreateEntity(world, prefabReferences.nodeHighlightEntity);
+            highlightEntityTransform = nodeHighlightEntity.GetComponent<TransformComp>().transform;
+            highlightEntityTransform.gameObject.SetActive(false);
+        }
 
         public override void Update()
         {
@@ -21,12 +30,14 @@ namespace TheGame
             {
                 var pos = transformComp.transform.position;
                 var rot = transformComp.transform.rotation;
+                highlightEntityTransform.position = pos;
+                highlightEntityTransform.rotation = rot;
+                highlightEntityTransform.gameObject.SetActive(true);
                 
-                var nodeHighlightEntity = GameObjectEntity.CreateEntity(world, prefabReferences.nodeHighlightEntity, pos, rot);
-                ref var highlightTransformComp = ref nodeHighlightEntity.GetComponent<TransformComp>();
-                var scale = highlightTransformComp.transform.localScale;
+                var scale = highlightEntityTransform.transform.localScale;
                 ref var highlightComp = ref nodeHighlightEntity.GetComponent<HighlightComp>();
                 highlightComp.owner = nodeEntity;
+                nodeHighlightEntity.CancelTween();
                 nodeHighlightEntity.XIVTween()
                     .Scale(scale, scale * 1.2f, 1f, EasingFunction.SmoothStop2, true, int.MaxValue)
                     .Start();
@@ -37,7 +48,13 @@ namespace TheGame
             {
                 highlightFilter.ForEach((Entity highlightEntity, ref HighlightComp highlightComp) =>
                 {
-                    if (highlightComp.owner == nodeEntity) highlightEntity.Destroy();
+                    // TODO: NodeHighlightSystem -> We don't need this
+                    if (highlightComp.owner == nodeEntity)
+                    {
+                        highlightComp.owner = Entity.Invalid;
+                        highlightEntity.CancelTween();
+                        highlightEntityTransform.gameObject.SetActive(false);
+                    }
                 });
             });
             disableHighlightFilter.RemoveTagAll<DisableHighlightTag>();

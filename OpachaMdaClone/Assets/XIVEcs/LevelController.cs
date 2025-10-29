@@ -63,6 +63,7 @@ namespace XIV.Ecs
             // Game
             manager.AddSystem(new NodeLevelGeneratorSystem(), States.Start);
             manager.AddSystem(new NodeInitializeSystem(), States.Game);
+            manager.AddSystem(new NodeOccupySystem(), States.Game);
             
             manager.AddSystem(new NodeResourceGenerateSystem(), States.Game);
             manager.AddSystem(new UnitNodeSelectionSystem(), States.Game);

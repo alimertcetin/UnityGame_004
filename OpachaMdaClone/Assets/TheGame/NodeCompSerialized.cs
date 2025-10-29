@@ -1,8 +1,5 @@
 using System;
 using TMPro;
-using XIV.Core.Collections;
-using XIV.Core.Utils;
-using XIV.Core.XIVMath;
 using XIV.Ecs;
 
 namespace TheGame
