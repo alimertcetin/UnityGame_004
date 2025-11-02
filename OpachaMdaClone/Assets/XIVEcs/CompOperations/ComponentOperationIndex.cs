@@ -154,6 +154,54 @@ namespace XIV.Ecs
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ExecuteAddComponentAction<T>(World world) where T : struct, IComponent
+        {
+            AddComponentOperations<T>.Execute(world);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ExecuteRemoveComponentAction<T>(World world) where T : struct, IComponent
+        {
+            RemoveComponentOperations<T>.Execute(world);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ExecuteRemoveComponentAction(int componentId, World world)
+        {
+            removeComponentActions[componentId](world);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ExecuteEnableComponentAction<T>(World world) where T : struct, IComponent
+        {
+            ActivateComponentOperations<T>.ExecuteEnableComponent(world);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ExecuteDisableComponentAction<T>(World world) where T : struct, IComponent
+        {
+            ActivateComponentOperations<T>.ExecuteDisableComponent(world);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ExecuteAddTagAction<T>(World world) where T : struct, ITag
+        {
+            AddTagOperations<T>.Execute(world);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ExecuteRemoveTagAction<T>(World world) where T : struct, ITag
+        {
+            RemoveTagOperations<T>.Execute(world);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void ExecuteRemoveTagAction(int tagId, World world)
+        {
+            removeTagActions[tagId](world);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ExecuteAddComponentActions(World world)
         {
             foreach (var action in addComponentActions)
@@ -161,7 +209,7 @@ namespace XIV.Ecs
                 action(world);
             }
         }
-
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ExecuteRemoveComponentActions(World world)
         {
@@ -170,7 +218,7 @@ namespace XIV.Ecs
                 action(world);
             }
         }
-
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ExecuteEnableComponentActions(World world)
         {
@@ -179,7 +227,7 @@ namespace XIV.Ecs
                 action(world);
             }
         }
-
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ExecuteDisableComponentActions(World world)
         {
@@ -188,7 +236,7 @@ namespace XIV.Ecs
                 action(world);
             }
         }
-
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ExecuteAddTagActions(World world)
         {
@@ -197,7 +245,7 @@ namespace XIV.Ecs
                 action(world);
             }
         }
-
+        
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ExecuteRemoveTagActions(World world)
         {

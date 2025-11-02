@@ -49,7 +49,6 @@ namespace XIV.Ecs
             }
         }
 
-        [Obsolete]
         public static Type GetComponentPoolType(int componentId) => idToCompPoolType[componentId];
         public static Type GetComponentPoolType<T>() where T : struct, IComponent => idToCompPoolType[ComponentId<T>.id];
         public static int GetComponentId(Type type) => typeToId.GetId(type);

@@ -10,11 +10,11 @@ namespace XIV.Ecs
     {
         public Bitset componentBitSet;
         public Bitset tagBitSet;
-        public int lockCounter;
         public DynamicArray<Entity> entities = new DynamicArray<Entity>(16);
         public ComponentPoolBase[] componentPools;
         public int[] componentIds;
-
+        int lockCounter;
+        
         public Archetype(Bitset componentBitSet, Bitset tagBitSet)
         {
             this.componentBitSet = componentBitSet;
@@ -32,6 +32,21 @@ namespace XIV.Ecs
                 componentIds[i] = componentId;
                 i++;
             }
+        }
+        
+        public bool IsLocked()
+        {
+            return lockCounter > 0;
+        }
+
+        public void Lock()
+        {
+            lockCounter++;
+        }
+
+        public void Unlock()
+        {
+            lockCounter--;
         }
 
         public void SetCustomReset(IReadOnlyDictionary<int, Delegate> customResetMap)

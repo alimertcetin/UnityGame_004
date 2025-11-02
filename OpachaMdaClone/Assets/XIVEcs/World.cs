@@ -12,6 +12,7 @@ namespace XIV.Ecs
         public List<Filter> filters;
 
         public DynamicArray<DestroyOperation> destroyedEntities;
+        // TODO : There is a bug that causes lockCounter on ArcheTypes to go below 0
 
         public World(int entityCapacity = 64)
         {
@@ -69,7 +70,7 @@ namespace XIV.Ecs
                 return;
             }
 
-            if (archetype.lockCounter > 0)
+            if (archetype.IsLocked())
             {
                 destroyedEntities.Add() = new DestroyOperation()
                 {
@@ -91,80 +92,80 @@ namespace XIV.Ecs
 
             ref var entityData = ref entityDataList[entityId.id];
 
-            if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
+            if (entityData.archetype != null && entityData.archetype.IsLocked())
             {
                 ComponentOperationIndex.AddComponent(entityId, componentValue);
                 return;
             }
 
             ComponentOperationIndex.AddComponent(entityId, componentValue);
-            ComponentOperationIndex.ExecuteAddComponentActions(this);
+            ComponentOperationIndex.ExecuteAddComponentAction<T>(this);
         }
 
         public void AddTag<T>(EntityId entityId) where T : struct, ITag
         {
             // Debug.Assert(IsEntityAlive(entityId));
             ref var entityData = ref entityDataList[entityId.id];
-            if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
+            if (entityData.archetype != null && entityData.archetype.IsLocked())
             {
                 ComponentOperationIndex.AddTag<T>(entityId);
                 return;
             }
 
             ComponentOperationIndex.AddTag<T>(entityId);
-            ComponentOperationIndex.ExecuteAddTagActions(this);
+            ComponentOperationIndex.ExecuteAddTagAction<T>(this);
         }
         
         public void RemoveTag<T>(EntityId entityId) where T : struct, ITag
         {
             ref var entityData = ref entityDataList[entityId.id];
 
-            if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
+            if (entityData.archetype != null && entityData.archetype.IsLocked())
             {
                 ComponentOperationIndex.RemoveTag<T>(entityId);
                 return;
             }
             ComponentOperationIndex.RemoveTag<T>(entityId);
-            ComponentOperationIndex.ExecuteRemoveTagActions(this);
+            ComponentOperationIndex.ExecuteRemoveTagAction<T>(this);
         }
         
         public void RemoveTag(EntityId entityId, int tagId)
         {
             ref var entityData = ref entityDataList[entityId.id];
 
-            if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
+            if (entityData.archetype != null && entityData.archetype.IsLocked())
             {
                 ComponentOperationIndex.RemoveTag(entityId, tagId);
                 return;
             }
             ComponentOperationIndex.RemoveTag(entityId, tagId);
-            ComponentOperationIndex.ExecuteRemoveTagActions(this);
+            ComponentOperationIndex.ExecuteRemoveTagAction(tagId, this);
         }
         
         public void RemoveComponent<T>(EntityId entityId) where T : struct, IComponent
         {
             ref var entityData = ref entityDataList[entityId.id];
-            if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
+            if (entityData.archetype != null && entityData.archetype.IsLocked())
             {
                 ComponentOperationIndex.RemoveComponent<T>(entityId);
                 return;
             }
 
             ComponentOperationIndex.RemoveComponent<T>(entityId);
-            ComponentOperationIndex.ExecuteRemoveComponentActions(this);
+            ComponentOperationIndex.ExecuteRemoveComponentAction<T>(this);
         }
         
         public void RemoveComponent(EntityId entityId, int componentId)
         {
             ref var entityData = ref entityDataList[entityId.id];
-            if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
+            if (entityData.archetype != null && entityData.archetype.IsLocked())
             {
                 ComponentOperationIndex.RemoveComponent(entityId, componentId);
                 return;
             }
 
             ComponentOperationIndex.RemoveComponent(entityId, componentId);
-            ComponentOperationIndex.ExecuteRemoveComponentActions(this);
+            ComponentOperationIndex.ExecuteRemoveComponentAction(componentId, this);
         }
 
         public bool HasComponent<T>(EntityId entity) where T : struct, IComponent
@@ -184,27 +185,27 @@ namespace XIV.Ecs
         public void EnableComponent<T>(EntityId entityId) where T : struct, IComponent
         {
             ref var entityData = ref entityDataList[entityId.id];
-            if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
+            if (entityData.archetype != null && entityData.archetype.IsLocked())
             {
                 ComponentOperationIndex.EnableComponent<T>(entityId);
                 return;
             }
 
             ComponentOperationIndex.EnableComponent<T>(entityId);
-            ComponentOperationIndex.ExecuteEnableComponentActions(this);
+            ComponentOperationIndex.ExecuteEnableComponentAction<T>(this);
         }
 
         public void DisableComponent<T>(EntityId entityId) where T : struct, IComponent
         {
             ref var entityData = ref entityDataList[entityId.id];
-            if (entityData.archetype != null && entityData.archetype.lockCounter > 0)
+            if (entityData.archetype != null && entityData.archetype.IsLocked())
             {
                 ComponentOperationIndex.DisableComponent<T>(this, entityId);
                 return;
             }
 
             ComponentOperationIndex.DisableComponent<T>(this, entityId);
-            ComponentOperationIndex.ExecuteDisableComponentActions(this);
+            ComponentOperationIndex.ExecuteDisableComponentAction<T>(this);
         }
         
         public bool HasTag<T>(EntityId entity) where T : struct, ITag

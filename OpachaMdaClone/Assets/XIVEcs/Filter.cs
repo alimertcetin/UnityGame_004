@@ -75,7 +75,7 @@ namespace XIV.Ecs
             
             for (var i = 0; i < query.archetypes.Count; i++)
             {
-                query.archetypes[i].lockCounter++;
+                query.archetypes[i].Lock();
                 numberOfEntitiesBuffer[bufferIdx][i] = query.archetypes[i].entities.Count;
             }
         }
@@ -83,7 +83,7 @@ namespace XIV.Ecs
         protected void Unlock()
         {
             lockCounter--;
-            foreach (var archetype in query.archetypes) archetype.lockCounter--;
+            foreach (var archetype in query.archetypes) archetype.Unlock();
 
             if (lockCounter == 0)
             {

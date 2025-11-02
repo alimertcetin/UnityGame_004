@@ -158,20 +158,20 @@
             for (int a = 0; a < filter1.query.archetypes.Count; a++)
             {
                 numberOfEntitiesBuffer1[a] = filter1.query.archetypes[a].entities.Count;
-                filter1.query.archetypes[a].lockCounter++;
+                filter1.query.archetypes[a].Lock();
             }
 
             for (int a = 0; a < filter2.query.archetypes.Count; a++)
             {
                 numberOfEntitiesBuffer2[a] = filter2.query.archetypes[a].entities.Count;
-                filter2.query.archetypes[a].lockCounter++;
+                filter2.query.archetypes[a].Lock();
             }
         }
 
         static void Unlock(Filter filter1, Filter filter2)
         {
-            foreach (var archetype in filter1.query.archetypes) archetype.lockCounter--;
-            foreach (var archetype in filter2.query.archetypes) archetype.lockCounter--;
+            foreach (var archetype in filter1.query.archetypes) archetype.Unlock();
+            foreach (var archetype in filter2.query.archetypes) archetype.Unlock();
             filter1.world.UnlockComponentOperation();
         }
 

@@ -54,7 +54,7 @@ namespace XIV.Ecs
                 disabledComponents.RemoveAt(idx);
             }
             enabledComponentOwnerIndices.Clear();
-            ComponentOperationIndex.ExecuteAddComponentActions(world);
+            ComponentOperationIndex.ExecuteAddComponentAction<T>(world);
         }
 
         public static void ExecuteDisableComponent(World world)
@@ -66,7 +66,7 @@ namespace XIV.Ecs
                 world.entityDataList[entityId.id].disabledComponentBitset.SetBit1(componentId);
                 ComponentOperationIndex.RemoveComponent<T>(entityId);
             }
-            ComponentOperationIndex.ExecuteRemoveComponentActions(world);
+            ComponentOperationIndex.ExecuteRemoveComponentAction<T>(world);
         }
         
         public static void QuickSort(XIVMemory<int> arr)
