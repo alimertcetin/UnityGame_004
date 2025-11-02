@@ -1,15 +1,22 @@
-﻿using TheGame;
+﻿using System;
+using TheGame;
 using UnityEngine;
 
 namespace XIV.Ecs
 {
-    public class PrefabReferences : MonoBehaviour
+    [Serializable]
+    public class AssetReferences
     {
         public GameObject resourceEntity;
         public GameObject nodeHighlightEntity;
         public GameObject nodeEntity;
         public GameObject connectionLineRendererPrefab;
-        public Material shieldLineRendererMaterial;
+        public GameObject shieldLineRendererPrefab;
         public GenerationStepSO[] generationConfigs;
+    }
+    
+    public class AssetReferencesMono : MonoBehaviour
+    {
+        public AssetReferences assetReferences;
     }
 }

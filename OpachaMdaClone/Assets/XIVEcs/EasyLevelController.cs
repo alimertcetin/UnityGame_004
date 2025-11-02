@@ -1,81 +1,88 @@
-using Dalak.Ecs;
-using UnityEngine;
+﻿using TheGame;
 
 namespace XIV.Ecs
 {
-    public abstract class EasyLevelController : MonoBehaviour
+    /*
+     System And Unity Events Execution Order
+        PreAwake (Ignores System State)  -> call SetCustomAssign and SetCustomReset here
+        Awake (Ignores System State) -> entity creation should be after this point
+        Start (Ignores System State)
+        FixedUpdate
+        Physics Update (Unity Only)
+        PreUpdate (System Only)
+            - System Manager State Changes
+            - Events
+            - PreUpdate 
+        Update
+        Coroutines
+        LateUpdate
+     */
+    
+    public class EasyLevelController : LevelController
     {
-        public World world;
-        public SystemManager manager;
-        #if UNITY_EDITOR
-        GameObject ecsDebug;
-        #endif
-
-        protected virtual World CreateWorld()
+        public static class States
         {
-            return new World();
-        }
-        
-        void Awake()
-        {
-            world = CreateWorld();
-            manager = new SystemManager(world);
+            public const int Start = 0;
+            public const int Game = 1;
+            public const int Paused = 2;
+            public const int LevelCompleted = 3;
+            public const int LevelFailed = 4;
+            public const int SceneLoadingStart = 5;
+            public const int SceneLoading = 6;
+            public const int SceneLoadingEnd = 7;
 
-#if UNITY_EDITOR
-            ecsDebug = EcsDebug.CreateDebug(world,manager,"ECS-DEBUG");
-#endif
-            AddSystems();
-            OnInject();
-
-            manager.HandleInjections();
-            manager.PreAwake();
-            manager.Awake();
-            XTime.fixedDeltaTime = Time.fixedDeltaTime;
-            XTime.timeScale = Time.timeScale;
-        }
-
-        void Start()
-        {
-            manager.Start();
-#if UNITY_EDITOR
-            var numberOfEntities = world.GetNumberOfEntities();
-            Debug.Log($"Number of entities: {numberOfEntities}");
-            if (numberOfEntities == 0)
+            public static readonly int[] All =
             {
-                Debug.LogError("There are no entities in the scene make sure you have a loading system");
-            }
-#endif
-        }
-
-        void Update()
-        {
-            XTime.deltaTime = Time.deltaTime * XTime.timeScale;
-            manager.Update();
-        }
-
-        void FixedUpdate()
-        {
-            XTime.deltaTime = XTime.fixedDeltaTime * XTime.timeScale;
-            manager.FixedUpdate();
-        }
-
-        void LateUpdate()
-        {
-            XTime.deltaTime = Time.deltaTime * XTime.timeScale;
-            manager.LateUpdate();
+                Start, Game, Paused, LevelCompleted, LevelFailed
+            };
         }
         
-
-        public abstract void OnInject();
-        public abstract void AddSystems();
-
-        void OnDestroy()
+        public override void OnInject()
         {
-#if UNITY_EDITOR
-            Destroy(ecsDebug);
-#endif
-            manager.OnDestroy();
+            LevelSettingsMono levelSettingsMono = FindObjectOfType<LevelSettingsMono>();
+            var levelSettings = levelSettingsMono == null ? new LevelSettings() : levelSettingsMono.levelSettings;
+            var assetReferencesMono = FindObjectOfType<AssetReferencesMono>();
+            var assetReferences = assetReferencesMono == null ? new AssetReferences() : assetReferencesMono.assetReferences;
+            manager.Inject(levelSettings);
+            manager.Inject(assetReferences);
+            manager.Inject(new LevelState());
+            manager.Inject(new ConnectionDB());
+            manager.Inject(new LineRendererPositionData());
+            
+            // Set start state to Game and don't instantiate startUI if you don't have a start menu
+            manager.ChangeState(States.Start);
+        }
+
+
+        public override void AddSystems()
+        {
+            manager.AddSystem(new LevelLoadingSystem(), States.All); // PreUpdate - Only Works During Start
+            manager.AddSystem(new CallLaterSystem(), States.All); // PreUpdate
+            manager.AddSystem(new InputSystem(), States.Game); // PreUpdate - Only Works During Game
+            manager.AddSystem(new UISystem(), States.All);
+            manager.AddSystem(new StartGameSystem(), States.Start);
+            
+            // Game
+            manager.AddSystem(new NodeLevelGeneratorSystem(), States.Start);
+            manager.AddSystem(new NodeInitializeSystem(), States.Game);
+            manager.AddSystem(new NodeOccupySystem(), States.Game);
+            
+            manager.AddSystem(new NodeResourceGenerateSystem(), States.Game);
+            manager.AddSystem(new UnitNodeSelectionSystem(), States.Game);
+            
+            manager.AddSystem(new NodeHighlightSystem(), States.Game);
+            
+            manager.AddSystem(new ResourceTransferSystem(), States.Game);
+            manager.AddSystem(new ResourceCollisionSystem(), States.Game);
+            
+            manager.AddSystem(new ConnectionLineRenderSystem(), States.Game);
+            manager.AddSystem(new ShieldRenderSystem(), States.Game);
+            manager.AddSystem(new NodeDebugSystem(), States.Game);
+            
+            
+            manager.AddSystem(new TransformSystem(), States.All); // Awake
+            manager.AddSystem(new ParentSystem(), States.All); // Update
+            manager.AddSystem(new DestroySystem(), States.All); // Late Update
         }
     }
-    
 }

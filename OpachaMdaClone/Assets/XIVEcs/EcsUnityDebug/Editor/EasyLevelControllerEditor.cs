@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace XIV.Ecs
 {
-    [CustomEditor(typeof(EasyLevelController),editorForChildClasses:true)]
+    [CustomEditor(typeof(LevelController),editorForChildClasses:true)]
     public class EasyLevelControllerEditor : Editor
     {
         public override void OnInspectorGUI()
@@ -16,7 +16,7 @@ namespace XIV.Ecs
             {
                 return;
             }
-            var easyLevelController = target as EasyLevelController;
+            var easyLevelController = target as LevelController;
             if (easyLevelController == null)
             {
                 return;

@@ -139,7 +139,7 @@ namespace XIV.Ecs
 #if UNITY_EDITOR   
                 executionTimer.StartWatch();
                 system.PreAwake();
-                executionTimer.StopWatch(system,SystemExecutionTimer.MethodType.Awake);
+                executionTimer.StopWatch(system,SystemExecutionTimer.MethodType.PreAwake);
 #else
                 system.PreAwake();
 #endif

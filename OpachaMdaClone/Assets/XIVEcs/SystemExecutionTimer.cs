@@ -28,10 +28,17 @@ namespace XIV.Ecs
                 systemExeTimeDic.Add(system, durations);
             }
         }
-        
+
         public enum MethodType
         {
-            Awake=0,Start,PreUpdate,Update,FixedUpdate,LateUpdate,NumberOfMethods
+            PreAwake = 0,
+            Awake,
+            Start,
+            PreUpdate,
+            Update,
+            FixedUpdate,
+            LateUpdate,
+            NumberOfMethods
         }
     }
 }
