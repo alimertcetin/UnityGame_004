@@ -13,13 +13,13 @@ namespace TheGame
         readonly Filter<TransformComp, NodeComp> enableHighlightFilter = new Filter<TransformComp, NodeComp>().Tag<EnableHighlightTag>();
         readonly Filter<TransformComp, NodeComp> disableHighlightFilter = new Filter<TransformComp, NodeComp>().Tag<DisableHighlightTag>();
         readonly Filter<HighlightComp> highlightFilter = new Filter<HighlightComp>();
-        readonly PrefabReferences prefabReferences;
+        readonly AssetReferences assetReferences;
         Entity nodeHighlightEntity;
         Transform highlightEntityTransform;
 
         public override void Awake()
         {
-            nodeHighlightEntity = GameObjectEntity.CreateEntity(world, prefabReferences.nodeHighlightEntity);
+            nodeHighlightEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeHighlightEntity);
             highlightEntityTransform = nodeHighlightEntity.GetComponent<TransformComp>().transform;
             highlightEntityTransform.gameObject.SetActive(false);
         }

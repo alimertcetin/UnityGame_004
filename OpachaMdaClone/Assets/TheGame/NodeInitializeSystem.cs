@@ -13,6 +13,7 @@ namespace TheGame
 {
     public class NodeInitializeSystem : XIV.Ecs.System
     {
+        readonly Filter<TransformComp, NodeComp, NodeOccupyComp> nodeOccupyFilter = null;
         readonly Filter<TransformComp, NodeComp> nodeCompFilter = null;
         readonly Filter<UnitComp> unitFilter = null;
 

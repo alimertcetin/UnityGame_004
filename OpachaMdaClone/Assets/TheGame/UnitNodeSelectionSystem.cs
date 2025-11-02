@@ -29,12 +29,12 @@ namespace TheGame
         readonly Filter<UnitComp, InputListenerComp> nodeSelectorFilter = null;
         readonly Filter<DoubleTapComp> doubleTapFilter = null;
         readonly ConnectionDB connectionDB = null;
-        readonly PrefabReferences prefabReferences = null;
+        readonly AssetReferences assetReferences = null;
         SelectionFsmManager selectionFsmManager = null;
 
         public override void Awake()
         {
-            selectionFsmManager = new SelectionFsmManager(connectionDB, prefabReferences);
+            selectionFsmManager = new SelectionFsmManager(connectionDB, assetReferences);
         }
 
         public override void Update()

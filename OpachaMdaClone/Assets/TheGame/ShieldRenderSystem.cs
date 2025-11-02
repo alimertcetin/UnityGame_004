@@ -15,14 +15,15 @@ namespace XIV.Ecs
     {
         readonly Filter<TransformComp, NodeComp> nodeFilter = null;
         readonly Filter<TransformComp, NodeComp, NodeShieldRenderComp> shieldFilter = null;
-        readonly PrefabReferences prefabReferences = null;
+        readonly AssetReferences prefabReferences = null;
 
         public override void Start()
         {
             nodeFilter.ForEach((Entity nodeEntity, ref TransformComp transformComp, ref NodeComp nodeComp) =>
             {
-                var lineRenderer = new GameObject().AddComponent<LineRenderer>();
-                lineRenderer.material = prefabReferences.shieldLineRendererMaterial;
+                var lineRenderer = GameObjectEntity.CreateEntity(world, prefabReferences.shieldLineRendererPrefab).GetTransform().GetComponent<LineRenderer>();
+                // var lineRenderer = new GameObject().AddComponent<LineRenderer>();
+                // lineRenderer.material = prefabReferences.shieldLineRendererPrefab.GetComponent<Renderer>().sharedMaterial;
                 lineRenderer.XIVSetWidth(0.1f);
                 nodeEntity.AddComponent(new NodeShieldRenderComp
                 {

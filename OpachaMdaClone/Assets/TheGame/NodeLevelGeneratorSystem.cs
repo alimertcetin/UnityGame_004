@@ -9,7 +9,7 @@ namespace TheGame
     public class NodeLevelGeneratorSystem : XIV.Ecs.System
     {
         readonly LevelSettings levelSettings = null;
-        readonly PrefabReferences prefabReferences = null;
+        readonly AssetReferences assetReferences = null;
         readonly ConnectionDB connectionDB = null;
 
         public override void Start()
@@ -17,7 +17,7 @@ namespace TheGame
             int seed = 790;
             var tightness = XIVMathf.Max(1 - levelSettings.tightness, 0.001f);
             var sameDirectionCutThreshold = XIVMathf.Max(1f - levelSettings.sameDirectionCutThreshold, 0.001f);
-            new LevelGenerator(new LevelGenerationSettings(levelSettings.mapSize, seed, tightness, sameDirectionCutThreshold, 0.5f), world, prefabReferences,connectionDB).GenerateLevel();
+            new LevelGenerator(new LevelGenerationSettings(levelSettings.mapSize, seed, tightness, sameDirectionCutThreshold, 0.5f), world, assetReferences,connectionDB).GenerateLevel();
             SaveSeed(seed);
         }
 

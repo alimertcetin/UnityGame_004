@@ -35,7 +35,7 @@ namespace TheGame
         readonly Filter<TransformComp, NodeComp, NodeResourceCollisionComp> nodeResourceCollisionFilter = null;
         readonly Filter<TransformComp, NodeComp, OccupiedNodeComp, SendResourceComp> sendResourceFilter = null;
         readonly Filter<NodeComp, OccupiedNodeComp, SendResourceContinuouslyComp> sendResourceContinuouslyFilter = null;
-        readonly PrefabReferences prefabReferences = null;
+        readonly AssetReferences assetReferences = null;
         readonly Queue<GameObject> resourcePool = new Queue<GameObject>();
         readonly ConnectionDB connectionDB = null;
         readonly LineRendererPositionData lineRendererPositionData = null;
@@ -203,7 +203,7 @@ namespace TheGame
             Entity entity;
             if (resourcePool.Count == 0)
             {
-                entity = GameObjectEntity.CreateEntity(world, prefabReferences.resourceEntity, transformPosition, transformRotation);
+                entity = GameObjectEntity.CreateEntity(world, assetReferences.resourceEntity, transformPosition, transformRotation);
             }
             else
             {

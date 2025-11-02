@@ -10,10 +10,17 @@ namespace TheGame
         // readonly Filter<TransformComp, NodeComp, OccupiedNodeComp> occupiedNodeFilter = new Filter<TransformComp, NodeComp, OccupiedNodeComp>().Exclude<SendResourceContinuouslyComp>();
         readonly Filter<TransformComp, NodeComp, OccupiedNodeComp> occupiedNodeFilter = null;
         readonly ConnectionDB connectionDB = null;
-        readonly PrefabReferences prefabReferences = null;
+        readonly AssetReferences assetReferences = null;
+        readonly Filter entityFilter = null;
 
         public override void Update()
         {
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                entityFilter.ForEach(e => e.Destroy());
+                manager.ChangeState(EasyLevelController.States.Start);
+            }
+            
             int count = connectionDB.Count;
             for (int i = 0; i < count; i++)
             {
@@ -30,7 +37,7 @@ namespace TheGame
 
             void SendResource(Entity ent1, Entity ent2)
             {
-                var duration = prefabReferences.generationConfigs[0].duration;
+                var duration = assetReferences.generationConfigs[0].duration;
                 ent1.AddComponent(new SendResourceContinuouslyComp
                 {
                     currentDuration = duration,

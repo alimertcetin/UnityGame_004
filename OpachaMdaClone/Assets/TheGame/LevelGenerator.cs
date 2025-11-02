@@ -20,14 +20,14 @@ namespace TheGame
 
         LevelGenerationSettings generationSettings;
         readonly World world;
-        readonly PrefabReferences prefabReferences;
+        readonly AssetReferences assetReferences;
         readonly ConnectionDB connectionDB;
 
-        public LevelGenerator(LevelGenerationSettings generationSettings, World world, PrefabReferences prefabReferences, ConnectionDB connectionDB)
+        public LevelGenerator(LevelGenerationSettings generationSettings, World world, AssetReferences assetReferences, ConnectionDB connectionDB)
         {
             this.generationSettings = generationSettings;
             this.world = world;
-            this.prefabReferences = prefabReferences;
+            this.assetReferences = assetReferences;
             this.connectionDB = connectionDB;
         }
 
@@ -88,7 +88,7 @@ namespace TheGame
             for (int i = 0; i < entityBufferLen && i < positionBufferLen; i++)
             {
                 var pos = new Vector3(positionBuffer[i].x, positionBuffer[i].y, 0f);
-                entityBuffer[i] = GameObjectEntity.CreateEntity(world, prefabReferences.nodeEntity, pos, Quaternion.identity);
+                entityBuffer[i] = GameObjectEntity.CreateEntity(world, assetReferences.nodeEntity, pos, Quaternion.identity);
             }
         }        
         
@@ -200,7 +200,7 @@ namespace TheGame
                 
                 var p0 = positionBuffer[conList1[connectionIdx]];
                 var p1 = positionBuffer[conList2[connectionIdx]];
-                var lineRenderer = Object.Instantiate(prefabReferences.connectionLineRendererPrefab).GetComponent<LineRenderer>();
+                var lineRenderer = GameObjectEntity.CreateEntity(world, assetReferences.connectionLineRendererPrefab).GetComponent<TransformComp>().transform.GetComponent<LineRenderer>();
 #if UNITY_EDITOR
                 lineRenderer.gameObject.name = connectionDB.Count + " - " + ent1 + " <-> " + ent2;
 #endif

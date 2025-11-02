@@ -25,12 +25,9 @@ namespace TheGame
                     var movementPositions = lineRendererPositionData.movementPositions;
                     // I dont know how it happened but somehow movementPositions were less than others while connectionIndices and movementDirections were exactly has the same amount of items in it.
                     int count = XIVMathInt.Min(XIVMathInt.Min(connectionIndices.Count, movementDirections.Count), movementPositions.Count);
-                    for (int i = count - 1; i >= 0; i--)
+                    for (int i = 0; i < count; i++)
                     {
                         HandleLineRendererVisual(ref connectionDB[connectionIndices[i]], movementDirections[i], movementPositions[i]);
-                        connectionIndices.RemoveLast();
-                        movementDirections.RemoveLast();
-                        movementPositions.RemoveLast();
                     }
                     FixLineRendererPositions();
                     connectionIndices.Clear();

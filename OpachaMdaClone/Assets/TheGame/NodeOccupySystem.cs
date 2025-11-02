@@ -9,7 +9,7 @@ namespace TheGame
     public class NodeOccupySystem : XIV.Ecs.System
     {
         readonly Filter<TransformComp, NodeComp, NodeOccupyComp> nodeOccupyFilter = null;
-        readonly PrefabReferences prefabReferences = null;
+        readonly AssetReferences assetReferences = null;
         readonly ConnectionDB connectionDB = null;
 
         public override void Update()
@@ -23,7 +23,7 @@ namespace TheGame
                 nodeEntity.AddComponent(new OccupiedNodeComp
                 {
                     unitEntity = unitEntity,
-                    resourceGenerationSpeed = prefabReferences.generationConfigs[0].generationSpeed, // the default config on unitComp
+                    resourceGenerationSpeed = assetReferences.generationConfigs[0].generationSpeed, // the default config on unitComp
                 });
                 var renderer = transformComp.transform.GetComponent<SpriteRenderer>();
                 var ca = renderer.color;

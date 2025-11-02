@@ -10,9 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 6866202128170569717}
   - component: {fileID: 4737824883707179746}
-  - component: {fileID: 7898689584800242385}
+  - component: {fileID: 6117932217737389479}
   m_Layer: 0
-  m_Name: ConnectionLine
+  m_Name: ShieldLine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -97,16 +97,16 @@ LineRenderer:
       m_RotationOrder: 4
     colorGradient:
       serializedVersion: 2
-      key0: {r: 0, g: 0, b: 0, a: 1}
-      key1: {r: 0, g: 0, b: 0, a: 1}
+      key0: {r: 0.31132078, g: 0.31132078, b: 0.31132078, a: 1}
+      key1: {r: 0.1509434, g: 0.1509434, b: 0.1509434, a: 1}
       key2: {r: 0, g: 0, b: 0, a: 0}
       key3: {r: 0, g: 0, b: 0, a: 0}
       key4: {r: 0, g: 0, b: 0, a: 0}
       key5: {r: 0, g: 0, b: 0, a: 0}
       key6: {r: 0, g: 0, b: 0, a: 0}
       key7: {r: 0, g: 0, b: 0, a: 0}
-      ctime0: 26214
-      ctime1: 39321
+      ctime0: 12336
+      ctime1: 51464
       ctime2: 0
       ctime3: 0
       ctime4: 0
@@ -132,7 +132,7 @@ LineRenderer:
     generateLightingData: 0
   m_UseWorldSpace: 0
   m_Loop: 0
---- !u!114 &7898689584800242385
+--- !u!114 &6117932217737389479
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}

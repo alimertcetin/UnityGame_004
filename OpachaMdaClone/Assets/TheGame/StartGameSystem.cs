@@ -6,7 +6,7 @@ namespace TheGame
     {
         public override void Update()
         {
-            manager.ChangeState(LevelController.States.Game);
+            manager.ChangeState(EasyLevelController.States.Game);
         }
     }
 }
