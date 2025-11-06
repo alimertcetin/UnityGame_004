@@ -33,7 +33,7 @@ namespace XIV.Ecs
                 if (entityData.tagBitset.IsBit1(tagId))
                 {
                     // Already has the tag
-                    return;
+                    continue;
                 }
 
                 entityData.tagBitset.SetBit1(tagId);

@@ -34,7 +34,7 @@ namespace XIV.Ecs
                 if (entityData.tagBitset.IsBit1(tagId) == false)
                 {
                     // Already removed
-                    return;
+                    continue;
                 }
 
                 entityData.tagBitset.SetBit0(tagId);
