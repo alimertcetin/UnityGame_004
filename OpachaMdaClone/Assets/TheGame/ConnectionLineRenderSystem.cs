@@ -1,6 +1,8 @@
 ﻿using System.Threading;
 using UnityEngine;
+using XIV.Core.DataStructures;
 using XIV.Core.XIVMath;
+using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame
 {
@@ -55,37 +57,37 @@ namespace TheGame
             }
         }
 
-        void HandleLineRendererVisual(ref ConnectionPair connectionPair, Vector3 movementDirection, Vector3 position)
+        void HandleLineRendererVisual(ref ConnectionPair connectionPair, Vec3 movementDirection, Vec3 position)
         {
             int pointCount = connectionPair.positions.Length;
             const float stepOffset = 0.3f;
-            const float scale = 0.075f;
-            const float frequency = 0.75f;
-            const float falloff = 2f;
+            const float scale = 0.09f;
+            const float frequency = 0.9f;
+            const float falloff = 2.5f;
 
-            Vector3 lineStart = connectionPair.startPosition;
-            Vector3 lineEnd = connectionPair.endPosition;
-            Vector3 direction = (lineEnd - lineStart).normalized;
+            Vec3 lineStart = connectionPair.startPosition;
+            Vec3 lineEnd = connectionPair.endPosition;
+            Vec3 direction = (lineEnd - lineStart).normalized;
 
-            float totalDistance = Vector3.Distance(lineStart, lineEnd);
+            float totalDistance = Vec3.Distance(lineStart, lineEnd);
             if (totalDistance < Mathf.Epsilon) return;
 
             // Project position onto the line segment (direction-agnostic)
-            Vector3 lineVector = lineEnd - lineStart;
-            Vector3 toPosition = position - lineStart;
-            float projectedLength = Vector3.Dot(toPosition, lineVector.normalized);
+            Vec3 lineVector = lineEnd - lineStart;
+            Vec3 toPosition = position - lineStart;
+            float projectedLength = Vec3.Dot(toPosition, lineVector.normalized);
             float projectedT = projectedLength / lineVector.magnitude;
-            projectedT = Mathf.Clamp01(projectedT); // Clamp to valid range
+            projectedT = XIVMathf.Clamp01(projectedT); // Clamp to valid range
 
             // int affectedIndex = Mathf.Clamp((int)(projectedT * (pointCount - 1)), 1, pointCount - 2);
 
-            Vector3 normal = Vector3.Cross(Vector3.forward, direction); // Perpendicular in XY
+            Vec3 normal = Vec3.Cross(Vec3.forward, direction); // Perpendicular in XY
 
             for (int i = 1; i < pointCount - 1; i++)
             {
                 float t = (float)(i - 1) / pointCount;
-                Vector3 basePos = Vector3.LerpUnclamped(lineStart, lineEnd, t);
-                var d = Vector3.Dot(movementDirection, position - basePos);
+                Vec3 basePos = Vec3.LerpUnclamped(lineStart, lineEnd, t);
+                var d = Vec3.Dot(movementDirection, position - basePos);
                 if (d < 0) continue;
                 
                 // Distortion falloff based on distance from projection
@@ -97,17 +99,19 @@ namespace TheGame
                 float sin = XIVMathf.Sin(dist + stepOffset + (frequency * i)) * scale;
                 basePos += normal * (sin * weight);
 
-                connectionPair.positions[i] = basePos;
+                connectionPair.positions[i] = basePos.ToVector3();
             }
         }
         
         void FixLineRendererPositions()
         {
-            var dt = 0.005f;
+            var dt = 0.016f;
             int count = connectionDB.Count;
             for (int i = 0; i < count; i++)
             {
                 ref ConnectionPair connectionPair = ref connectionDB[i];
+                if (connectionPair.resourceEntitiesOnConnection.Count == 0) continue;
+                
                 var startPos = connectionPair.startPosition;
                 var endPos = connectionPair.endPosition;
                 var positions = connectionPair.positions;
@@ -116,10 +120,10 @@ namespace TheGame
                 for (int j = 0; j < positionCount; j++)
                 {
                     var t = (float)j / positionCount;
-                    var targetPos = Vector3.Lerp(startPos, endPos, t);
+                    var targetPos = Vec3.Lerp(startPos, endPos, t);
                     var currentPos = positions[j];
-                    var newPos = Vector3.MoveTowards(currentPos, targetPos, dt);
-                    positions[j] = newPos;
+                    var newPos = Vec3.MoveTowards(currentPos.ToVec3(), targetPos, dt);
+                    positions[j] = newPos.ToVector3();
                 }
             }
         }

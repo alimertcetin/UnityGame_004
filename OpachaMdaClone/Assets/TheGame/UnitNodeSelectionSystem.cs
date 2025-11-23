@@ -19,15 +19,15 @@ namespace TheGame
         public Entity toEntity;
     }
 
-    public struct DoubleTapComp : IComponent
-    {
-        public float duration;
-    }
+    // public struct DoubleTapComp : IComponent
+    // {
+    //     public Timer timer;
+    // }
 
     public class UnitNodeSelectionSystem : XIV.Ecs.System
     {
         readonly Filter<UnitComp, InputListenerComp> nodeSelectorFilter = null;
-        readonly Filter<DoubleTapComp> doubleTapFilter = null;
+        // readonly Filter<DoubleTapComp> doubleTapFilter = null;
         readonly ConnectionDB connectionDB = null;
         readonly AssetReferences assetReferences = null;
         SelectionFsmManager selectionFsmManager = null;
@@ -39,11 +39,10 @@ namespace TheGame
 
         public override void Update()
         {
-            doubleTapFilter.ForEach((Entity entity, ref DoubleTapComp doubleTapComp) =>
-            {
-                doubleTapComp.duration -= XTime.deltaTime;
-                if (doubleTapComp.duration <= 0) entity.RemoveComponent<DoubleTapComp>();
-            });
+            // doubleTapFilter.ForEach((Entity entity, ref DoubleTapComp doubleTapComp) =>
+            // {
+            //     if (doubleTapComp.timer.Update(XTime.deltaTime)) entity.RemoveComponent<DoubleTapComp>();
+            // });
 
             InputData input = default;
             nodeSelectorFilter.ForEach((Entity selectorEntity, ref UnitComp unitComp, ref InputListenerComp listener) =>

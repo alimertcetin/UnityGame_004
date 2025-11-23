@@ -10,6 +10,7 @@ namespace TheGame
         public UnitIdLookup.UnitType unitType;
         [NonSerialized] public DynamicArray<Entity> occupiedNodeEntities;
         [NonSerialized] public int totalPower;
+        public float smartness01;
     }
     
     public class UnitCompSerialized : SerializedComponent<UnitComp>

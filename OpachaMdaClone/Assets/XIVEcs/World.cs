@@ -39,11 +39,15 @@ namespace XIV.Ecs
 
         public void UnlockComponentOperation()
         {
+            // TODO : World.UnlockComponentOperation -> Order of operation, addComp after removeComp can cause component to not added, removeComp after addComp can cause component to not removed
+            // Quick, kinda fix: Do Remove operations before Add operations
             HandleDestroyOperations();
-            ComponentOperationIndex.ExecuteAddTagActions(this);
-            ComponentOperationIndex.ExecuteRemoveTagActions(this);
-            ComponentOperationIndex.ExecuteAddComponentActions(this);
+            ComponentOperationIndex.ExecuteDisableComponentActions(this);
             ComponentOperationIndex.ExecuteRemoveComponentActions(this);
+            ComponentOperationIndex.ExecuteRemoveTagActions(this);
+            ComponentOperationIndex.ExecuteEnableComponentActions(this);
+            ComponentOperationIndex.ExecuteAddComponentActions(this);
+            ComponentOperationIndex.ExecuteAddTagActions(this);
         }
 
         void HandleDestroyOperations()
@@ -218,6 +222,7 @@ namespace XIV.Ecs
         public ref T GetComponent<T>(EntityId entity) where T : struct, IComponent
         {
             // Debug.Assert(IsEntityAlive(entity));
+            if (IsEntityAlive(entity) == false) throw new Exception($"Entity is not alive - Entity: {entity}");
             if (HasComponent<T>(entity) == false) throw new Exception($"Entity does not have component {typeof(T).Name} - Entity: {entity}");
 
             ref var entityData = ref entityDataList[entity.id];

@@ -1,67 +1,330 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using XIV.Core.Collections;
+using XIV.Core.DataStructures;
+using XIV.Core.Utils;
 using XIV.Ecs;
 
 namespace TheGame
 {
-    public struct ConnectionPair
+    public struct ConnectionPair : IEquatable<ConnectionPair>
     {
-        public static ConnectionPair invalidConnectionPair = new ConnectionPair { entity1 = Entity.Invalid, entity2 = Entity.Invalid };
+        public static readonly ConnectionPair invalidConnectionPair = new ConnectionPair { entity1 = Entity.Invalid, entity2 = Entity.Invalid };
         public Entity entity1;
         public Entity entity2;
-        public Vector3 startPosition;
-        public Vector3 endPosition;
-        public Vector3[] positions;
+        public Vec3 startPosition;
+        public Vec3 endPosition;
+        public Vector3[] positions; // lineRenderer positions
         public LineRenderer lineRenderer;
+        public DynamicArray<Entity> resourceEntitiesOnConnection;
 
         public bool Contains(Entity entity) => entity1 == entity || entity2 == entity;
 
         public Entity GetOpposite(Entity entity) => entity == entity1 ? entity2 : entity == entity2 ? entity1 : Entity.Invalid;
+        public Vec3 GetOppositePosition(Entity entity) => entity == entity1 ? endPosition : entity == entity2 ? startPosition : Vec3.zero;
+        public Vec3 GetPosition(Entity entity) => entity == entity1 ? startPosition : entity == entity2 ? endPosition : Vec3.zero;
+
+        public void AddResourceTransfer(Entity resourceEntity, ref TransferableResourceComp transferableResourceComp)
+        {
+            resourceEntitiesOnConnection.Add() = resourceEntity;
+        }
+
+        public void RemoveResourceTransfer(Entity resourceEntity, ref TransferableResourceComp transferableResourceComp)
+        {
+            resourceEntitiesOnConnection.Remove(ref resourceEntity);
+        }
+
+        public static bool operator ==(ConnectionPair a, ConnectionPair b) => a.entity1 == b.entity1 && a.entity2 == b.entity2;
+
+        public static bool operator !=(ConnectionPair a, ConnectionPair b) => !(a == b);
+
+        public bool Equals(ConnectionPair other)
+        {
+            return this.entity1 == other.entity1 && this.entity2 == other.entity2;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is ConnectionPair other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = new HashCode();
+            hashCode.Add(entity1);
+            hashCode.Add(entity2);
+            hashCode.Add(startPosition);
+            hashCode.Add(endPosition);
+            hashCode.Add(positions);
+            hashCode.Add(lineRenderer);
+            hashCode.Add(resourceEntitiesOnConnection);
+            return hashCode.ToHashCode();
+        }
     }
     
     public class ConnectionDB
     {
         DynamicArray<ConnectionPair> connections = new DynamicArray<ConnectionPair>();
+        Dictionary<Entity, DynamicArray<int>> entityConnectionLookup = new Dictionary<Entity, DynamicArray<int>>();
         public int Count => connections.Count;
 
         public ref ConnectionPair this[int index] => ref connections[index];
 
-        public int GetPairs(Entity entity, ConnectionPair[] pairBuffer)
+        public void AddConnection(Entity ent1, Entity ent2, Vec3 connectionStartPosition, Vec3 connectionEndPosition, Vector3[] positions, LineRenderer lineRenderer)
         {
-            int connectionLength = connections.Count;
-            var bufferLength = pairBuffer.Length;
-            int count = 0;
-            for (int i = 0; i < connectionLength && count < bufferLength; i++)
-            {
-                ref var pair = ref connections[i];
-                if (pair.Contains(entity)) pairBuffer[count++] = pair;
-            }
+            if (GetConnectionIndex(ent1, ent2) != -1) throw new InvalidOperationException($"{ent1} and {ent2} are already connected");
+            int idx = connections.Count;
+            DynamicArray<int> list1;
+            DynamicArray<int> list2;
+            list1 = entityConnectionLookup.TryGetValue(ent1, out list1) ? list1 : new DynamicArray<int>();
+            list2 = entityConnectionLookup.TryGetValue(ent2, out list2) ? list2 : new DynamicArray<int>();
+            list1.Add() = idx;
+            list2.Add() = idx;
+            entityConnectionLookup.TryAdd(ent1, list1);
+            entityConnectionLookup.TryAdd(ent2, list2);
+            ref var connectionPair = ref connections.Add();
+            connectionPair.entity1 = ent1;
+            connectionPair.entity2 = ent2;
+            connectionPair.startPosition = connectionStartPosition;
+            connectionPair.endPosition = connectionEndPosition;
+            connectionPair.positions = positions;
+            connectionPair.lineRenderer = lineRenderer;
+            connectionPair.resourceEntitiesOnConnection = new DynamicArray<Entity>();
 
-            return count;
         }
 
         public bool IsConnected(Entity ent1, Entity ent2) => GetConnectionIndex(ent1, ent2) != -1;
 
         public int GetConnectionIndex(Entity ent1, Entity ent2)
         {
-            // TODO : ConnectionDb -> Faster connection index lookup
-            int len = connections.Count;
-            for (int i = 0; i < len; i++)
+            if (entityConnectionLookup.TryGetValue(ent1, out var list1) == false) return -1;
+            if (entityConnectionLookup.TryGetValue(ent2, out var list2) == false) return -1;
+
+            int len1 = list1.Count;
+            int len2 = list2.Count;
+            for (int i = 0; i < len1; i++)
             {
-                ref var conn = ref connections[i];
-                if (conn.Contains(ent1) && conn.Contains(ent2)) return i;
+                ref var connectionIndex1 = ref list1[i];
+                for (int j = 0; j < len2; j++)
+                {
+                    ref var connectionIndex2 = ref list2[j];
+                    if (connectionIndex1 == connectionIndex2)
+                    {
+                        return connectionIndex1;
+                    }
+                }
             }
 
             return -1;
         }
 
-        public ref ConnectionPair AddConnection(Entity ent1, Entity ent2, out bool isAdded)
+        public float GetAllNeighborResourceQuantity(Entity entity, Entity unitEntity)
         {
-            isAdded = GetConnectionIndex(ent1, ent2) == -1;
-            if (isAdded) return ref connections.Add();
-            
-            return ref ConnectionPair.invalidConnectionPair;
+            return GetNeighborResourceQuantity(entity, (opposite) => true);
+        }
+
+        public float GetHostileNeighborResourceQuantity(Entity entity, Entity unitEntity)
+        {
+            return GetNeighborResourceQuantity(entity, (opposite) => IsTargetHostile(unitEntity, opposite));
+        }
+
+        public float GetAllyNeighborResourceQuantity(Entity entity, Entity unitEntity)
+        {
+            return GetNeighborResourceQuantity(entity, (opposite) => IsTargetAlly(unitEntity, opposite));
+        }
+
+        public float GetNeighborResourceQuantity(Entity entity, Func<Entity, bool> predicate)
+        {
+            using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
+            var pairLen = GetAllConnectionPairs(entity, indexBuffer);
+            float resourceQuantity = 0f;
+            for (int i = 0; i < pairLen; i++)
+            {
+                ref var pair = ref this[indexBuffer[i]];
+                var opposite = pair.GetOpposite(entity);
+                if (predicate.Invoke(opposite) == false) continue;
+                ref var oppositeNodeComp = ref opposite.GetComponent<NodeComp>();
+                resourceQuantity += oppositeNodeComp.resourceQuantity;
+            }
+
+            return resourceQuantity;
+        }
+
+        public int GetAllNeighbors(Entity entity, Entity[] entityBuffer)
+        {
+            return GetNeighbors(entity, entityBuffer, (_) => true);
+        }
+
+        public int GetHostileNeighbors(Entity entity, Entity unitEntity, Entity[] entityBuffer)
+        {
+            return GetNeighbors(entity, entityBuffer, (opposite) => IsTargetHostile(unitEntity, opposite));
+        }
+
+        public int GetAllyNeighbors(Entity entity, Entity unitEntity, Entity[] entityBuffer)
+        {
+            return GetNeighbors(entity, entityBuffer, (opposite) => IsTargetAlly(unitEntity, opposite));
+        }
+
+        public int GetNeighbors(Entity entity, Entity[] entityBuffer, Func<Entity, bool> predicate)
+        {
+            using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
+            int pairLen = GetAllConnectionPairs(entity, indexBuffer);
+            int entityBufferLen = entityBuffer.Length;
+            int count = 0;
+            for (int i = 0; i < pairLen && count < entityBufferLen; i++)
+            {
+                ref var pair = ref this[indexBuffer[i]];
+                var opposite = pair.GetOpposite(entity);
+                if (predicate.Invoke(opposite) == false) continue;
+                entityBuffer[count++] = opposite;
+            }
+
+            return count;
+        }
+
+        public int GetAllConnectionPairs(Entity entity, int[] indexBuffer)
+        {
+            return GetPairs(entity, indexBuffer, (_) => true);
+        }
+
+        public int GetAlliedConnectionPairs(Entity entity, Entity unitEntity, int[] indexBuffer)
+        {
+            return GetPairs(entity, indexBuffer, (opposite) => IsTargetAlly(unitEntity, opposite));
+        }
+
+        public int GetHostileConnectionPairs(Entity entity, Entity unitEntity, int[] indexBuffer)
+        {
+            return GetPairs(entity, indexBuffer, (opposite) => IsTargetHostile(unitEntity, opposite));
+        }
+
+        public int GetHostileAndNeutralPairs(Entity entity, Entity unitEntity, int[] indexBuffer)
+        {
+            return GetPairs(entity, indexBuffer, (opposite) => IsNeutralNode(opposite) || IsTargetHostile(unitEntity, opposite));
+        }
+
+        public int GetNeutralConnectionPairs(Entity entity, int[] indexBuffer)
+        {
+            return GetPairs(entity, indexBuffer, IsNeutralNode);
+        }
+
+        public int GetPairs(Entity entity, int[] indexBuffer, Func<Entity, bool> predicate)
+        {
+            int connectionLength = connections.Count;
+            var bufferLength = indexBuffer.Length;
+            int count = 0;
+            for (int i = 0; i < connectionLength && count < bufferLength; i++)
+            {
+                ref var pair = ref connections[i];
+                if (pair.Contains(entity))
+                {
+                    var opposite = pair.GetOpposite(entity);
+                    if (predicate.Invoke(opposite)) indexBuffer[count++] = i;
+                }
+            }
+
+            return count;
+        }
+
+        public bool IsTargetHostile(Entity attackerUnitEntity, Entity targetNode)
+        {
+            if (IsNeutralNode(targetNode)) return false;
+            ref var oppositeOccupiedNodeComp = ref targetNode.GetComponent<OccupiedNodeComp>();
+            return attackerUnitEntity != oppositeOccupiedNodeComp.unitEntity;
+        }
+
+        public bool IsTargetAlly(Entity attackerUnitEntity, Entity targetNode)
+        {
+            if (IsNeutralNode(targetNode)) return false;
+            ref var oppositeOccupiedNodeComp = ref targetNode.GetComponent<OccupiedNodeComp>();
+            return attackerUnitEntity == oppositeOccupiedNodeComp.unitEntity;
+        }
+
+        public bool IsNeutralNode(Entity target)
+        {
+            return target.HasComponent<OccupiedNodeComp>() == false;
+        }
+
+        public float GetAllyResourceTransfer(Entity entity, Entity attackerUnitEntity)
+        {
+            using var indexBuffer = ArrayUtils.GetBuffer<int>();
+            float allyResourceTransfer = 0f;
+            int connectionCount = GetAllConnectionPairs(entity, indexBuffer);
+            for (int i = 0; i < connectionCount; i++)
+            {
+                ref var pair = ref connections[indexBuffer[i]];
+                int resourceEntityCount = pair.resourceEntitiesOnConnection.Count;
+                for (int j = 0; j < resourceEntityCount; j++)
+                {
+                    var resourceEntity = pair.resourceEntitiesOnConnection[j];
+                    ref var transferableResourceComp = ref resourceEntity.GetComponent<TransferableResourceComp>();
+                    if (transferableResourceComp.unitEntity == attackerUnitEntity)
+                    {
+                        allyResourceTransfer += transferableResourceComp.quantity;
+                    }
+                }
+            }
+
+            return allyResourceTransfer;
+        }
+
+        public float GetHostileResourceTransfer(Entity entity, Entity attackerUnitEntity)
+        {
+            using var indexBuffer = ArrayUtils.GetBuffer<int>();
+            float hostileResourceTransfer = 0f;
+            int connectionCount = GetAllConnectionPairs(entity, indexBuffer);
+            for (int i = 0; i < connectionCount; i++)
+            {
+                ref var pair = ref connections[indexBuffer[i]];
+                int resourceEntityCount = pair.resourceEntitiesOnConnection.Count;
+                for (int j = 0; j < resourceEntityCount; j++)
+                {
+                    var resourceEntity = pair.resourceEntitiesOnConnection[j];
+                    ref var transferableResourceComp = ref resourceEntity.GetComponent<TransferableResourceComp>();
+                    if (transferableResourceComp.unitEntity != attackerUnitEntity)
+                    {
+                        hostileResourceTransfer += transferableResourceComp.quantity;
+                    }
+                }
+            }
+
+            return hostileResourceTransfer;
+        }
+
+        public int GetHostileTransferableResources(Entity entity, Entity attackerUnitEntity, Entity[] entityBuffer)
+        {
+            using var indexBuffer = ArrayUtils.GetBuffer<int>();
+            int connectionCount = GetAllConnectionPairs(entity, indexBuffer);
+            int count = 0;
+            var entityBufferLength = entityBuffer.Length;
+            for (int i = 0; i < connectionCount && count < entityBufferLength; i++)
+            {
+                ref var pair = ref connections[indexBuffer[i]];
+                int resourceEntityCount = pair.resourceEntitiesOnConnection.Count;
+                for (int j = 0; j < resourceEntityCount; j++)
+                {
+                    var resourceEntity = pair.resourceEntitiesOnConnection[j];
+                    ref var transferableResourceComp = ref resourceEntity.GetComponent<TransferableResourceComp>();
+                    if (transferableResourceComp.unitEntity != attackerUnitEntity)
+                    {
+                        entityBuffer[count++] = resourceEntity;
+                    }
+                }
+            }
+
+            return count;
+        }
+
+        public bool HasHostileNeighbor(Entity entity, Entity unitEntity)
+        {
+            using var indexBuffer = ArrayUtils.GetBuffer<int>();
+            return GetHostileConnectionPairs(entity, unitEntity, indexBuffer) != 0;
+        }
+
+        public bool HasHostileOrNeutralNeighbor(Entity entity, Entity unitEntity)
+        {
+            using var indexBuffer = ArrayUtils.GetBuffer<int>();
+            return GetHostileAndNeutralPairs(entity, unitEntity, indexBuffer) != 0;
         }
     }
 }

@@ -9,25 +9,43 @@ namespace TheGame
     public class NodeOccupySystem : XIV.Ecs.System
     {
         readonly Filter<TransformComp, NodeComp, NodeOccupyComp> nodeOccupyFilter = null;
-        readonly AssetReferences assetReferences = null;
+        readonly Filter<OccupiedNodeComp> occupiedNodeCompFilter = null;
         readonly ConnectionDB connectionDB = null;
 
         public override void Update()
         {
+            bool occupiedAny = false;
             nodeOccupyFilter.ForEach((Entity nodeEntity, ref TransformComp transformComp, ref NodeComp nodeComp, ref NodeOccupyComp nodeOccupyComp) =>
             {
+                occupiedAny = true;
                 var unitEntity = nodeOccupyComp.unitEntity;
-                ref var unitComp = ref unitEntity.GetComponent<UnitComp>();
-                unitComp.occupiedNodeEntities.Add() = nodeEntity;
-                nodeComp.unitType = unitComp.unitType;
+                if (nodeEntity.HasComponent<OccupiedNodeComp>())
+                {
+                    nodeEntity.GetComponent<OccupiedNodeComp>().unitEntity.GetComponent<UnitComp>().occupiedNodeEntities.Remove(ref nodeEntity);
+                }
+
+                ref var attackerUnitComp = ref unitEntity.GetComponent<UnitComp>();
+
+                if (attackerUnitComp.unitType == UnitIdLookup.UnitType.Green)
+                {
+                    nodeEntity.RemoveComponent<NodeDecisionComp>();
+                }
+                else
+                {
+                    var nodeDecisionComp = new NodeDecisionComp();
+                    nodeDecisionComp.decisionDelay = new Timer(1f - attackerUnitComp.smartness01);
+                    nodeEntity.AddComponent(nodeDecisionComp);
+                }
+                
+                attackerUnitComp.occupiedNodeEntities.Add() = nodeEntity;
                 nodeEntity.AddComponent(new OccupiedNodeComp
                 {
                     unitEntity = unitEntity,
-                    resourceGenerationSpeed = assetReferences.generationConfigs[0].generationSpeed, // the default config on unitComp
                 });
+                
                 var renderer = transformComp.transform.GetComponent<SpriteRenderer>();
                 var ca = renderer.color;
-                var cb = UnitIdLookup.GetColor(nodeComp.unitType);
+                var cb = UnitIdLookup.GetColor(attackerUnitComp.unitType);
                 renderer.CancelTween();
                 renderer.XIVTween()
                     .ScaleBounceOnce()
@@ -35,34 +53,46 @@ namespace TheGame
                     .SpriteRendererColor(ca, cb, 0.5f, EasingFunction.SmoothStop3)
                     .Start();
                 
-                // Handle line renderer visuals
-                using var dispose = ArrayUtils.GetBuffer(out ConnectionPair[] buffer, 16);
-                int len = connectionDB.GetPairs(nodeEntity, buffer);
+                // Handle line renderer visuals and add reevaluate decision tag
+                // nodeEntity.AddTag<ReevaluateDecisionTag>();
+                
+                using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
+                int len = connectionDB.GetAllConnectionPairs(nodeEntity, indexBuffer);
                 for (int i = 0; i < len; i++)
                 {
-                    ref var connectionPair = ref buffer[i];
-                    var e2 = connectionPair.GetOpposite(nodeEntity);
-                    ref var e2NodeComp = ref e2.GetComponent<NodeComp>();
-                    if (e2NodeComp.unitType == nodeComp.unitType)
+                    ref var connectionPair = ref connectionDB[indexBuffer[i]];
+                    var neighborEntity = connectionPair.GetOpposite(nodeEntity);
+                    UnitIdLookup.UnitType neighborUnitType = UnitIdLookup.UnitType.Black;
+                    if (neighborEntity.HasComponent<OccupiedNodeComp>())
                     {
-                        connectionPair.lineRenderer.XIVSetColor(UnitIdLookup.GetColor(nodeComp.unitType));
+                        // neighborEntity.AddTag<ReevaluateDecisionTag>();
+                        neighborUnitType = neighborEntity.GetComponent<OccupiedNodeComp>().unitEntity.GetComponent<UnitComp>().unitType;
+                    }
+                    if (neighborUnitType == attackerUnitComp.unitType)
+                    {
+                        connectionPair.lineRenderer.XIVSetColor(UnitIdLookup.GetColor(attackerUnitComp.unitType));
                         continue;
                     }
 
                     if (nodeEntity == connectionPair.entity1)
                     {
-                        connectionPair.lineRenderer.startColor = UnitIdLookup.GetColor(nodeComp.unitType);
-                        connectionPair.lineRenderer.endColor = UnitIdLookup.GetColor(e2NodeComp.unitType);
+                        connectionPair.lineRenderer.startColor = UnitIdLookup.GetColor(attackerUnitComp.unitType);
+                        connectionPair.lineRenderer.endColor = UnitIdLookup.GetColor(neighborUnitType);
                     }
                     else
                     {
-                        connectionPair.lineRenderer.startColor = UnitIdLookup.GetColor(e2NodeComp.unitType);
-                        connectionPair.lineRenderer.endColor = UnitIdLookup.GetColor(nodeComp.unitType);
+                        connectionPair.lineRenderer.startColor = UnitIdLookup.GetColor(neighborUnitType);
+                        connectionPair.lineRenderer.endColor = UnitIdLookup.GetColor(attackerUnitComp.unitType);
                     }
                 }
             });
             
+            nodeOccupyFilter.RemoveComponentAll<SendResourceContinuouslyComp>();
             nodeOccupyFilter.RemoveComponentAll<NodeOccupyComp>();
+            if (occupiedAny)
+            {
+                // occupiedNodeCompFilter.AddTagAll<ReevaluateDecisionTag>();
+            }
         }
     }
 }

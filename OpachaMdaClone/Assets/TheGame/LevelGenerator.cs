@@ -38,9 +38,9 @@ namespace TheGame
             
             // TODO : NodeLevelGeneratorSystem -> add map size variable
             int bufferLen = generationSettings.GetNodeQuantity();
-            using var entityBufferDispose = ArrayUtils.GetBuffer(out Entity[] entityBuffer, bufferLen);
-            using var positionBufferDispose = ArrayUtils.GetBuffer(out Vector2[] positionBuffer, bufferLen);
-            var pivot = new Vector2(-5f, -5f);
+            using var entityBuffer = ArrayUtils.GetBuffer<Entity>(bufferLen);
+            using var positionBuffer = ArrayUtils.GetBuffer<Vec2>(bufferLen);
+            var pivot = new Vec2(-5f, -5f);
             FillPositions(positionBuffer, bufferLen);
             MovePositionsToPivot(positionBuffer, bufferLen, pivot);
             CreateNodes(entityBuffer, bufferLen, positionBuffer, bufferLen);
@@ -49,7 +49,7 @@ namespace TheGame
             XIVRandom.InitState(prevSeed);
         }
 
-        void FillPositions(Vector2[] positionBuffer, int bufferLen)
+        void FillPositions(Vec2[] positionBuffer, int bufferLen)
         {
             PoissonDiscSampler poissonDiscSampler = new PoissonDiscSampler();
             tryCount = 1;
@@ -63,13 +63,13 @@ namespace TheGame
 
             for (int i = 0; i < bufferLen; i++)
             {
-                positionBuffer[i] = points[i].ToVector2();
+                positionBuffer[i] = points[i];
             }
         }
 
-        void MovePositionsToPivot(Vector2[] positionBuffer, int bufferLen, Vector2 pivot)
+        void MovePositionsToPivot(Vec2[] positionBuffer, int bufferLen, Vec2 pivot)
         {
-            GetMinAndMax(positionBuffer, bufferLen, out Vector2 min, out Vector2 max);
+            GetMinAndMax(positionBuffer, bufferLen, out Vec2 min, out Vec2 max);
 
             float px = (min.x + max.x) / 2;
             float py = (min.y + max.y) / 2;
@@ -83,7 +83,7 @@ namespace TheGame
             }
         }
 
-        void CreateNodes(Entity[] entityBuffer, int entityBufferLen, Vector2[] positionBuffer, int positionBufferLen)
+        void CreateNodes(Entity[] entityBuffer, int entityBufferLen, Vec2[] positionBuffer, int positionBufferLen)
         {
             for (int i = 0; i < entityBufferLen && i < positionBufferLen; i++)
             {
@@ -92,7 +92,7 @@ namespace TheGame
             }
         }        
         
-        void LinkNodes(Entity[] entityBuffer, int entityBufferLen, Vector2[] positionBuffer, int positionBufferLen)
+        void LinkNodes(Entity[] entityBuffer, int entityBufferLen, Vec2[] positionBuffer, int positionBufferLen)
         {
             var conList1 = XIVPoolSystem.GetItem<DynamicArray<int>>();
             var conList2 = XIVPoolSystem.GetItem<DynamicArray<int>>();
@@ -121,7 +121,7 @@ namespace TheGame
                     if (currentNodeEntity == nextNodeEntity) continue;
                     var nextNodeEntityPos = positionBuffer[j];
 
-                    var distance = Vector3.Distance(currentNodeEntityPos, nextNodeEntityPos);
+                    var distance = Vec3.Distance(currentNodeEntityPos, nextNodeEntityPos);
                     if (distance > generationSettings.linkDistance) continue;
                     AddConnection(i, j, ref connectionCount);
                 }
@@ -134,8 +134,8 @@ namespace TheGame
                 var currEnt2Idx = conList2[i];
                 var currentEntity1 = entityBuffer[currEnt1Idx];
                 var currentEntity2 = entityBuffer[currEnt2Idx];
-                var p0 = positionBuffer[currEnt1Idx].ToVec2();
-                var p1 = positionBuffer[currEnt2Idx].ToVec2();
+                var p0 = positionBuffer[currEnt1Idx];
+                var p1 = positionBuffer[currEnt2Idx];
                 for (var j = connectionCount - 1; j >= 0; j--)
                 {
                     var otherEnt1Idx = conList1[j];
@@ -145,8 +145,8 @@ namespace TheGame
                     
                     if ((otherEntity1 == currentEntity1 || otherEntity2 == currentEntity1) || (otherEntity1 == currentEntity2 || otherEntity2 == currentEntity2)) continue;
                     
-                    var p3 = positionBuffer[otherEnt1Idx].ToVec2();
-                    var p4 = positionBuffer[otherEnt2Idx].ToVec2();
+                    var p3 = positionBuffer[otherEnt1Idx];
+                    var p4 = positionBuffer[otherEnt2Idx];
                     if (LineMath.IsIntersect(p0, p1, p3, p4))
                     {
                         RemoveConnection(j, ref connectionCount);
@@ -178,7 +178,7 @@ namespace TheGame
                     var dirAcNormalized = dirAc.normalized;
                     var distAC = dirAc.sqrMagnitude;
 
-                    float dot = Vector2.Dot(dirAbNormalized, dirAcNormalized);
+                    float dot = Vec2.Dot(dirAbNormalized, dirAcNormalized);
                     if (dot > generationSettings.sameDirectionCutThreshold)
                     {
                         // remove the longer link
@@ -190,13 +190,13 @@ namespace TheGame
             }
             
             const int LINERENDERER_POSITION_COUNT = 32; // link detail
+            using var posBuffer = ArrayUtils.GetBuffer<Vector3>(LINERENDERER_POSITION_COUNT);
             for (int connectionIdx = 0; connectionIdx < connectionCount; connectionIdx++)
             {
                 var ent1 = entityBuffer[conList1[connectionIdx]];
                 var ent2 = entityBuffer[conList2[connectionIdx]];
                 
-                ref var connectionPair = ref connectionDB.AddConnection(ent1, ent2, out var isAdded);
-                if (isAdded == false) continue;
+                if (connectionDB.IsConnected(ent1, ent2)) continue;
                 
                 var p0 = positionBuffer[conList1[connectionIdx]];
                 var p1 = positionBuffer[conList2[connectionIdx]];
@@ -206,17 +206,16 @@ namespace TheGame
 #endif
                 lineRenderer.transform.localScale = ent1.GetComponent<TransformComp>().transform.localScale;
                 lineRenderer.positionCount = LINERENDERER_POSITION_COUNT;
-                lineRenderer.XIVStraightLine(p0, p1);
+                lineRenderer.XIVStraightLine(p0.ToVector2(), p1.ToVector2());
                 lineRenderer.XIVSetWidth(0.1f);
-                var positions = new Vector3[LINERENDERER_POSITION_COUNT];
-                lineRenderer.GetPositions(positions);
+                int len = lineRenderer.GetPositions(posBuffer);
+                var positions = new Vector3[len];
+                for (int i = 0; i < len; i++)
+                {
+                    positions[i] = posBuffer[i];
+                }
 
-                connectionPair.entity1 = ent1;
-                connectionPair.entity2 = ent2;
-                connectionPair.startPosition = p0;
-                connectionPair.endPosition = p1;
-                connectionPair.positions = positions;
-                connectionPair.lineRenderer = lineRenderer;
+                connectionDB.AddConnection(ent1, ent2, p0, p1, positions, lineRenderer);
             }
             
             XIVPoolSystem.ReleaseItem(conList1);
@@ -224,10 +223,10 @@ namespace TheGame
         }
 
 
-        static void GetMinAndMax(Vector2[] positionBuffer, int bufferLen, out Vector2 min, out Vector2 max)
+        static void GetMinAndMax(Vec2[] positionBuffer, int bufferLen, out Vec2 min, out Vec2 max)
         {
-            min = Vector2.zero;
-            max = Vector2.zero;
+            min = Vec2.zero;
+            max = Vec2.zero;
             for (int i = 0; i < bufferLen; i++)
             {
                 ref var p = ref positionBuffer[i];

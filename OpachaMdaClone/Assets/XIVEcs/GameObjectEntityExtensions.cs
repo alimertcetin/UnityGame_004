@@ -12,6 +12,8 @@ namespace XIV.Ecs
         /// Destroys entity without destroying GameObject
         public static void Unbind(this Entity entity)
         {
+            // TODO: GameObjectEntityExtensions.Unbind -> Do not destroy the entity
+            // unbind should just undo the binding to GameObject
             ref var transformComp = ref entity.GetComponent<TransformComp>();
             // Object.Destroy(transformComp.gameObjectEntity);
             transformComp.gameObjectEntity.entity = Entity.Invalid;
@@ -24,9 +26,10 @@ namespace XIV.Ecs
         {
             ref var transformComp = ref entity.GetComponent<TransformComp>();
             // Object.Destroy(transformComp.gameObjectEntity);
-            transformComp.gameObjectEntity.entity = Entity.Invalid;
-            
-            transformComp.gameObjectEntity = gameObject.AddComponent<GameObjectEntity>();
+            // transformComp.gameObjectEntity.entity = Entity.Invalid;
+
+            var goEntity = gameObject.GetComponent<GameObjectEntity>();
+            transformComp.gameObjectEntity = goEntity ? goEntity : gameObject.AddComponent<GameObjectEntity>();
             transformComp.gameObjectEntity.entity = entity;
             transformComp.transform = gameObject.transform;
         }

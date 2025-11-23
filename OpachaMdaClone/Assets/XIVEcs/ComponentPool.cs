@@ -65,10 +65,8 @@ namespace XIV.Ecs
             if (destPool is ComponentPool<T> dest)
             {
                 T value = components[srcIdx];
-                if (dest.customAssign != null)
-                    dest.customAssign(ref dest.components[destIdx], value);
-                else
-                    dest.components[destIdx] = value;
+                if (dest.customAssign != null) dest.customAssign(ref dest.components[destIdx], value);
+                else dest.components[destIdx] = value;
             }
             else
             {

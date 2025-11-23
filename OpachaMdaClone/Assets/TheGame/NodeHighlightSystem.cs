@@ -14,14 +14,14 @@ namespace TheGame
         readonly Filter<TransformComp, NodeComp> disableHighlightFilter = new Filter<TransformComp, NodeComp>().Tag<DisableHighlightTag>();
         readonly Filter<HighlightComp> highlightFilter = new Filter<HighlightComp>();
         readonly AssetReferences assetReferences;
-        Entity nodeHighlightEntity;
         Transform highlightEntityTransform;
 
         public override void Awake()
         {
-            nodeHighlightEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeHighlightEntity);
+            var nodeHighlightEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeHighlightEntity);
             highlightEntityTransform = nodeHighlightEntity.GetComponent<TransformComp>().transform;
             highlightEntityTransform.gameObject.SetActive(false);
+            nodeHighlightEntity.Unbind();
         }
 
         public override void Update()
@@ -30,11 +30,13 @@ namespace TheGame
             {
                 var pos = transformComp.transform.position;
                 var rot = transformComp.transform.rotation;
+                var scale = highlightEntityTransform.gameObject.activeSelf ? Vector3.one * 1.2f : Vector3.one;
                 highlightEntityTransform.position = pos;
                 highlightEntityTransform.rotation = rot;
+                highlightEntityTransform.localScale = scale;
+                var nodeHighlightEntity = GameObjectEntity.BindGameObjectToEntity(world, highlightEntityTransform.gameObject);
                 highlightEntityTransform.gameObject.SetActive(true);
                 
-                var scale = highlightEntityTransform.transform.localScale;
                 ref var highlightComp = ref nodeHighlightEntity.GetComponent<HighlightComp>();
                 highlightComp.owner = nodeEntity;
                 nodeHighlightEntity.CancelTween();

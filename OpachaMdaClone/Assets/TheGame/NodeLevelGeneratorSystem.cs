@@ -14,16 +14,13 @@ namespace TheGame
 
         public override void Start()
         {
-            int seed = 790;
-            var tightness = XIVMathf.Max(1 - levelSettings.tightness, 0.001f);
-            var sameDirectionCutThreshold = XIVMathf.Max(1f - levelSettings.sameDirectionCutThreshold, 0.001f);
-            new LevelGenerator(new LevelGenerationSettings(levelSettings.mapSize, seed, tightness, sameDirectionCutThreshold, 0.5f), world, assetReferences,connectionDB).GenerateLevel();
-            SaveSeed(seed);
+            new LevelGenerator(levelSettings.levelGenerationSettings, world, assetReferences,connectionDB).GenerateLevel();
+            SaveSeed(levelSettings.levelGenerationSettings.seed);
         }
 
         void SaveSeed(int seedInt)
         {
-            var seedStr = DateTime.Now.ToShortTimeString() + " - Seed:" + seedInt.ToString() + Environment.NewLine;
+            var seedStr = DateTime.Now + " - Seed:" + seedInt.ToString() + Environment.NewLine;
             var path = Path.Combine("Assets", "GenerationSeeds");
             Directory.CreateDirectory(path);
             File.AppendAllText(Path.Combine(path, "Seed.txt"), seedStr);

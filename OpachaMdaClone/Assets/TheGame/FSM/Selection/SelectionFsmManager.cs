@@ -56,7 +56,7 @@ namespace TheGame
         {
             // first requires OccupiedNodeComp but second doesn't need it.
             if (TryGetEntityFromInput(ref input, out entity) == false) return false;
-            return entity.HasComponent<OccupiedNodeComp>() && entity.GetComponent<NodeComp>().unitType == UnitIdLookup.UnitType.Green;
+            return entity.HasComponent<OccupiedNodeComp>() && entity.GetComponent<OccupiedNodeComp>().unitEntity.GetComponent<UnitComp>().unitType == UnitIdLookup.UnitType.Green;
         }
 
         public bool TryGetSecondFromInput(ref InputData input, out Entity entity)
@@ -64,17 +64,12 @@ namespace TheGame
             // first requires OccupiedNodeComp but second doesn't need it.
             // Second requires a connection to first
             if (TryGetEntityFromInput(ref input, out entity) == false) return false;
-            return IsConnected(first, entity);
-        }
-        
-        bool IsConnected(Entity ent1, Entity ent2)
-        {
-            return connectionDB.IsConnected(ent1, ent2);
+            return connectionDB.IsConnected(first, entity);
         }
 
         public bool TryGetEntityFromInput(ref InputData input, out Entity entity)
         {
-            using var disposable = ArrayUtils.GetBuffer(out RaycastHit[] hits, 4);
+            using var hits = ArrayUtils.GetBuffer<RaycastHit>(1);
             int hitCount = Physics.RaycastNonAlloc(input.InputRay, hits, 100f, 1 << PhysicsConstants.NodeLayer);
             if (hitCount > 0)
             {
@@ -93,11 +88,11 @@ namespace TheGame
             var dotProduct = 0f;
             var firstNodeEntityTransformPosition = first.GetComponent<TransformComp>().transform.position;
             Entity closestEntity = Entity.Invalid;
-            using var dispose = ArrayUtils.GetBuffer(out ConnectionPair[] pairBuffer, connectionDB.Count);
-            int len = connectionDB.GetPairs(first, pairBuffer);
+            using var indexBuffer = ArrayUtils.GetBuffer<int>(connectionDB.Count);
+            int len = connectionDB.GetAllConnectionPairs(first, indexBuffer);
             for (var i = 0; i < len; i++)
             {
-                ref var pair = ref pairBuffer[i];
+                ref var pair = ref connectionDB[indexBuffer[i]];
                 var connectedEntity = pair.GetOpposite(first);
                 var connectedEntityPos = connectedEntity.GetComponent<TransformComp>().transform.position;
                 var dirToConnected = (Vector2)(connectedEntityPos - firstNodeEntityTransformPosition);
@@ -122,7 +117,7 @@ namespace TheGame
 
         public void TransferOnce(bool allResource = true)
         {
-            if (first.IsAlive() == false || second.IsAlive() == false || IsConnected(first, second) == false) return;
+            if (first.IsAlive() == false || second.IsAlive() == false || connectionDB.IsConnected(first, second) == false) return;
             var total = (int)first.GetComponent<NodeComp>().resourceQuantity;
             var send = allResource ? total : total * 0.5f;
             
@@ -135,7 +130,7 @@ namespace TheGame
 
         public void StartContinuousTransfer()
         {
-            if (first.IsAlive() == false || second.IsAlive() == false || IsConnected(first, second) == false) return;
+            if (first.IsAlive() == false || second.IsAlive() == false || connectionDB.IsConnected(first, second) == false) return;
             
             first.AddComponent(new SendResourceContinuouslyComp
             {

@@ -8,8 +8,7 @@ namespace XIVEcsUnityIntegration.Extensions
         public static Entity XIVGetEntity(this Component component)
         {
             if (component == false) return Entity.Invalid;
-            if (component.TryGetComponent(out GameObjectEntity goEntity)) return goEntity.entity;
-            return Entity.Invalid;
+            return component.TryGetComponent(out GameObjectEntity goEntity) ? goEntity.entity : Entity.Invalid;
         }
     }
 }

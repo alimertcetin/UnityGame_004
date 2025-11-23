@@ -9,6 +9,7 @@ namespace XIV.Ecs
     [AttributeUsage((AttributeTargets.Method))]
     public class OnResetAttribute : Attribute {}
     
+    [RequireComponent(typeof(GameObjectEntity))]
     public abstract class SerializedComponent : MonoBehaviour
     {
         public bool add = true;

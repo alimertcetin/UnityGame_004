@@ -5,6 +5,7 @@ using XIV.Ecs;
 
 namespace TheGame
 {
+    [System.Serializable]
     public struct LevelGenerationSettings
     {
         public const float TIGHTNESS = 0f;

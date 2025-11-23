@@ -1,5 +1,7 @@
 ﻿using System;
+using TheGame;
 using UnityEngine;
+using XIV.Core.XIVMath;
 using XIV.UnityEngineIntegration;
 
 namespace XIV.Ecs
@@ -16,22 +18,31 @@ namespace XIV.Ecs
     [Serializable]
     public class LevelSettings
     {
+        public LevelGenerationSettings levelGenerationSettings = new LevelGenerationSettings(MapSize.Giant, XIVRandom.seed, 0, 0.8f, 0.5f);
         [Range(0f, 10f), OnValueChanged(nameof(ChangeTimeScale), true)]
         public float timeScale = 1f;
-        public MapSize mapSize = MapSize.Giant;
-        [Range(0f, 1f), Tooltip("Higher values generates more strict nodes")]
-        public float tightness = 0f;
-        [Range(0f, 1f), Tooltip("Cuts the generated links in similar directions. Higher the value lesser the link")]
-        public float sameDirectionCutThreshold = 0.8f;
+        [Range(1, UnitIdLookup.MAX_UNIT_ID_LENGTH - 2)]
+        public int hostileUnits = 1;
 
         void ChangeTimeScale()
         {
             XTime.timeScale = timeScale;
+        }
+
+        [Button]
+        void RandomSeed()
+        {
+            levelGenerationSettings.seed = (int)(XIVRandom.value * 100000);
         }
     }
     
     public class LevelSettingsMono : MonoBehaviour
     {
         public LevelSettings levelSettings;
+
+        void Start()
+        {
+            XTime.timeScale = levelSettings.timeScale;
+        }
     }
 }

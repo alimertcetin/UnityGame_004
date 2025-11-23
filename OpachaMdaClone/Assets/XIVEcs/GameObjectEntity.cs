@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+using XIVUnityEngineIntegration.Extensions;
 
 namespace XIV.Ecs
 {
@@ -12,22 +13,30 @@ namespace XIV.Ecs
 
         static List<SerializedComponent> serializedComponentBuffer = new();
         
-        // first component is transform component
-        public static void SetupEntity(World world, Entity e, GameObjectEntity goEntity)
+        public static void SetupEntity(World world, Entity entity, GameObjectEntity goEntity)
         {
-            if (serializedComponentBuffer == null)
-            {
-                serializedComponentBuffer = new List<SerializedComponent>();
-            }
+            serializedComponentBuffer ??= new List<SerializedComponent>();
             serializedComponentBuffer.Clear();
-            // 8 kb gc allocation, get components and get transform
-            goEntity.entity = e;
-
+            goEntity.entity = entity;
             goEntity.GetComponents<SerializedComponent>(serializedComponentBuffer);
-            goEntity.entity.AddComponent(new TransformComp()
+            
+            var goEntityTransform = goEntity.transform;
+            entity.AddComponent(new TransformComp()
             {
-                gameObjectEntity = goEntity,
-                transform = goEntity.transform,
+                transform = goEntityTransform,
+                gameObjectEntity = goEntity
+            });
+            entity.AddComponent(new PositionComp
+            {
+                position = goEntityTransform.localPosition.ToVec3(),
+            });
+            entity.AddComponent(new ScaleComp
+            {
+                scale = goEntityTransform.localScale.ToVec3(),
+            });
+            entity.AddComponent(new RotationComp
+            {
+                eulerRotation = goEntityTransform.eulerAngles.ToVec3(),
             });
 
 #if UNITY_EDITOR
@@ -50,50 +59,44 @@ namespace XIV.Ecs
             // }
         }
 
-        public static Entity CreateEntity(World world)
+        public static Entity CreateEntity(World world, Entity entity, GameObject entityPrefab, Vector3 pos, Quaternion rot)
         {
-            var entity = world.NewEntity();
-            GameObject go = new GameObject();
-            GameObjectEntity goe = go.AddComponent<GameObjectEntity>();
-            goe.entity = entity;
-            entity.AddComponent(new TransformComp()
-            {
-                transform = go.transform,
-                gameObjectEntity = goe
-            });
-            return entity;
+            GameObject go = GameObject.Instantiate(entityPrefab, pos, rot);
+            return BindGameObjectToEntity(world, entity, go);
         }
-     
-        
+
+        public static Entity CreateEntity(World world, GameObject entityPrefab, Vector3 pos, Quaternion rot)
+        {
+            return CreateEntity(world, world.NewEntity(), entityPrefab, pos, rot);
+        }
+
+        public static Entity CreateEntity(World world, Entity entity, GameObject entityPrefab)
+        {
+            return CreateEntity(world, entity, entityPrefab, Vector3.zero, Quaternion.identity);
+        }
+
         public static Entity CreateEntity(World world, GameObject entityPrefab)
         {
-            var entity = world.NewEntity();
-            GameObject go = Instantiate(entityPrefab);
-            SetupEntity(world, entity, go.GetComponent<GameObjectEntity>());
+            return CreateEntity(world, world.NewEntity(), entityPrefab);
+        }
+
+        public static Entity CreateEntity(World world)
+        {
+            return BindGameObjectToEntity(world, world.NewEntity(), new GameObject());
+        }
+
+        public static Entity BindGameObjectToEntity(World world, Entity entity, GameObject gameObject)
+        {
+            var goEntity = gameObject.GetOrAddComponent<GameObjectEntity>();
+            SetupEntity(world, entity, goEntity);
             return entity;
         }
 
-        public static void CreateEntity(World world, Entity entity, GameObject entityPrefab)
+        public static Entity BindGameObjectToEntity(World world, GameObject gameObject)
         {
-            GameObject go = Instantiate(entityPrefab);
-            SetupEntity(world, entity, go.GetComponent<GameObjectEntity>());
-        }
-        
-        public static Entity CreateEntity(World world, GameObject entityPrefab,Vector3 pos,Quaternion rot)
-        {
-            var entity = world.NewEntity();
-            GameObject go = GameObject.Instantiate(entityPrefab,pos,rot);
-            SetupEntity(world, entity, go.GetComponent<GameObjectEntity>());
-            return entity;
+            return BindGameObjectToEntity(world, world.NewEntity(), gameObject);
         }
 
-        public static Entity CreateEntity(World world,Entity entity, GameObject entityPrefab,Vector3 pos,Quaternion rot)
-        {
-            GameObject go = GameObject.Instantiate(entityPrefab,pos,rot);
-            SetupEntity(world, entity, go.GetComponent<GameObjectEntity>());
-            return entity;
-        }
-        
         public static Entity[] CreateEntitiesRecursive(World world, GameObject entityPrefab)
         {
             GameObjectEntity[] gameObjectEntitiesOnPrefab = entityPrefab.GetComponentsInChildren<GameObjectEntity>();
@@ -138,11 +141,11 @@ namespace XIV.Ecs
         {
             return CreateEntitiesRecursive(world, entityPrefab)[0];
         }
-        
+
         /// <returns>First entity</returns>
         public static Entity CreateEntityRecursive(World world, GameObject entityPrefab, Vector3 pos, Quaternion rot)
         {
-            Entity entity = CreateEntitiesRecursiveWithPos(world, entityPrefab,pos,rot)[0];
+            Entity entity = CreateEntitiesRecursiveWithPos(world, entityPrefab, pos, rot)[0];
             return entity;
         }
 
@@ -175,27 +178,6 @@ namespace XIV.Ecs
             }
 
             return entities;
-        }
-
-        public static Entity BindGameObjectToEntity(World world, GameObject gameObject)
-        {
-            var entity = world.NewEntity();
-            var gameObjectEntity = gameObject.AddComponent<GameObjectEntity>();
-            gameObjectEntity.entity = entity;
-            entity.AddComponent(new TransformComp()
-            {
-                transform = gameObject.transform,
-                gameObjectEntity = gameObjectEntity
-            });
-            return entity;
-        }
-
-        public static Entity BindGameObjectToEntityWithDependencies(World world, GameObjectEntity goEnt)
-        {
-            var entity = world.NewEntity();
-            goEnt.entity = entity;
-            SetupEntity(world, goEnt.entity, goEnt);
-            return entity;
         }
     
     }

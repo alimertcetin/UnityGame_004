@@ -108,9 +108,12 @@ namespace TheGame
             return (T)EditorGUILayout.ObjectField(label, obj, typeof(T), true);
         }
 
+        static Camera cam;
         static Camera GetCamera()
         {
-            return Camera.main;
+            if (cam) return cam;
+            cam = Camera.main;
+            return cam;
         }
     }
 }

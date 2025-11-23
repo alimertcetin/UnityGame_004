@@ -13,34 +13,46 @@ namespace TheGame
 {
     public class NodeInitializeSystem : XIV.Ecs.System
     {
-        readonly Filter<TransformComp, NodeComp, NodeOccupyComp> nodeOccupyFilter = null;
         readonly Filter<TransformComp, NodeComp> nodeCompFilter = null;
         readonly Filter<UnitComp> unitFilter = null;
+        readonly AssetReferences assetReferences = null;
+        readonly LevelSettings levelSettings;
 
         public override void Start()
         {
             void CreateUnit(UnitIdLookup.UnitType unitType) => world.NewEntity().AddComponent(new UnitComp { unitType = unitType, });
             
-            InitializeNodes();
+            // Initialize all nodes with default values
+            nodeCompFilter.ForEach(InitializeNodes);
 
-            using var dispose = ArrayUtils.GetBuffer(out Entity[] nodeEntityBuffer, nodeCompFilter.NumberOfEntities);
+            using var nodeEntityBuffer = ArrayUtils.GetBuffer<Entity>(nodeCompFilter.NumberOfEntities);
             var nodeEntityCount = nodeCompFilter.EntitiesNonAlloc(nodeEntityBuffer);
             if (nodeEntityCount < 3) throw new InvalidOperationException();
 
-            using var temp = ArrayUtils.GetBuffer(out Entity[] startingUnitNodeEntityBuffer, nodeEntityCount);
-            startingUnitNodeEntityBuffer[0] = nodeEntityBuffer.XIVGetClosest(nodeEntityCount, new Vec3(1, 1, 0) * 200f, p => p.GetComponent<TransformComp>().transform.position);
-            startingUnitNodeEntityBuffer[1] = nodeEntityBuffer.XIVGetClosest(nodeEntityCount, new Vec3(-1, 1, 0) * 200f, p => p.GetComponent<TransformComp>().transform.position);
-            startingUnitNodeEntityBuffer[2] = nodeEntityBuffer.XIVGetClosest(nodeEntityCount, new Vec3(-1, -1, 0) * 200f, p => p.GetComponent<TransformComp>().transform.position);
-            startingUnitNodeEntityBuffer[3] = nodeEntityBuffer.XIVGetClosest(nodeEntityCount, new Vec3(1, -1, 0) * 200f, p => p.GetComponent<TransformComp>().transform.position);
+            Array values = Enum.GetValues(typeof(UnitIdLookup.UnitType));
+            for (int i = 0; i < levelSettings.hostileUnits; i++)
+            {
+                var v = (UnitIdLookup.UnitType)values.GetValue(i) + (int)UnitIdLookup.UnitType.Black + 1;
+                CreateUnit(v);
+            }
 
-            CreateUnit(UnitIdLookup.UnitType.Blue);
-            CreateUnit(UnitIdLookup.UnitType.Red);
+            var unitEntityCount = unitFilter.NumberOfEntities;
+            using var startingUnitNodeEntityBuffer = ArrayUtils.GetBuffer<Entity>(nodeEntityCount);
+            int order = 6; // max 6
+            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(1, 1, 0) * 200f, p => p.GetComponent<PositionComp>().position);
+            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(-1, 1, 0) * 200f, p => p.GetComponent<PositionComp>().position);
+            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(-1, -1, 0) * 200f, p => p.GetComponent<PositionComp>().position);
+            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(1, -1, 0) * 200f, p => p.GetComponent<PositionComp>().position);
+            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(1, 0, 0) * 200f, p => p.GetComponent<PositionComp>().position);
+            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(0, 1, 0) * 200f, p => p.GetComponent<PositionComp>().position);
+            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(0, 0, 0) * 200f, p => p.GetComponent<PositionComp>().position);
 
             int index = 0;
             unitFilter.ForEach((Entity e, ref UnitComp unitComp) =>
             {
-                var entity = startingUnitNodeEntityBuffer[index++];
+                var entity = startingUnitNodeEntityBuffer[unitEntityCount - 1 - index++];
                 unitComp.occupiedNodeEntities = new DynamicArray<Entity>();
+                unitComp.smartness01 = unitComp.unitType == UnitIdLookup.UnitType.Green ? unitComp.smartness01 : (float)unitComp.unitType / (float)(UnitIdLookup.UnitType.NumberOfItems - 1);
                 entity.AddComponent(new NodeOccupyComp
                 {
                     unitEntity = e,
@@ -48,19 +60,17 @@ namespace TheGame
             });
         }
 
-        void InitializeNodes()
+        void InitializeNodes(Entity entity, ref TransformComp transformComp, ref NodeComp nodeComp)
         {
-            // Initialize all nodes with default values
-            nodeCompFilter.ForEach(((ref TransformComp transformComp, ref NodeComp nodeComp) =>
-            {
-                nodeComp.resourceQuantity = 3;
-                nodeComp.txt_quantity.WriteScoreText((int)nodeComp.resourceQuantity);
-                nodeComp.shieldPoints = 7;
-                nodeComp.totalShieldPoints = 7;
-                nodeComp.unitType = UnitIdLookup.UnitType.Black;
-                var renderer = transformComp.transform.GetComponent<SpriteRenderer>();
-                renderer.color = UnitIdLookup.GetColor(nodeComp.unitType);
-            }));
+            nodeComp.resourceQuantity = 3;
+            nodeComp.configIdx = 0;
+            nodeComp.txt_quantity.WriteScoreText((int)nodeComp.resourceQuantity);
+            nodeComp.shieldPoints = assetReferences.generationConfigs[nodeComp.configIdx].shieldPoints;
+            // nodeComp.totalShieldPoints = 7;
+            // nodeComp.resourceGenerationSpeed = 0;
+            var renderer = transformComp.transform.GetComponent<SpriteRenderer>();
+            renderer.color = UnitIdLookup.GetColor(UnitIdLookup.UnitType.Black);
+            entity.AddComponent(new NodeDecisionComp());
         }
     }
 }

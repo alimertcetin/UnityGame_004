@@ -14,25 +14,22 @@ using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame
 {
-    public struct ResourceComp : IComponent
+    public struct TransferableResourceComp : IComponent
     {
         public Entity unitEntity;
-        public Entity startNodeEntity;
         public Entity endNodeEntity;
-        public Vector3 resourcePosition;
         public int quantity;
+        public int connectionIndex;
     }
 
     public struct PooledComp : IComponent
     {
-        public Func<Vector3, Quaternion, Entity> getFromPoolAction;
         public Action<Entity> releaseToPoolAction;
     }
 
     public class ResourceTransferSystem : XIV.Ecs.System
     {
-        readonly Filter<TransformComp, ResourceComp> resourceFilter = null;
-        readonly Filter<TransformComp, NodeComp, NodeResourceCollisionComp> nodeResourceCollisionFilter = null;
+        readonly Filter<PositionComp, TransferableResourceComp> resourceFilter = null;
         readonly Filter<TransformComp, NodeComp, OccupiedNodeComp, SendResourceComp> sendResourceFilter = null;
         readonly Filter<NodeComp, OccupiedNodeComp, SendResourceContinuouslyComp> sendResourceContinuouslyFilter = null;
         readonly AssetReferences assetReferences = null;
@@ -41,18 +38,16 @@ namespace TheGame
         readonly LineRendererPositionData lineRendererPositionData = null;
         
         readonly Action<Entity> releaseResourceAction;
-        readonly Func<Vector3, Quaternion, Entity> getResourceAction;
         
         public ResourceTransferSystem() : base()
         {
-            getResourceAction = GetResource;
             releaseResourceAction = ReleaseResource;
         }
 
         public override void Start()
         {
             const int PREWARM_COUNT = 250;
-            using var dispose = ArrayUtils.GetBuffer(out Entity[] entityBuffer, PREWARM_COUNT);
+            using var entityBuffer = ArrayUtils.GetBuffer<Entity>(PREWARM_COUNT);
             for (int i = 0; i < PREWARM_COUNT; i++)
             {
                 entityBuffer[i] = GetResource(Vector3.zero, Quaternion.identity);
@@ -66,76 +61,35 @@ namespace TheGame
 
         public override void Update()
         {
-            nodeResourceCollisionFilter.ForEach(HandleResourceCollision);
             resourceFilter.ForEach(MoveResourceAlongLine);
             sendResourceFilter.ForEach(SendResource);
             sendResourceContinuouslyFilter.ForEach(SendResourceContinuously);
-        }
-
-        void HandleResourceCollision(Entity nodeEntity, ref TransformComp transformComp, ref NodeComp nodeComp, ref NodeResourceCollisionComp nodeResourceCollisionComp)
-        {
-            var unitEntity = nodeResourceCollisionComp.unitEntity;
-            ref var unitComp = ref unitEntity.GetComponent<UnitComp>();
-            if (nodeComp.unitType == unitComp.unitType)
-            {
-                nodeComp.resourceQuantity += nodeResourceCollisionComp.quantity;
-            }
-            else
-            {
-                var remaining = nodeComp.shieldPoints - nodeResourceCollisionComp.quantity;
-                nodeComp.shieldPoints = XIVMathf.Max(nodeComp.shieldPoints - nodeResourceCollisionComp.quantity, 0);
-                if (remaining >= 0) return;
-                remaining = -remaining;
-                    
-                nodeComp.resourceQuantity -= remaining;
-                if (nodeComp.resourceQuantity <= 0)
-                {
-                    nodeComp.unitType = unitComp.unitType;
-                    nodeComp.resourceQuantity = -nodeComp.resourceQuantity;
-                    nodeEntity.AddComponent(new NodeOccupyComp
-                    {
-                        unitEntity = unitEntity,
-                    });
-                }
-            }
-
-            transformComp.transform.CancelTween();
-            transformComp.transform.XIVTween()
-                .ScaleBounceOnce()
-                .Start();
-            nodeEntity.RemoveComponent<NodeResourceCollisionComp>();
-        }
-
-        void MoveResourceAlongLine(Entity resourceEntity, ref TransformComp transformComp, ref ResourceComp resourceComp)
-        {
-            int idx = connectionDB.GetConnectionIndex(resourceComp.startNodeEntity, resourceComp.endNodeEntity);
-            ref ConnectionPair connectionPairComp = ref connectionDB[idx];
             
-            GetStartAndTargetPositions(ref resourceComp, ref connectionPairComp, out var startTransformPosition, out var targetTransformPosition);
-            resourceComp.resourcePosition = Vector3.MoveTowards(resourceComp.resourcePosition, targetTransformPosition, 2f * XTime.deltaTime);
+        }
+
+        void MoveResourceAlongLine(Entity resourceEntity, ref PositionComp positionComp, ref TransferableResourceComp transferableResourceComp)
+        {
+            int idx = transferableResourceComp.connectionIndex;
+            ref ConnectionPair pair = ref connectionDB[idx];
+            
+            GetStartAndTargetPositions(ref transferableResourceComp, ref pair, out var startTransformPosition, out var targetTransformPosition);
+            var pos = Vec3.MoveTowards(positionComp.position, targetTransformPosition, 2f * XTime.deltaTime);
             var movementDirection = targetTransformPosition - startTransformPosition;
             
             lineRendererPositionData.connectionIndices.Add() = idx;
-            lineRendererPositionData.movementPositions.Add() = resourceComp.resourcePosition;
+            lineRendererPositionData.movementPositions.Add() = pos;
             lineRendererPositionData.movementDirections.Add() = movementDirection;
-            transformComp.transform.position = resourceComp.resourcePosition;
+            positionComp.position = pos;
 
-            if (Vector3.Distance(resourceComp.resourcePosition, targetTransformPosition) < 0.02f == false) return;
+            if (Vec3.Distance(pos, targetTransformPosition) < 0.02f == false) return;
             
-            // lineRenderer.XIVStraightLine(startTransformPosition, targetTransformPosition);
-                
-            connectionPairComp.GetOpposite(resourceComp.startNodeEntity).AddComponent(new NodeResourceCollisionComp
+            transferableResourceComp.endNodeEntity.AddComponent(new NodeResourceCollisionComp
             {
-                unitEntity = resourceComp.unitEntity,
-                quantity = resourceComp.quantity,
+                sender = connectionDB[transferableResourceComp.connectionIndex].GetOpposite(transferableResourceComp.endNodeEntity),
+                senderUnitEntity = transferableResourceComp.unitEntity,
+                quantity = transferableResourceComp.quantity,
             });
-                
-            resourceEntity.RemoveComponent<ResourceComp>();
-            resourceEntity.AddComponent(new CallLaterComp
-            {
-                action = releaseResourceAction,
-                timer = 0.1f,
-            });
+            resourceEntity.AddTag<ReturnToPoolTag>();
         }
 
         void SendResource(Entity entity, ref TransformComp transformComp, ref NodeComp nodeComp, ref OccupiedNodeComp occupiedNodeComp, ref SendResourceComp sendResourceComp)
@@ -146,21 +100,22 @@ namespace TheGame
             var resourceEntity = GetResource(transformPosition, transformRotation);
             // if we process collision before sending the resource it may get negative
             sendResourceComp.resourceQuantity = XIVMathInt.Clamp(sendResourceComp.resourceQuantity, 0, (int)nodeComp.resourceQuantity);
+            int connIdx = connectionDB.GetConnectionIndex(entity, sendResourceComp.toEntity);
             
-            var resourceComp = new ResourceComp
+            var resourceComp = new TransferableResourceComp
             {
                 unitEntity = occupiedNodeComp.unitEntity,
-                startNodeEntity = entity,
                 endNodeEntity = sendResourceComp.toEntity,
                 quantity = sendResourceComp.resourceQuantity,
-                resourcePosition = transformPosition,
+                connectionIndex = connIdx,
             };
             
+            resourceEntity.AddTag<InitTag>();
             resourceEntity.AddComponent(resourceComp);
             resourceEntity.GetComponent<TextComp>().txt.text = resourceComp.quantity.ToString();
             
             var resourceEntityRenderer = resourceEntity.GetComponent<TransformComp>().transform.GetComponent<SpriteRenderer>();
-            resourceEntityRenderer.color = UnitIdLookup.GetColor(nodeComp.unitType);
+            resourceEntityRenderer.color = UnitIdLookup.GetColor(occupiedNodeComp.unitEntity.GetComponent<UnitComp>().unitType);
             nodeComp.resourceQuantity -= sendResourceComp.resourceQuantity;
             entity.RemoveComponent<SendResourceComp>();
         }
@@ -184,9 +139,9 @@ namespace TheGame
             });
         }
 
-        static void GetStartAndTargetPositions(ref ResourceComp resourceComp, ref ConnectionPair connectionPairComp, out Vector3 startTransformPosition, out Vector3 targetTransformPosition)
+        static void GetStartAndTargetPositions(ref TransferableResourceComp transferableResourceComp, ref ConnectionPair connectionPairComp, out Vec3 startTransformPosition, out Vec3 targetTransformPosition)
         {
-            if (resourceComp.startNodeEntity == connectionPairComp.entity1)
+            if (connectionPairComp.GetOpposite(transferableResourceComp.endNodeEntity) == connectionPairComp.entity1)
             {
                 startTransformPosition = connectionPairComp.startPosition;
                 targetTransformPosition = connectionPairComp.endPosition;
@@ -211,11 +166,10 @@ namespace TheGame
                 go.transform.position = transformPosition;
                 go.transform.rotation = transformRotation;
                 go.SetActive(true);
-                entity = GameObjectEntity.BindGameObjectToEntityWithDependencies(world, go.GetComponent<GameObjectEntity>());
+                entity = GameObjectEntity.BindGameObjectToEntity(world, go);
             }
             entity.AddComponent(new PooledComp
             {
-                getFromPoolAction = getResourceAction,
                 releaseToPoolAction = releaseResourceAction,
             });
             return entity;

@@ -75,10 +75,18 @@ namespace XIV.Ecs
             manager.AddSystem(new ResourceTransferSystem(), States.Game);
             manager.AddSystem(new ResourceCollisionSystem(), States.Game);
             
+            manager.AddSystem(new NodeTypeChangeSystem(), States.Game);
+            
             manager.AddSystem(new ConnectionLineRenderSystem(), States.Game);
             manager.AddSystem(new ShieldRenderSystem(), States.Game);
-            manager.AddSystem(new NodeDebugSystem(), States.Game);
             
+            manager.AddSystem(new NodeDecisionSystem(), States.Game);
+            manager.AddSystem(new NodeDecisionApplySystem(), States.Game);
+            manager.AddSystem(new NodeCaptureSystem(), States.Game);
+            manager.AddSystem(new NodeHelpFrontierSystem(), States.Game);
+            
+            manager.AddSystem(new DebugSystem(), States.Game);
+            // manager.AddSystem(new NodePathSystem(), States.Game);
             
             manager.AddSystem(new TransformSystem(), States.All); // Awake
             manager.AddSystem(new ParentSystem(), States.All); // Update

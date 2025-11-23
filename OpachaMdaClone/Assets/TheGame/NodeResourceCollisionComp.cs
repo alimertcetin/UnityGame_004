@@ -4,7 +4,9 @@ namespace TheGame
 {
     public struct NodeResourceCollisionComp : IComponent
     {
-        public Entity unitEntity;
+        public Entity sender;
+        // public Entity receiver; // receiver is component owner
+        public Entity senderUnitEntity;
         public int quantity;
     }
 }

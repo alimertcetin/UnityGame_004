@@ -3,6 +3,7 @@ using TheGame.Extensions;
 using UnityEngine;
 using XIV.Core.DataStructures;
 using XIV.UnityEngineIntegration;
+using XIVUnityEngineIntegration.Extensions;
 
 namespace XIV.Ecs
 {
@@ -13,17 +14,15 @@ namespace XIV.Ecs
     
     public class ShieldRenderSystem : XIV.Ecs.System
     {
-        readonly Filter<TransformComp, NodeComp> nodeFilter = null;
-        readonly Filter<TransformComp, NodeComp, NodeShieldRenderComp> shieldFilter = null;
-        readonly AssetReferences prefabReferences = null;
+        readonly Filter<NodeComp> nodesWithoutShieldFilter = new Filter<NodeComp>().Exclude<NodeShieldRenderComp>();
+        readonly Filter<PositionComp, NodeComp, NodeShieldRenderComp> shieldFilter = null;
+        readonly AssetReferences assetReferences = null;
 
         public override void Start()
         {
-            nodeFilter.ForEach((Entity nodeEntity, ref TransformComp transformComp, ref NodeComp nodeComp) =>
+            nodesWithoutShieldFilter.ForEach((Entity nodeEntity, ref NodeComp nodeComp) =>
             {
-                var lineRenderer = GameObjectEntity.CreateEntity(world, prefabReferences.shieldLineRendererPrefab).GetTransform().GetComponent<LineRenderer>();
-                // var lineRenderer = new GameObject().AddComponent<LineRenderer>();
-                // lineRenderer.material = prefabReferences.shieldLineRendererPrefab.GetComponent<Renderer>().sharedMaterial;
+                var lineRenderer = GameObjectEntity.CreateEntity(world, assetReferences.shieldLineRendererPrefab).GetTransform().GetComponent<LineRenderer>();
                 lineRenderer.XIVSetWidth(0.1f);
                 nodeEntity.AddComponent(new NodeShieldRenderComp
                 {
@@ -34,11 +33,12 @@ namespace XIV.Ecs
 
         public override void Update()
         {
-            shieldFilter.ForEach((ref TransformComp transformComp, ref NodeComp nodeComp, ref NodeShieldRenderComp nodeShieldRenderComp) =>
+            shieldFilter.ForEach((Entity e, ref PositionComp positionComp, ref NodeComp nodeComp, ref NodeShieldRenderComp nodeShieldRenderComp) =>
             {
-                var detail = nodeComp.shieldPoints / nodeComp.totalShieldPoints;
-                nodeShieldRenderComp.lineRenderer.positionCount = (int)(detail * 10f) + 3; // min 3 points
-                DrawCircle(nodeShieldRenderComp.lineRenderer, transformComp.transform.position);
+                if (nodeComp.shieldPoints < 2) return;
+                var detail = nodeComp.shieldPoints / assetReferences.generationConfigs[nodeComp.configIdx].shieldPoints;
+                nodeShieldRenderComp.lineRenderer.positionCount = (int)(detail * 10f);
+                DrawCircle(nodeShieldRenderComp.lineRenderer, positionComp.position);
             });
         }
 
@@ -46,13 +46,14 @@ namespace XIV.Ecs
         {
             var radius = lineRenderer.transform.localScale.y * 0.5f + lineRenderer.startWidth;
             int detail = lineRenderer.positionCount - 1;
-            var rotation = Quaternion.FromToRotation(Vec3.forward, Vec3.forward);
+            var rotation = Quaternion.FromToRotation(Vector3.forward, Vector3.forward);
             // var startPoint = (Vector3)entityPosition + rotation * Vec3.right * radius;
             // var p1 = startPoint;
+            var entityPosVector3 = entityPosition.ToVector3();
             for (int i = 0; i <= detail; i++)
             {
                 float angle = (i + 1) * (360f / detail);
-                var p2 = (Vector3)entityPosition + rotation * Quaternion.AngleAxis(angle, Vec3.forward) * Vec3.right * radius;
+                var p2 = entityPosVector3 + rotation * Quaternion.AngleAxis(angle, Vector3.forward) * Vector3.right * radius;
                 lineRenderer.SetPosition(i, p2);
             }
             lineRenderer.loop = detail > 2;

@@ -12,23 +12,21 @@ namespace TheGame
     public struct OccupiedNodeComp : IComponent
     {
         public Entity unitEntity;
-        public float resourceGenerationSpeed;
     }
 
     public class NodeResourceGenerateSystem : XIV.Ecs.System
     {
+        readonly AssetReferences assetReferences = null;
         readonly Filter<NodeComp, OccupiedNodeComp> occupiedNodeCompFilter = null;
+        const float SHIELD_GENERATION_SPEED = 0.5f;
 
         public override void Update()
         {
             occupiedNodeCompFilter.ForEach((Entity e, ref NodeComp nodeComp, ref OccupiedNodeComp occupiedNodeComp) =>
             {
-                nodeComp.resourceQuantity += (XTime.deltaTime * occupiedNodeComp.resourceGenerationSpeed);
+                nodeComp.resourceQuantity += (XTime.deltaTime * assetReferences.generationConfigs[nodeComp.configIdx].generationSpeed);
                 nodeComp.txt_quantity.WriteScoreText((int)nodeComp.resourceQuantity);
-                // TODO : NodeResourceGenerateSystem -> add occupiedNodeComp.shieldGenerationSpeed
-                var distance = XIVMathf.Abs(nodeComp.totalShieldPoints - nodeComp.shieldPoints);
-                nodeComp.shieldPoints += distance * XTime.deltaTime + 0.01f;
-                nodeComp.shieldPoints = XIVMathf.Clamp(nodeComp.shieldPoints, 0, nodeComp.totalShieldPoints);
+                nodeComp.shieldPoints = XIVMathf.Clamp(nodeComp.shieldPoints + SHIELD_GENERATION_SPEED * XTime.deltaTime, 0, assetReferences.generationConfigs[nodeComp.configIdx].shieldPoints);
             });
         }
     }

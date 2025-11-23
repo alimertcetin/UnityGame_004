@@ -7,8 +7,8 @@ namespace TheGame
     {
         public static void WriteScoreText(this TMP_Text txt, int score)
         {
-            using var dispose = ArrayUtils.GetBuffer(out char[] buffer);
-            if (ScoreTextFormatter.TryFormat(score, buffer, out int written))
+            using var buffer = ArrayUtils.GetBuffer<char>(16);
+            if (ScoreTextFormatter.TryFormat(score, (char[])buffer, out int written))
             {
                 txt.SetCharArray(buffer, 0, written);
             }
