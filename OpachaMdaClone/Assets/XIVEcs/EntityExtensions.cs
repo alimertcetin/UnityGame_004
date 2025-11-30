@@ -12,6 +12,11 @@ namespace XIV.Ecs
             return entity.GetComponent<TransformComp>().transform;
         }
         
+        public static T GetUnityComponent<T>(this Entity entity) where T : Component
+        {
+            return entity.GetComponent<TransformComp>().gameObjectEntity.GetComponent<T>();
+        }
+        
         public static RectTransform GetRectTransform(this Entity entity)
         {
             return (RectTransform)entity.GetTransform();
