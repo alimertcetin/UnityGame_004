@@ -5,12 +5,12 @@ using XIV.Core.Extensions;
 
 namespace XIV.Ecs
 {
-    static class TagId<T> where T : struct, ITag
-    {
-        public static int id;
-    }
     public static class TagIdManager
     {
+        static class TagId<T> where T : struct, ITag
+        {
+            public static int id;
+        }
         public static int NumberOfTags => numberOfTags;
 
         static int numberOfTags = -1;
@@ -40,7 +40,6 @@ namespace XIV.Ecs
 
                 var tagIdType = typeof(TagId<>).MakeGenericType(tagType);
                 tagIdType.XIVSetField("id", null, tagId);
-                // tagIdType.DalSet(null, "entityId", tagId);
             }
 
         }
