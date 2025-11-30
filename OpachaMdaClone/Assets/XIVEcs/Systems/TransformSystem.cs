@@ -5,9 +5,9 @@ namespace XIV.Ecs
 {
     public class TransformSystem : XIV.Ecs.System
     {
-        readonly Filter<TransformComp, PositionComp> positionFilter;
-        readonly Filter<TransformComp, ScaleComp> scaleFilter;
-        readonly Filter<TransformComp, RotationComp> rotationFilter;
+        readonly Filter<TransformComp, PositionComp> positionFilter = null;
+        readonly Filter<TransformComp, ScaleComp> scaleFilter = null;
+        readonly Filter<TransformComp, RotationComp> rotationFilter = null;
         
         public override void PreAwake()
         {
@@ -16,7 +16,7 @@ namespace XIV.Ecs
 
         public override void Update()
         {
-            positionFilter.ForEach((Entity e, ref TransformComp transformComp, ref PositionComp positionComp) =>
+            positionFilter.ForEach((ref TransformComp transformComp, ref PositionComp positionComp) =>
             {
                 var pos = positionComp.position.ToVector3();
                 if (transformComp.transform.localPosition != pos) transformComp.transform.localPosition = pos;
@@ -28,7 +28,7 @@ namespace XIV.Ecs
             });
             rotationFilter.ForEach((ref TransformComp transformComp, ref RotationComp rotationComp) =>
             {
-                var eulerRotation = rotationComp.eulerRotation.ToVector3();
+                var eulerRotation = rotationComp.eulerAngles.ToVector3();
                 if (transformComp.transform.localRotation.eulerAngles != eulerRotation) transformComp.transform.localRotation = Quaternion.Euler(eulerRotation);
             });
         }
