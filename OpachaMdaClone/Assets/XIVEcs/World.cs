@@ -40,12 +40,14 @@ namespace XIV.Ecs
             // TODO : World.UnlockComponentOperation -> Order of operation, addComp after removeComp can cause component to not added, removeComp after addComp can cause component to not removed
             // Quick, kinda fix: Do Remove operations before Add operations
             HandleDestroyOperations();
-            ComponentOperationIndex.ExecuteDisableComponentActions(this);
-            ComponentOperationIndex.ExecuteRemoveComponentActions(this);
-            ComponentOperationIndex.ExecuteRemoveTagActions(this);
-            ComponentOperationIndex.ExecuteEnableComponentActions(this);
-            ComponentOperationIndex.ExecuteAddComponentActions(this);
-            ComponentOperationIndex.ExecuteAddTagActions(this);
+            ComponentOperationIndex.CollapseAdjacent();
+            ComponentOperationIndex.ExecutePending(this);
+            // ComponentOperationIndex.ExecuteDisableComponentActions(this);
+            // ComponentOperationIndex.ExecuteRemoveComponentActions(this);
+            // ComponentOperationIndex.ExecuteRemoveTagActions(this);
+            // ComponentOperationIndex.ExecuteEnableComponentActions(this);
+            // ComponentOperationIndex.ExecuteAddComponentActions(this);
+            // ComponentOperationIndex.ExecuteAddTagActions(this);
         }
 
         void HandleDestroyOperations()
@@ -101,7 +103,8 @@ namespace XIV.Ecs
             }
 
             ComponentOperationIndex.AddComponent(entityId, componentValue);
-            ComponentOperationIndex.ExecuteAddComponentAction<T>(this);
+            ComponentOperationIndex.ExecutePending(this);
+            // ComponentOperationIndex.ExecuteAddComponentAction<T>(this);
         }
 
         public void AddTag<T>(EntityId entityId) where T : struct, ITag
@@ -115,7 +118,8 @@ namespace XIV.Ecs
             }
 
             ComponentOperationIndex.AddTag<T>(entityId);
-            ComponentOperationIndex.ExecuteAddTagAction<T>(this);
+            ComponentOperationIndex.ExecutePending(this);
+            // ComponentOperationIndex.ExecuteAddTagAction<T>(this);
         }
         
         public void RemoveTag<T>(EntityId entityId) where T : struct, ITag
@@ -128,7 +132,8 @@ namespace XIV.Ecs
                 return;
             }
             ComponentOperationIndex.RemoveTag<T>(entityId);
-            ComponentOperationIndex.ExecuteRemoveTagAction<T>(this);
+            ComponentOperationIndex.ExecutePending(this);
+            // ComponentOperationIndex.ExecuteRemoveTagAction<T>(this);
         }
         
         public void RemoveTag(EntityId entityId, int tagId)
@@ -141,7 +146,8 @@ namespace XIV.Ecs
                 return;
             }
             ComponentOperationIndex.RemoveTag(entityId, tagId);
-            ComponentOperationIndex.ExecuteRemoveTagAction(tagId, this);
+            ComponentOperationIndex.ExecutePending(this);
+            // ComponentOperationIndex.ExecuteRemoveTagAction(tagId, this);
         }
         
         public void RemoveComponent<T>(EntityId entityId) where T : struct, IComponent
@@ -154,7 +160,8 @@ namespace XIV.Ecs
             }
 
             ComponentOperationIndex.RemoveComponent<T>(entityId);
-            ComponentOperationIndex.ExecuteRemoveComponentAction<T>(this);
+            ComponentOperationIndex.ExecutePending(this);
+            // ComponentOperationIndex.ExecuteRemoveComponentAction<T>(this);
         }
         
         public void RemoveComponent(EntityId entityId, int componentId)
@@ -167,7 +174,8 @@ namespace XIV.Ecs
             }
 
             ComponentOperationIndex.RemoveComponent(entityId, componentId);
-            ComponentOperationIndex.ExecuteRemoveComponentAction(componentId, this);
+            ComponentOperationIndex.ExecutePending(this);
+            // ComponentOperationIndex.ExecuteRemoveComponentAction(componentId, this);
         }
 
         public bool HasComponent<T>(EntityId entity) where T : struct, IComponent
@@ -189,12 +197,13 @@ namespace XIV.Ecs
             ref var entityData = ref entityDataList[entityId.id];
             if (entityData.archetype != null && entityData.archetype.IsLocked())
             {
-                ComponentOperationIndex.EnableComponent<T>(entityId);
+                ComponentOperationIndex.EnableComponent<T>(this, entityId);
                 return;
             }
 
-            ComponentOperationIndex.EnableComponent<T>(entityId);
-            ComponentOperationIndex.ExecuteEnableComponentAction<T>(this);
+            ComponentOperationIndex.EnableComponent<T>(this, entityId);
+            ComponentOperationIndex.ExecutePending(this);
+            // ComponentOperationIndex.ExecuteEnableComponentAction<T>(this);
         }
 
         public void DisableComponent<T>(EntityId entityId) where T : struct, IComponent
@@ -207,7 +216,8 @@ namespace XIV.Ecs
             }
 
             ComponentOperationIndex.DisableComponent<T>(this, entityId);
-            ComponentOperationIndex.ExecuteDisableComponentAction<T>(this);
+            ComponentOperationIndex.ExecutePending(this);
+            // ComponentOperationIndex.ExecuteDisableComponentAction<T>(this);
         }
         
         public bool HasTag<T>(EntityId entity) where T : struct, ITag
