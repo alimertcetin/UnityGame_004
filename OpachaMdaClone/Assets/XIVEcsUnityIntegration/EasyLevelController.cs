@@ -67,7 +67,13 @@ namespace XIV.Ecs
             manager.AddSystem(new NodeInitializeSystem(), States.Game);
             manager.AddSystem(new NodeOccupySystem(), States.Game);
             
-            manager.AddSystem(new NodeResourceGenerateSystem(), States.Game);
+            manager.AddSystem(new ResourceGenerateSystem(), States.Game);
+            manager.AddSystem(new ResourceIncreaseQuantitySystem(), States.Game);
+            manager.AddSystem(new ResourceDamageSystem(), States.Game);
+            
+            manager.AddSystem(new NodeShieldSystem(), States.Game);
+            manager.AddSystem(new NodeAddShieldSystem(), States.Game);
+            manager.AddSystem(new NodeRemoveShieldSystem(), States.Game);
             manager.AddSystem(new UnitNodeSelectionSystem(), States.Game);
             
             manager.AddSystem(new NodeHighlightSystem(), States.Game);
@@ -77,9 +83,13 @@ namespace XIV.Ecs
             
             manager.AddSystem(new NodeTypeChangeSystem(), States.Game);
             
+            // Visuals
             manager.AddSystem(new ConnectionLineRenderSystem(), States.Game);
             manager.AddSystem(new ShieldRenderSystem(), States.Game);
+            manager.AddSystem(new ResourceTextRenderSystem(), States.Game);
+            manager.AddSystem(new ResourceTransferIndicatorSystem(), States.Game);
             
+            // AI
             manager.AddSystem(new NodeDecisionSystem(), States.Game);
             manager.AddSystem(new NodeDecisionApplySystem(), States.Game);
             manager.AddSystem(new NodeCaptureSystem(), States.Game);

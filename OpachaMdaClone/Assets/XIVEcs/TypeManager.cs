@@ -8,11 +8,14 @@ namespace XIV.Ecs
     {
         readonly List<Type> componentTypes;
         readonly List<Type> tagTypes;
+        readonly List<Type> eventTypes;
 
         public TypeManager(params string[] assemblyNames)
         {
             componentTypes = new List<Type>(32);
             tagTypes = new List<Type>(32);
+            eventTypes = new List<Type>(32);
+            
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
             int assemblyNamesLength = assemblyNames.Length;
             var filtered = assemblies.XIVFilterBy(p =>
@@ -29,6 +32,7 @@ namespace XIV.Ecs
 
             var componentBase = typeof(IComponent);
             var tagBase = typeof(ITag);
+            var eventBase = typeof(IEvent);
 
             var filteredLength = filtered.Length;
             for (int i = 0; i < filteredLength; i++)
@@ -47,11 +51,17 @@ namespace XIV.Ecs
                     {
                         tagTypes.Add(type);
                     }
+
+                    if (type != eventBase && eventBase.IsAssignableFrom(type))
+                    {
+                        eventTypes.Add(type);
+                    }
                 }
             }
         }
         
-        public IReadOnlyList<Type> GetComponents() => componentTypes;
+        public IReadOnlyList<Type> GetComponentTypes() => componentTypes;
         public IReadOnlyList<Type> GetTagTypes() => tagTypes;
+        public IReadOnlyList<Type> GetEventTypes() => eventTypes;
     }
 }

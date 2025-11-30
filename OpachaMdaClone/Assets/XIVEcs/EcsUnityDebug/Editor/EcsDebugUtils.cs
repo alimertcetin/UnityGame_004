@@ -36,7 +36,7 @@ namespace XIV.Ecs
 
             if (entity.IsAlive() && entity != Entity.Invalid)
             {
-                EditorGUILayout.LabelField("--- Entity Id: " + entity.entityId.id + "---",greenText);
+                EditorGUILayout.LabelField("--- Entity Id: " + entity.entityId.id + " Entity Generation: " + entity.entityId.generation + "---",greenText);
             }
             else
             {
@@ -72,7 +72,7 @@ namespace XIV.Ecs
                 var component = componentPool.Get(archetypeIdx);
                 
                 Type componentType = component.GetType();
-                EditorGUILayout.LabelField("---" + componentType.Name + "---");
+                EditorGUILayout.LabelField("---" + componentType.Name + "---", greenText);
                 if (GUILayout.Button("Remove Component"))
                 {
                     entity.world.RemoveComponent(entity.entityId, ComponentIdManager.GetComponentId(componentType));

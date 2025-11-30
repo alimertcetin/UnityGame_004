@@ -11,9 +11,13 @@ namespace XIV.Ecs
         public GameObject nodeHighlightEntity;
         public GameObject nodeEntity;
         public GameObject connectionLineRendererPrefab;
-        public GameObject shieldLineRendererPrefab;
+        public GameObject nodeShieldPrefab;
         public GenerationStepSO[] generationConfigs; // 0 = default, 1 = adc, 2 = tank
         public GameObject nodeTypeChangeParticle;
+        public GameObject resourceTransferIndicatorPrefab;
+        
+        public const int RESOURCE_GENERATOR_CONFIG = 1;
+        public const int DEFEND_CONFIG = 2;
 
         public int GetConfigIndex(DecisionType decisionType)
         {
