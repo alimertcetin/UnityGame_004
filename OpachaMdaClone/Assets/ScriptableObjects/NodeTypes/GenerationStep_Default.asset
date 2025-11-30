@@ -15,4 +15,5 @@ MonoBehaviour:
   quantity: 3
   duration: 3
   shieldPoints: 7
-  generationSpeed: 1
+  resourceGenerationSpeed: 1
+  shieldGenerationSpeed: 0.5

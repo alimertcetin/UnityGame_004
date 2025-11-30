@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2b145ee894d841f59fa77cb5d1e46e13, type: 3}
   m_Name: GenerationStep_Adc
   m_EditorClassIdentifier: 
-  quantity: 3
-  duration: 9
+  quantity: 2
+  duration: 3
   shieldPoints: 0
-  generationSpeed: 0.33333334
+  resourceGenerationSpeed: 0.6666667
+  shieldGenerationSpeed: 0.5

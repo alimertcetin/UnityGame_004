@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: GenerationStep_Tank
   m_EditorClassIdentifier: 
   quantity: 1
-  duration: 9
+  duration: 3
   shieldPoints: 14
-  generationSpeed: 0.11111111
+  resourceGenerationSpeed: 0.33333334
+  shieldGenerationSpeed: 2
