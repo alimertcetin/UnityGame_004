@@ -10,9 +10,7 @@ namespace XIV.Ecs
         public ArchetypeMap archetypeMap;
         public List<Query> queries;
         public List<Filter> filters;
-
         public DynamicArray<DestroyOperation> destroyedEntities;
-        // TODO : There is a bug that causes lockCounter on ArcheTypes to go below 0
 
         public World(int entityCapacity = 64)
         {
@@ -52,12 +50,12 @@ namespace XIV.Ecs
 
         void HandleDestroyOperations()
         {
-            for (int i = 0; i < destroyedEntities.Count; i++)
+            var count = destroyedEntities.Count;
+            for (int i = 0; i < count; i++)
             {
                 ref var destroyOperation = ref destroyedEntities[i];
                 ref var entityData = ref entityDataList[destroyOperation.entityId.id];
                 entityData.archetype.RemoveEntityAndComponents(entityData.archetypeIndex, entityDataList);
-
                 entityDataList.Free(destroyOperation.entityId.id);
             }
             destroyedEntities.Clear();
