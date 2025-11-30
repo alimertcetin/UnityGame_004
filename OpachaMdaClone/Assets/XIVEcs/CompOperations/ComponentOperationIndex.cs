@@ -27,7 +27,7 @@ namespace XIV.Ecs
         
         public static void Init(TypeManager typeManager)
         {
-            var componentTypes = typeManager.GetComponents();
+            var componentTypes = typeManager.GetComponentTypes();
             var tagTypes = typeManager.GetTagTypes();
             int componentTypeCount = componentTypes.Count;
             int tagTypeCount = tagTypes.Count;
