@@ -23,7 +23,7 @@ namespace XIV.Ecs
         {
             // Debug.Log("Number of Components:" + componentTypes.Count);
 
-            var componentTypes = typeManager.GetComponents();
+            var componentTypes = typeManager.GetComponentTypes();
             var componentTypesCount = componentTypes.Count;
             idToType = new Type[componentTypesCount];
             idToCompPoolType = new Type[componentTypesCount];
