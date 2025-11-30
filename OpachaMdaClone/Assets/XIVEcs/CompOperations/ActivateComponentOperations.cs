@@ -30,6 +30,8 @@ namespace XIV.Ecs
 
         public static void DisableComponent(World world, EntityId entityId)
         {
+            int idx = disabledComponentOwners.Exists(p => p.id == entityId.id && p.generation == entityId.generation);
+            if (idx != -1) return; // already disabled
             disabledComponentOwners.Add() = entityId;
             disabledComponents.Add() = world.GetComponent<T>(entityId);
         }
