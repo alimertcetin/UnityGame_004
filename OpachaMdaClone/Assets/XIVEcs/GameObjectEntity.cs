@@ -26,17 +26,26 @@ namespace XIV.Ecs
                 transform = goEntityTransform,
                 gameObjectEntity = goEntity
             });
+            var position = goEntityTransform.localPosition.ToVec3();
             entity.AddComponent(new PositionComp
             {
-                position = goEntityTransform.localPosition.ToVec3(),
+                posX = position.x,
+                posY = position.y,
+                posZ = position.z,
             });
+            var scale = goEntityTransform.localScale;
             entity.AddComponent(new ScaleComp
             {
-                scale = goEntityTransform.localScale.ToVec3(),
+                scaleX = scale.x,
+                scaleY = scale.y,
+                scaleZ = scale.z,
             });
+            var eulerAngles = goEntityTransform.eulerAngles.ToVec3();
             entity.AddComponent(new RotationComp
             {
-                eulerRotation = goEntityTransform.eulerAngles.ToVec3(),
+                rotX = eulerAngles.x,
+                rotY = eulerAngles.y,
+                rotZ = eulerAngles.z,
             });
 
 #if UNITY_EDITOR
