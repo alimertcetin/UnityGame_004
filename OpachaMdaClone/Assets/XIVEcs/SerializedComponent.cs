@@ -20,8 +20,6 @@ namespace XIV.Ecs
 
         void Reset()
         {
-            // if gameObject has GameObjectEntity AddComponent will return null, will not change existing one
-            gameObject.AddComponent<GameObjectEntity>();
             GetType().XIVInvokeMethodsHasAttribute<OnResetAttribute>(this);
         }
     }
