@@ -203,7 +203,7 @@ namespace XIV.Ecs
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void DisableComponent<T>(World world, EntityId entityId) where T : struct, IComponent
         {
-            ActivateComponentOperations<T>.DisableComponent(world, entityId); // your Disable enqueues internal removal too
+            ActivateComponentOperations<T>.DisableComponent(world, entityId); // Disable enqueues internal removal too
             var id = ComponentIdManager.GetComponentId<T>();
             ref var r = ref opQueue.Add();
             r.Type = OpType.DisableComponent;
@@ -389,7 +389,8 @@ namespace XIV.Ecs
         public static void ExecutePending(World world)
         {
             var span = opQueue.AsReadOnlySpan();
-            for (int i = 0; i < span.Length; i++)
+            var spanLength = span.Length;
+            for (int i = 0; i < spanLength; i++)
             {
                 ref readonly var op = ref span[i];
                 switch (op.Type)
