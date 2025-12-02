@@ -8,11 +8,11 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: ConnectionMaterial
-  m_Shader: {fileID: 4800000, guid: 87af61aefe0a4435b3a77ce349b8f818, type: 3}
+  m_Shader: {fileID: 4800000, guid: b2b93ba778a64ab88c7d234e8a770982, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
-  m_EnableInstancingVariants: 0
+  m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap: {}
@@ -70,6 +70,8 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
+    - _SegCount: 7
+    - _SegGap: 0.6
     - _ShadowSize: 1.04
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1

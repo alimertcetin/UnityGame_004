@@ -6,6 +6,8 @@
         _ShadowColor ("Shadow Color", Color) = (0,0,0,0.4)
         _ShadowOffset ("Shadow Offset", Vector) = (0, -0.1, 0, 0)
         _ShadowSize ("Shadow Size", Vector) = (1.05, 1.05, 0, 0)
+        _SegCount ("Segment Count", Float) = 1
+//        _SegGap ("Gap Fraction", Range(0,1)) = 0.2
     }
 
     SubShader
@@ -31,6 +33,8 @@
             fixed4 _ShadowColor;
             float4 _ShadowOffset;
             float3 _ShadowSize;
+            float _SegCount;
+            // float _SegGap;
 
             struct appdata
             {
@@ -46,6 +50,21 @@
                 fixed4 color : COLOR;
                 float4 vertex : SV_POSITION;
             };
+
+            float SegmentMask(float uvx)
+            {
+                float count = max(_SegCount, 0);
+                if (count <= 0)
+                {
+                    return 1;
+                }
+                float segLen = 1.0 / count;
+                float local = fmod(uvx, segLen);
+                // float filled = segLen * (1.0 - _SegGap);
+                float filled = segLen * (0.9);
+                
+                return step(local, filled);
+            }
 
             v2f vert(appdata v)
             {
@@ -82,7 +101,8 @@
 
             fixed4 frag(v2f i) : SV_Target
             {
-                return _ShadowColor * i.color.a;
+                float m = SegmentMask(i.uv.x);
+                return _ShadowColor * i.color.a * m;
             }
             ENDCG
         }
@@ -97,6 +117,8 @@
             #include "UnityCG.cginc"
 
             sampler2D _MainTex;
+            float _SegCount;
+            float _SegGap;
 
             struct appdata
             {
@@ -120,11 +142,27 @@
                 o.color = v.color;
                 return o;
             }
+            
+            float SegmentMask(float uvx)
+            {
+                float count = max(_SegCount, 0);
+                if (count <= 0)
+                {
+                    return 1;
+                }
+                float segLen = 1.0 / count;
+                float local = fmod(uvx, segLen);
+                // float filled = segLen * (1.0 - _SegGap);
+                float filled = segLen * (0.9);
+                
+                return step(local, filled);
+            }
 
             fixed4 frag(v2f i) : SV_Target
             {
+                float m = SegmentMask(i.uv.x);
                 fixed4 texCol = tex2D(_MainTex, i.uv);
-                return texCol * i.color;
+                return texCol * i.color * m;
             }
             ENDCG
         }

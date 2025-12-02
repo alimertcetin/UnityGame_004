@@ -11,9 +11,9 @@ namespace TheGame
         [OnValueChanged(nameof(UpdateGenerationSpeed))]
         public int duration;
         public int shieldPoints; // default = 5, adc = 0, tank = 14
-        [DisplayWithoutEdit]
-        public float generationSpeed;
+        public float resourceGenerationSpeed;
+        public float shieldGenerationSpeed = 0.5f;
         
-        void UpdateGenerationSpeed() => generationSpeed = (float)quantity / duration;
+        void UpdateGenerationSpeed() => resourceGenerationSpeed = (float)quantity / duration;
     }
 }

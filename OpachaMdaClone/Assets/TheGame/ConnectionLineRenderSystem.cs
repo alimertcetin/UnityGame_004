@@ -1,14 +1,30 @@
 ﻿using System.Threading;
+using TheGame.Extensions;
 using UnityEngine;
 using XIV.Core.DataStructures;
+using XIV.Core.TweenSystem;
+using XIV.Core.Utils;
 using XIV.Core.XIVMath;
+using XIV.Ecs;
 using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame
 {
+    public struct LineRendererComp : IComponent
+    {
+        public LineRenderer lineRenderer;
+    }
+
+    public struct InstancedRendererComp : IComponent
+    {
+        public Renderer renderer;
+        public MaterialPropertyBlock materialPropertyBlock;
+    }
+    
     public class ConnectionLineRenderSystem : XIV.Ecs.System
     {
         readonly LineRendererPositionData lineRendererPositionData = null;
+        readonly Filter<OccupiedNodeComp> updateConnectionVisualFilter = new Filter<OccupiedNodeComp>().Tag<UpdateVisualLineConnectionTag>();
         readonly ConnectionDB connectionDB = null;
         
         public override void Start()
@@ -43,6 +59,7 @@ namespace TheGame
 
         public override void Update()
         {
+            updateConnectionVisualFilter.ForEach(UpdateConnectionVisuals);
             AssignLineRendererPositions();
         }
 
@@ -53,7 +70,8 @@ namespace TheGame
             {
                 // Perf : Skip unmodified lineRenderers
                 ref ConnectionPair connectionPair = ref connectionDB[i];
-                connectionPair.lineRenderer.SetPositions(connectionPair.positions);
+                connectionPair.lineRendererEntity.GetComponent<LineRendererComp>().lineRenderer.SetPositions(connectionPair.positions);
+                
             }
         }
 
@@ -70,7 +88,7 @@ namespace TheGame
             Vec3 direction = (lineEnd - lineStart).normalized;
 
             float totalDistance = Vec3.Distance(lineStart, lineEnd);
-            if (totalDistance < Mathf.Epsilon) return;
+            if (totalDistance < XIVMathf.Epsilon) return;
 
             // Project position onto the line segment (direction-agnostic)
             Vec3 lineVector = lineEnd - lineStart;
@@ -110,7 +128,7 @@ namespace TheGame
             for (int i = 0; i < count; i++)
             {
                 ref ConnectionPair connectionPair = ref connectionDB[i];
-                if (connectionPair.resourceEntitiesOnConnection.Count == 0) continue;
+                // if (connectionPair.resourceEntitiesOnConnection.Count == 0) continue;
                 
                 var startPos = connectionPair.startPosition;
                 var endPos = connectionPair.endPosition;
@@ -123,9 +141,69 @@ namespace TheGame
                     var targetPos = Vec3.Lerp(startPos, endPos, t);
                     var currentPos = positions[j];
                     var newPos = Vec3.MoveTowards(currentPos.ToVec3(), targetPos, dt);
+                    
                     positions[j] = newPos.ToVector3();
                 }
             }
         }
+
+        void UpdateConnectionVisuals(Entity nodeEntity, ref OccupiedNodeComp occupiedNodeComp)
+        {
+            nodeEntity.RemoveTag<UpdateVisualLineConnectionTag>();
+            ref var attackerUnitComp = ref occupiedNodeComp.unitEntity.GetComponent<UnitComp>();
+            var renderer = nodeEntity.GetUnityComponent<SpriteRenderer>();
+            var ca = renderer.color;
+            var cb = UnitIdLookup.GetColor(attackerUnitComp.unitType);
+            nodeEntity.DisableComponent<ScaleComp>();
+            renderer.CancelTween();
+            renderer.XIVTween()
+                .ScaleBounceOnce()
+                .And()
+                .SpriteRendererColor(ca, cb, 0.5f, EasingFunction.SmoothStop3)
+                .OnComplete(() => nodeEntity.EnableComponent<ScaleComp>())
+                .Start();
+
+            using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
+            int len = connectionDB.GetAllConnectionPairs(nodeEntity, indexBuffer);
+            for (int i = 0; i < len; i++)
+            {
+                ref var connectionPair = ref connectionDB[indexBuffer[i]];
+                var neighborEntity = connectionPair.GetOpposite(nodeEntity);
+                UnitIdLookup.UnitType neighborUnitType = UnitIdLookup.UnitType.Black;
+                if (neighborEntity.HasComponent<OccupiedNodeComp>())
+                {
+                    neighborUnitType = neighborEntity.GetComponent<OccupiedNodeComp>().unitEntity.GetComponent<UnitComp>().unitType;
+                }
+
+                ref var lineRendererComp = ref connectionPair.lineRendererEntity.GetComponent<LineRendererComp>();
+                ref var instancedRendererComp = ref connectionPair.lineRendererEntity.GetComponent<InstancedRendererComp>();
+                
+                if (neighborUnitType == attackerUnitComp.unitType)
+                {
+                    lineRendererComp.lineRenderer.XIVSetColor(UnitIdLookup.GetColor(attackerUnitComp.unitType));
+                    
+                    instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
+                    instancedRendererComp.materialPropertyBlock.SetFloat(ShaderConstants.Custom_LineWithShadow_Gradient_Sized.SegCount_Float, 1);
+                    instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
+                    continue;
+                }
+
+                if (nodeEntity == connectionPair.entity1)
+                {
+                    lineRendererComp.lineRenderer.startColor = UnitIdLookup.GetColor(attackerUnitComp.unitType);
+                    lineRendererComp.lineRenderer.endColor = UnitIdLookup.GetColor(neighborUnitType);
+                }
+                else
+                {
+                    lineRendererComp.lineRenderer.startColor = UnitIdLookup.GetColor(neighborUnitType);
+                    lineRendererComp.lineRenderer.endColor = UnitIdLookup.GetColor(attackerUnitComp.unitType);
+                }
+
+                instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
+                instancedRendererComp.materialPropertyBlock.SetFloat(ShaderConstants.Custom_LineWithShadow_Gradient_Sized.SegCount_Float, 7);
+                instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
+            }
+        }
+
     }
 }

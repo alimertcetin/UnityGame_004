@@ -1,5 +1,4 @@
 using System;
-using TMPro;
 using XIV.Ecs;
 using XIV.UnityEngineIntegration;
 
@@ -15,31 +14,69 @@ namespace TheGame
     [Serializable]
     public struct NodeComp : IComponent
     {
-        public TMP_Text txt_quantity;
         public int configIdx;
-        public float resourceQuantity;
-        public float shieldPoints;
     }
     
     public class NodeCompSerialized : SerializedComponent<NodeComp>
     {
         [Button]
-        void AddReevaluateTag()
+        void SendResourceToPlayer()
         {
-            // GetComponent<GameObjectEntity>().entity.AddTag<ReevaluateDecisionTag>();
+            GetComponent<GameObjectEntity>().entity.AddTag<SendResourceToPlayerTag>();
         }
+        
+        [Button]
+        void SendResourceToAllNeighbors()
+        {
+            GetComponent<GameObjectEntity>().entity.AddTag<SendResourceToAllNeighborsTag>();
+        }
+        
+        [Button]
+        void ChangeTypeToTank()
+        {
+            GetComponent<GameObjectEntity>().entity.AddComponent(new NodeChangeTypeComp
+            {
+                penalty = 0f,
+                newConfig = AssetReferences.DEFEND_CONFIG,
+            });
+        }
+        
+        [Button]
+        void ChangeTypeToAdc()
+        {
+            GetComponent<GameObjectEntity>().entity.AddComponent(new NodeChangeTypeComp
+            {
+                penalty = 0f,
+                newConfig = AssetReferences.RESOURCE_GENERATOR_CONFIG,
+            });
+        }
+        
+        [Button]
+        void ChangeTypeToDefault()
+        {
+            GetComponent<GameObjectEntity>().entity.AddComponent(new NodeChangeTypeComp
+            {
+                penalty = 0f,
+                newConfig = 0,
+            });
+        }
+    }
+    
+    public struct SendResourceToPlayerTag : ITag { }
+    public struct SendResourceToAllNeighborsTag : ITag { }
+
+    public struct ResourceComp : IComponent
+    {
+        public float resourceQuantity;
     }
 
     public struct ResourceGeneratorComp : IComponent
     {
         public float resourceGenerationSpeed;
-        public float resourceQuantity;
     }
 
     public struct ShieldGeneratorComp : IComponent
     {
         public float shieldGenerationSpeed;
-        public float shieldPoints;
-        public float totalShieldPoints;
     }
 }

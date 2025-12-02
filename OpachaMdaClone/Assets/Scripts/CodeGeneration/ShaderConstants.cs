@@ -6,6 +6,182 @@ using UnityEngine;
 public static class ShaderConstants
 {
 	// Inner Classes
+	public static class Custom_AnimatedBezelsUI
+	{
+		// Members
+		public const string MainTex_Texture = "_MainTex";
+		public static readonly int MainTex_TextureID = Shader.PropertyToID("_MainTex");
+		public const string BackgroundColor_Color = "_BackgroundColor";
+		public static readonly int BackgroundColor_ColorID = Shader.PropertyToID("_BackgroundColor");
+		public const string BezelFrequency_Range = "_BezelFrequency";
+		public static readonly int BezelFrequency_RangeID = Shader.PropertyToID("_BezelFrequency");
+		public const string BezelMinSize_Float = "_BezelMinSize";
+		public static readonly int BezelMinSize_FloatID = Shader.PropertyToID("_BezelMinSize");
+		public const string BezelMaxSize_Float = "_BezelMaxSize";
+		public static readonly int BezelMaxSize_FloatID = Shader.PropertyToID("_BezelMaxSize");
+		public const string BezelColor0_Color = "_BezelColor0";
+		public static readonly int BezelColor0_ColorID = Shader.PropertyToID("_BezelColor0");
+		public const string BezelColor1_Color = "_BezelColor1";
+		public static readonly int BezelColor1_ColorID = Shader.PropertyToID("_BezelColor1");
+		public const string BezelColor2_Color = "_BezelColor2";
+		public static readonly int BezelColor2_ColorID = Shader.PropertyToID("_BezelColor2");
+		public const string BezelColor3_Color = "_BezelColor3";
+		public static readonly int BezelColor3_ColorID = Shader.PropertyToID("_BezelColor3");
+		public const string BezelMinSpeed_Float = "_BezelMinSpeed";
+		public static readonly int BezelMinSpeed_FloatID = Shader.PropertyToID("_BezelMinSpeed");
+		public const string BezelMaxSpeed_Float = "_BezelMaxSpeed";
+		public static readonly int BezelMaxSpeed_FloatID = Shader.PropertyToID("_BezelMaxSpeed");
+		
+	} // class Custom_AnimatedBezelsUI
+	
+	public static class Custom_AnimatedBezelsUI_GrowShrink
+	{
+		// Members
+		public const string MainTex_Texture = "_MainTex";
+		public static readonly int MainTex_TextureID = Shader.PropertyToID("_MainTex");
+		public const string BackgroundColor_Color = "_BackgroundColor";
+		public static readonly int BackgroundColor_ColorID = Shader.PropertyToID("_BackgroundColor");
+		public const string BezelFrequency_Range = "_BezelFrequency";
+		public static readonly int BezelFrequency_RangeID = Shader.PropertyToID("_BezelFrequency");
+		public const string BezelMinSize_Float = "_BezelMinSize";
+		public static readonly int BezelMinSize_FloatID = Shader.PropertyToID("_BezelMinSize");
+		public const string BezelMaxSize_Float = "_BezelMaxSize";
+		public static readonly int BezelMaxSize_FloatID = Shader.PropertyToID("_BezelMaxSize");
+		public const string BezelColor0_Color = "_BezelColor0";
+		public static readonly int BezelColor0_ColorID = Shader.PropertyToID("_BezelColor0");
+		public const string BezelColor1_Color = "_BezelColor1";
+		public static readonly int BezelColor1_ColorID = Shader.PropertyToID("_BezelColor1");
+		public const string BezelColor2_Color = "_BezelColor2";
+		public static readonly int BezelColor2_ColorID = Shader.PropertyToID("_BezelColor2");
+		public const string BezelColor3_Color = "_BezelColor3";
+		public static readonly int BezelColor3_ColorID = Shader.PropertyToID("_BezelColor3");
+		public const string BezelMinSpeed_Float = "_BezelMinSpeed";
+		public static readonly int BezelMinSpeed_FloatID = Shader.PropertyToID("_BezelMinSpeed");
+		public const string BezelMaxSpeed_Float = "_BezelMaxSpeed";
+		public static readonly int BezelMaxSpeed_FloatID = Shader.PropertyToID("_BezelMaxSpeed");
+		public const string VoronoiCells_Float = "_VoronoiCells";
+		public static readonly int VoronoiCells_FloatID = Shader.PropertyToID("_VoronoiCells");
+		
+	} // class Custom_AnimatedBezelsUI_GrowShrink
+	
+	public static class Custom_CircleTangentTriangle
+	{
+		// Members
+		public const string Color_Color = "_Color";
+		public static readonly int Color_ColorID = Shader.PropertyToID("_Color");
+		public const string Center_Vector = "_Center";
+		public static readonly int Center_VectorID = Shader.PropertyToID("_Center");
+		public const string Radius_Float = "_Radius";
+		public static readonly int Radius_FloatID = Shader.PropertyToID("_Radius");
+		public const string Angle_Range = "_Angle";
+		public static readonly int Angle_RangeID = Shader.PropertyToID("_Angle");
+		public const string Length_Float = "_Length";
+		public static readonly int Length_FloatID = Shader.PropertyToID("_Length");
+		
+	} // class Custom_CircleTangentTriangle
+	
+	public static class Custom_LineWithShadow_Gradient
+	{
+		// Members
+		public const string MainTex_Texture = "_MainTex";
+		public static readonly int MainTex_TextureID = Shader.PropertyToID("_MainTex");
+		public const string ShadowColor_Color = "_ShadowColor";
+		public static readonly int ShadowColor_ColorID = Shader.PropertyToID("_ShadowColor");
+		public const string ShadowOffset_Vector = "_ShadowOffset";
+		public static readonly int ShadowOffset_VectorID = Shader.PropertyToID("_ShadowOffset");
+		
+	} // class Custom_LineWithShadow_Gradient
+	
+	public static class Custom_LineWithShadow_Gradient_Sized
+	{
+		// Members
+		public const string MainTex_Texture = "_MainTex";
+		public static readonly int MainTex_TextureID = Shader.PropertyToID("_MainTex");
+		public const string ShadowColor_Color = "_ShadowColor";
+		public static readonly int ShadowColor_ColorID = Shader.PropertyToID("_ShadowColor");
+		public const string ShadowOffset_Vector = "_ShadowOffset";
+		public static readonly int ShadowOffset_VectorID = Shader.PropertyToID("_ShadowOffset");
+		public const string ShadowSize_Vector = "_ShadowSize";
+		public static readonly int ShadowSize_VectorID = Shader.PropertyToID("_ShadowSize");
+		public const string SegCount_Float = "_SegCount";
+		public static readonly int SegCount_FloatID = Shader.PropertyToID("_SegCount");
+		
+	} // class Custom_LineWithShadow_Gradient_Sized
+	
+	public static class Custom_ShieldCircle
+	{
+		// Members
+		public const string ColorActive_Color = "_ColorActive";
+		public static readonly int ColorActive_ColorID = Shader.PropertyToID("_ColorActive");
+		public const string ColorInactive_Color = "_ColorInactive";
+		public static readonly int ColorInactive_ColorID = Shader.PropertyToID("_ColorInactive");
+		public const string TotalShield_Float = "_TotalShield";
+		public static readonly int TotalShield_FloatID = Shader.PropertyToID("_TotalShield");
+		public const string CurrentShield_Float = "_CurrentShield";
+		public static readonly int CurrentShield_FloatID = Shader.PropertyToID("_CurrentShield");
+		public const string Radius_Float = "_Radius";
+		public static readonly int Radius_FloatID = Shader.PropertyToID("_Radius");
+		public const string Thickness_Float = "_Thickness";
+		public static readonly int Thickness_FloatID = Shader.PropertyToID("_Thickness");
+		public const string Gap_Float = "_Gap";
+		public static readonly int Gap_FloatID = Shader.PropertyToID("_Gap");
+		
+	} // class Custom_ShieldCircle
+	
+	public static class Custom_ShieldCircleAdvanced
+	{
+		// Members
+		public const string ColorActive_Color = "_ColorActive";
+		public static readonly int ColorActive_ColorID = Shader.PropertyToID("_ColorActive");
+		public const string ColorInactive_Color = "_ColorInactive";
+		public static readonly int ColorInactive_ColorID = Shader.PropertyToID("_ColorInactive");
+		public const string GlowColor_Color = "_GlowColor";
+		public static readonly int GlowColor_ColorID = Shader.PropertyToID("_GlowColor");
+		public const string TotalShield_Float = "_TotalShield";
+		public static readonly int TotalShield_FloatID = Shader.PropertyToID("_TotalShield");
+		public const string CurrentShield_Float = "_CurrentShield";
+		public static readonly int CurrentShield_FloatID = Shader.PropertyToID("_CurrentShield");
+		public const string Radius_Float = "_Radius";
+		public static readonly int Radius_FloatID = Shader.PropertyToID("_Radius");
+		public const string Thickness_Float = "_Thickness";
+		public static readonly int Thickness_FloatID = Shader.PropertyToID("_Thickness");
+		public const string GapDeg_Float = "_GapDeg";
+		public static readonly int GapDeg_FloatID = Shader.PropertyToID("_GapDeg");
+		public const string EdgeSoftness_Float = "_EdgeSoftness";
+		public static readonly int EdgeSoftness_FloatID = Shader.PropertyToID("_EdgeSoftness");
+		public const string GlowIntensity_Float = "_GlowIntensity";
+		public static readonly int GlowIntensity_FloatID = Shader.PropertyToID("_GlowIntensity");
+		public const string PulseAmp_Float = "_PulseAmp";
+		public static readonly int PulseAmp_FloatID = Shader.PropertyToID("_PulseAmp");
+		public const string PulseFreq_Float = "_PulseFreq";
+		public static readonly int PulseFreq_FloatID = Shader.PropertyToID("_PulseFreq");
+		public const string PulseSeed_Float = "_PulseSeed";
+		public static readonly int PulseSeed_FloatID = Shader.PropertyToID("_PulseSeed");
+		public const string DamageProgress_Float = "_DamageProgress";
+		public static readonly int DamageProgress_FloatID = Shader.PropertyToID("_DamageProgress");
+		public const string DamageFlash_Float = "_DamageFlash";
+		public static readonly int DamageFlash_FloatID = Shader.PropertyToID("_DamageFlash");
+		
+	} // class Custom_ShieldCircleAdvanced
+	
+	public static class Custom_TriangleAttachedToCircle
+	{
+		// Members
+		public const string Color_Color = "_Color";
+		public static readonly int Color_ColorID = Shader.PropertyToID("_Color");
+		public const string Center_Vector = "_Center";
+		public static readonly int Center_VectorID = Shader.PropertyToID("_Center");
+		public const string CircleRadius_Float = "_CircleRadius";
+		public static readonly int CircleRadius_FloatID = Shader.PropertyToID("_CircleRadius");
+		public const string AttachAngle_Range = "_AttachAngle";
+		public static readonly int AttachAngle_RangeID = Shader.PropertyToID("_AttachAngle");
+		public const string AngularWidth_Range = "_AngularWidth";
+		public static readonly int AngularWidth_RangeID = Shader.PropertyToID("_AngularWidth");
+		public const string TriangleLength_Float = "_TriangleLength";
+		public static readonly int TriangleLength_FloatID = Shader.PropertyToID("_TriangleLength");
+		
+	} // class Custom_TriangleAttachedToCircle
+	
 	public static class TextMeshPro_BitmapCustomAtlas
 	{
 		// Members

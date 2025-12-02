@@ -1,10 +1,14 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using XIV.Core.XIVMath;
+using XIV.Ecs;
 using XIV.UnityEngineIntegration;
+using Random = UnityEngine.Random;
 
 namespace TheGame
 {
+    
     [RequireComponent(typeof(MeshRenderer))]
     public class TempShield : MonoBehaviour
     {
@@ -12,18 +16,18 @@ namespace TheGame
         MaterialPropertyBlock mpb;
 
         [Header("Shield values")]
-        public int totalShield = 12;
+        public int totalShield = 7;
         [Tooltip("Can be fractional (e.g. 3.5) for partial segment fill")]
-        public float currentShield = 12f;
+        public float currentShield = 7f;
 
         [Header("Visuals")]
-        public float radius = 0.45f;
+        public float radius = 0.65f;
         public float thickness = 0.08f;
         public float gapDeg = 6f;
         public float edgeSoftness = 0.008f;
         public float glowIntensity = 1.5f;
-        public float pulseAmp = 0.06f;
-        public float pulseFreq = 1.6f;
+        public float pulseAmp = 0.014f;
+        public float pulseFreq = 2f;
         [Range(0,1)] public float damageFlash = 0.8f;
 
         // internal
@@ -35,7 +39,6 @@ namespace TheGame
             rend = GetComponent<MeshRenderer>();
             mpb = new MaterialPropertyBlock();
             pulseSeed = Random.Range(0f, 6.28f); // randomize phase
-            WriteAllToMPB();
         }
 
         void OnEnable()
@@ -44,22 +47,47 @@ namespace TheGame
             WriteAllToMPB();
         }
 
+        void Update()
+        {
+            WriteAllToMPB();
+        }
+
         void WriteAllToMPB()
         {
-            rend.GetPropertyBlock(mpb);
-            mpb.SetFloat("_TotalShield", (float)totalShield);
-            mpb.SetFloat("_CurrentShield", currentShield);
-            mpb.SetFloat("_Radius", radius);
-            mpb.SetFloat("_Thickness", thickness);
-            mpb.SetFloat("_GapDeg", gapDeg);
-            mpb.SetFloat("_EdgeSoftness", edgeSoftness);
-            mpb.SetFloat("_GlowIntensity", glowIntensity);
-            mpb.SetFloat("_PulseAmp", pulseAmp);
-            mpb.SetFloat("_PulseFreq", pulseFreq);
-            mpb.SetFloat("_PulseSeed", pulseSeed);
-            mpb.SetFloat("_DamageProgress", 0f);
-            mpb.SetFloat("_DamageFlash", damageFlash);
-            rend.SetPropertyBlock(mpb);
+            if (damageCoroutine != null) return;
+            SetupMaterialProperties(rend, mpb, new ShieldRenderPropertyComp
+            {
+                maxShield = totalShield,
+                currentShield = currentShield,
+                radius = radius,
+                thickness = thickness,
+                gapDeg = gapDeg,
+                edgeSoftness = edgeSoftness,
+                glowIntensity = glowIntensity,
+                pulseAmp = pulseAmp,
+                pulseFreq = pulseFreq,
+                pulseSeed = pulseSeed,
+                damageProgress = 0f,
+                damageFlash = damageFlash,
+            });
+        }
+
+        static void SetupMaterialProperties(Renderer renderer, MaterialPropertyBlock mpb, ShieldRenderPropertyComp shieldRenderPropertyComp)
+        {
+            renderer.GetPropertyBlock(mpb);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.TotalShield_FloatID, shieldRenderPropertyComp.maxShield);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.CurrentShield_FloatID, shieldRenderPropertyComp.currentShield);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.Radius_FloatID, shieldRenderPropertyComp.radius);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.Thickness_FloatID, shieldRenderPropertyComp.thickness);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.GapDeg_FloatID, shieldRenderPropertyComp.gapDeg);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.EdgeSoftness_FloatID, shieldRenderPropertyComp.edgeSoftness);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.GlowIntensity_FloatID, shieldRenderPropertyComp.glowIntensity);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.PulseAmp_FloatID, shieldRenderPropertyComp.pulseAmp);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.PulseFreq_FloatID, shieldRenderPropertyComp.pulseFreq);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.PulseSeed_FloatID, shieldRenderPropertyComp.pulseSeed);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.DamageProgress_FloatID, shieldRenderPropertyComp.damageProgress);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.DamageFlash_FloatID, shieldRenderPropertyComp.damageFlash);
+            renderer.SetPropertyBlock(mpb);
         }
 
         // Call this every frame if currentShield or totalShield may change frequently
@@ -68,13 +96,15 @@ namespace TheGame
             totalShield = total;
             currentShield = current;
             rend.GetPropertyBlock(mpb);
-            mpb.SetFloat("_TotalShield", (float)totalShield);
-            mpb.SetFloat("_CurrentShield", currentShield);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.TotalShield_FloatID, total);
+            mpb.SetFloat(ShaderConstants.Custom_ShieldCircleAdvanced.CurrentShield_FloatID, current);
             rend.SetPropertyBlock(mpb);
         }
 
         public bool useNewShieldVal;
+        [Min(0f)]
         public float newShieldValue;
+        [Min(0f)]
         public float speed = 3f;
 
         [Button(true)]

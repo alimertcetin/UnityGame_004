@@ -16,7 +16,7 @@ namespace TheGame
         public Vec3 startPosition;
         public Vec3 endPosition;
         public Vector3[] positions; // lineRenderer positions
-        public LineRenderer lineRenderer;
+        public Entity lineRendererEntity;
         public DynamicArray<Entity> resourceEntitiesOnConnection;
 
         public bool Contains(Entity entity) => entity1 == entity || entity2 == entity;
@@ -57,7 +57,7 @@ namespace TheGame
             hashCode.Add(startPosition);
             hashCode.Add(endPosition);
             hashCode.Add(positions);
-            hashCode.Add(lineRenderer);
+            hashCode.Add(lineRendererEntity);
             hashCode.Add(resourceEntitiesOnConnection);
             return hashCode.ToHashCode();
         }
@@ -71,7 +71,7 @@ namespace TheGame
 
         public ref ConnectionPair this[int index] => ref connections[index];
 
-        public void AddConnection(Entity ent1, Entity ent2, Vec3 connectionStartPosition, Vec3 connectionEndPosition, Vector3[] positions, LineRenderer lineRenderer)
+        public void AddConnection(Entity ent1, Entity ent2, Vec3 connectionStartPosition, Vec3 connectionEndPosition, Vector3[] positions, Entity lineRendererEntity)
         {
             if (GetConnectionIndex(ent1, ent2) != -1) throw new InvalidOperationException($"{ent1} and {ent2} are already connected");
             int idx = connections.Count;
@@ -89,7 +89,7 @@ namespace TheGame
             connectionPair.startPosition = connectionStartPosition;
             connectionPair.endPosition = connectionEndPosition;
             connectionPair.positions = positions;
-            connectionPair.lineRenderer = lineRenderer;
+            connectionPair.lineRendererEntity = lineRendererEntity;
             connectionPair.resourceEntitiesOnConnection = new DynamicArray<Entity>();
 
         }
@@ -144,8 +144,8 @@ namespace TheGame
                 ref var pair = ref this[indexBuffer[i]];
                 var opposite = pair.GetOpposite(entity);
                 if (predicate.Invoke(opposite) == false) continue;
-                ref var oppositeNodeComp = ref opposite.GetComponent<NodeComp>();
-                resourceQuantity += oppositeNodeComp.resourceQuantity;
+                ref var oppositeResourceCompComp = ref opposite.GetComponent<ResourceComp>();
+                resourceQuantity += oppositeResourceCompComp.resourceQuantity;
             }
 
             return resourceQuantity;

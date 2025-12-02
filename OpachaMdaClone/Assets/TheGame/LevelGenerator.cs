@@ -190,7 +190,6 @@ namespace TheGame
             }
             
             const int LINERENDERER_POSITION_COUNT = 32; // link detail
-            using var posBuffer = ArrayUtils.GetBuffer<Vector3>(LINERENDERER_POSITION_COUNT);
             for (int connectionIdx = 0; connectionIdx < connectionCount; connectionIdx++)
             {
                 var ent1 = entityBuffer[conList1[connectionIdx]];
@@ -200,22 +199,29 @@ namespace TheGame
                 
                 var p0 = positionBuffer[conList1[connectionIdx]];
                 var p1 = positionBuffer[conList2[connectionIdx]];
-                var lineRenderer = GameObjectEntity.CreateEntity(world, assetReferences.connectionLineRendererPrefab).GetComponent<TransformComp>().transform.GetComponent<LineRenderer>();
+                
+                var lineRendererEntity = GameObjectEntity.CreateEntity(world, assetReferences.connectionLineRendererPrefab);
+                var lineRenderer = lineRendererEntity.GetComponent<TransformComp>().transform.GetComponent<LineRenderer>();
+                lineRendererEntity.AddComponent(new LineRendererComp
+                {
+                    lineRenderer = lineRenderer,
+                });
+                lineRendererEntity.AddComponent(new InstancedRendererComp
+                {
+                    renderer = lineRenderer.GetComponent<Renderer>(),
+                    materialPropertyBlock = new MaterialPropertyBlock(),
+                });
 #if UNITY_EDITOR
                 lineRenderer.gameObject.name = connectionDB.Count + " - " + ent1 + " <-> " + ent2;
 #endif
-                lineRenderer.transform.localScale = ent1.GetComponent<TransformComp>().transform.localScale;
+                lineRendererEntity.GetComponent<ScaleComp>().Set(ent1.GetComponent<ScaleComp>().scale);
                 lineRenderer.positionCount = LINERENDERER_POSITION_COUNT;
                 lineRenderer.XIVStraightLine(p0.ToVector2(), p1.ToVector2());
                 lineRenderer.XIVSetWidth(0.1f);
-                int len = lineRenderer.GetPositions(posBuffer);
-                var positions = new Vector3[len];
-                for (int i = 0; i < len; i++)
-                {
-                    positions[i] = posBuffer[i];
-                }
+                var positions = new Vector3[LINERENDERER_POSITION_COUNT];
+                lineRenderer.GetPositions(positions);
 
-                connectionDB.AddConnection(ent1, ent2, p0, p1, positions, lineRenderer);
+                connectionDB.AddConnection(ent1, ent2, p0, p1, positions, lineRendererEntity);
             }
             
             XIVPoolSystem.ReleaseItem(conList1);

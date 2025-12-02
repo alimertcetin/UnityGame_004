@@ -1,13 +1,17 @@
-﻿using XIV.Ecs;
+﻿using XIV.Core.Utils;
+using XIV.Ecs;
 
 namespace TheGame
 {
     public class DebugSystem : XIV.Ecs.System
     {
-        LevelSettings levelSettings = null;
+        readonly LevelSettings levelSettings = null;
         
-        Filter<SliderComp> sliderFilter;
-        Filter<SliderComp, SliderValueChangedComp> sliderValueChangeFilter;
+        readonly Filter<SliderComp> sliderFilter;
+        readonly Filter<SliderComp, SliderValueChangedComp> sliderValueChangeFilter;
+        readonly Filter<ResourceComp, OccupiedNodeComp> sendResourceToPlayerFilter = new Filter<ResourceComp, OccupiedNodeComp>().Tag<SendResourceToPlayerTag>();
+        readonly Filter<ResourceComp, OccupiedNodeComp> sendResourceToAllNeighborsFilter = new Filter<ResourceComp, OccupiedNodeComp>().Tag<SendResourceToAllNeighborsTag>();
+        readonly ConnectionDB connectionDB;
 
         public override void Start()
         {
@@ -25,6 +29,50 @@ namespace TheGame
                 sliderComp.value = sliderValueChangedComp.value;
                 levelSettings.timeScale = sliderValueChangedComp.value;
                 XTime.timeScale = sliderValueChangedComp.value;
+            });
+            
+            sendResourceToPlayerFilter.ForEach((Entity nodeEntity, ref ResourceComp resourceComp, ref OccupiedNodeComp occupiedNodeComp) =>
+            {
+                nodeEntity.RemoveTag<SendResourceToPlayerTag>();
+                using var neighborBuffer = ArrayUtils.GetBuffer<Entity>();
+                int count = connectionDB.GetHostileNeighbors(nodeEntity, occupiedNodeComp.unitEntity, neighborBuffer);
+
+                for (int i = 0; i < count; i++)
+                {
+                    var neighbor = neighborBuffer[i];
+                    if (neighbor.HasComponent<OccupiedNodeComp>())
+                    {
+                        ref var neighborOccupiedNodeComp = ref neighbor.GetComponent<OccupiedNodeComp>();
+                        ref var unitComp = ref neighborOccupiedNodeComp.unitEntity.GetComponent<UnitComp>();
+                        if (unitComp.unitType == UnitIdLookup.UnitType.Green)
+                        {
+                            nodeEntity.AddComponent(new SendResourceComp
+                            {
+                                resourceQuantity = (int)(resourceComp.resourceQuantity * 0.5f),
+                                toEntity = neighbor,
+                            });
+                        }
+                    }
+                }
+            });
+            
+            sendResourceToAllNeighborsFilter.ForEach((Entity nodeEntity, ref ResourceComp resourceComp, ref OccupiedNodeComp occupiedNodeComp) =>
+            {
+                nodeEntity.RemoveTag<SendResourceToAllNeighborsTag>();
+                
+                using var neighborBuffer = ArrayUtils.GetBuffer<Entity>();
+                int count = connectionDB.GetHostileNeighbors(nodeEntity, occupiedNodeComp.unitEntity, neighborBuffer);
+                var sendQuantity = (int)(resourceComp.resourceQuantity / count);
+
+                for (int i = 0; i < count; i++)
+                {
+                    var neighbor = neighborBuffer[i];
+                    nodeEntity.AddComponent(new SendResourceComp
+                    {
+                        resourceQuantity = sendQuantity,
+                        toEntity = neighbor,
+                    });
+                }
             });
         }
     }

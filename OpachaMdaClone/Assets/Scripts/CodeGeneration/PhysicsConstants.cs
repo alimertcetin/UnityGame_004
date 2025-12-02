@@ -18,6 +18,8 @@ public static class PhysicsConstants
 	public static readonly int UILayer = LayerMask.NameToLayer("UI");
 	public const string Node = "Node";
 	public static readonly int NodeLayer = LayerMask.NameToLayer("Node");
+	public const string Persistant = "Persistant";
+	public static readonly int PersistantLayer = LayerMask.NameToLayer("Persistant");
 	public static readonly string[] All = new string[]
 	{
 		Default,
@@ -26,6 +28,7 @@ public static class PhysicsConstants
 		Water,
 		UI,
 		Node,
+		Persistant,
 	};
 	
 } // class PhysicsConstants

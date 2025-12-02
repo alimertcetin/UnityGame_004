@@ -8,6 +8,8 @@ using XIV.Core.Extensions;
 using XIV.Core.Utils;
 using XIV.Core.XIVMath;
 using XIV.Ecs;
+using XIV.UnityEngineIntegration;
+using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame
 {
@@ -16,61 +18,75 @@ namespace TheGame
         readonly Filter<TransformComp, NodeComp> nodeCompFilter = null;
         readonly Filter<UnitComp> unitFilter = null;
         readonly AssetReferences assetReferences = null;
-        readonly LevelSettings levelSettings;
+        readonly LevelSettings levelSettings = null;
 
         public override void Start()
         {
-            void CreateUnit(UnitIdLookup.UnitType unitType) => world.NewEntity().AddComponent(new UnitComp { unitType = unitType, });
+            void CreateUnits(int nodeEntityCount)
+            {
+                Array values = Enum.GetValues(typeof(UnitIdLookup.UnitType));
+                for (int i = 0; i < levelSettings.hostileUnits && i < nodeEntityCount; i++)
+                {
+                    var v = (UnitIdLookup.UnitType)values.GetValue(i) + (int)UnitIdLookup.UnitType.Black + 1;
+                    var newEntity = world.NewEntity();
+                    newEntity.AddComponent(new UnitComp { unitType = v, });
+                    newEntity.AddComponent(new DebugNameComp { name = v.ToString() });
+                }
+            }
             
             // Initialize all nodes with default values
             nodeCompFilter.ForEach(InitializeNodes);
 
             using var nodeEntityBuffer = ArrayUtils.GetBuffer<Entity>(nodeCompFilter.NumberOfEntities);
-            var nodeEntityCount = nodeCompFilter.EntitiesNonAlloc(nodeEntityBuffer);
-            if (nodeEntityCount < 3) throw new InvalidOperationException();
-
-            Array values = Enum.GetValues(typeof(UnitIdLookup.UnitType));
-            for (int i = 0; i < levelSettings.hostileUnits; i++)
-            {
-                var v = (UnitIdLookup.UnitType)values.GetValue(i) + (int)UnitIdLookup.UnitType.Black + 1;
-                CreateUnit(v);
-            }
+            var arr = (Entity[])nodeEntityBuffer;
+            var nodeEntityCount = nodeCompFilter.EntitiesNonAlloc(arr);
+            CreateUnits(nodeEntityCount);
 
             var unitEntityCount = unitFilter.NumberOfEntities;
-            using var startingUnitNodeEntityBuffer = ArrayUtils.GetBuffer<Entity>(nodeEntityCount);
-            int order = 6; // max 6
-            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(1, 1, 0) * 200f, p => p.GetComponent<PositionComp>().position);
-            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(-1, 1, 0) * 200f, p => p.GetComponent<PositionComp>().position);
-            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(-1, -1, 0) * 200f, p => p.GetComponent<PositionComp>().position);
-            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(1, -1, 0) * 200f, p => p.GetComponent<PositionComp>().position);
-            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(1, 0, 0) * 200f, p => p.GetComponent<PositionComp>().position);
-            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(0, 1, 0) * 200f, p => p.GetComponent<PositionComp>().position);
-            startingUnitNodeEntityBuffer[order--] = ((Entity[])nodeEntityBuffer).XIVGetClosest(nodeEntityCount, new Vec3(0, 0, 0) * 200f, p => p.GetComponent<PositionComp>().position);
+            Entity[] excludeArr = new Entity[unitEntityCount];
+            Vector3 mapCenter = Vector3.zero;
+            for (int i = 0; i < nodeEntityCount; i++)
+            {
+                ref var entity = ref arr[i];
+                var pos = entity.GetComponent<PositionComp>().position;
+                mapCenter += pos.ToVector3();
+            }
+            mapCenter /= nodeEntityCount;
+            var angle = 180f / unitEntityCount;
 
             int index = 0;
+            var directionVector = (Vector3)XIVRandom.insideUnitCircle.ToVector2() * (mapCenter.sqrMagnitude * 0.5f);
             unitFilter.ForEach((Entity e, ref UnitComp unitComp) =>
             {
-                var entity = startingUnitNodeEntityBuffer[unitEntityCount - 1 - index++];
+                XIVDebug.DrawLine(mapCenter, directionVector, XIVColor.red, 10f);
+                var nodeEntity = arr.XIVGetClosest(nodeEntityCount, directionVector, out _, out _, (n) => n.GetComponent<PositionComp>().position, excludeArr, index);
+                directionVector = directionVector.RotateAroundZ(angle, mapCenter);
+                XIVDebug.DrawCircle(nodeEntity.GetComponent<PositionComp>().position, 2f, XIVColor.red, 8f);
                 unitComp.occupiedNodeEntities = new DynamicArray<Entity>();
                 unitComp.smartness01 = unitComp.unitType == UnitIdLookup.UnitType.Green ? unitComp.smartness01 : (float)unitComp.unitType / (float)(UnitIdLookup.UnitType.NumberOfItems - 1);
-                entity.AddComponent(new NodeOccupyComp
+                nodeEntity.AddComponent(new NodeOccupyComp
                 {
                     unitEntity = e,
                 });
+                excludeArr[index++] = nodeEntity;
             });
         }
 
         void InitializeNodes(Entity entity, ref TransformComp transformComp, ref NodeComp nodeComp)
         {
-            nodeComp.resourceQuantity = 3;
+            transformComp.transform.gameObject.name = "Node: " + entity.ToString();
             nodeComp.configIdx = 0;
-            nodeComp.txt_quantity.WriteScoreText((int)nodeComp.resourceQuantity);
-            nodeComp.shieldPoints = assetReferences.generationConfigs[nodeComp.configIdx].shieldPoints;
-            // nodeComp.totalShieldPoints = 7;
-            // nodeComp.resourceGenerationSpeed = 0;
             var renderer = transformComp.transform.GetComponent<SpriteRenderer>();
             renderer.color = UnitIdLookup.GetColor(UnitIdLookup.UnitType.Black);
-            entity.AddComponent(new NodeDecisionComp());
+            entity.AddComponent(new ResourceComp
+            {
+                resourceQuantity = 3f,
+            });
+            entity.AddComponent(new AddShieldComp
+            {
+                max = 7f,
+                current = 3f,
+            });
         }
     }
 }

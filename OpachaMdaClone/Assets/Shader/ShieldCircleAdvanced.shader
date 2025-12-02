@@ -105,7 +105,7 @@
                     discard;
 
                 // radial falloff for smooth edge
-                float edge = 0.0;
+                float edge;
                 if (dist > outerR - _EdgeSoftness) edge = saturate((outerR - dist) / _EdgeSoftness);
                 else if (dist < innerR + _EdgeSoftness) edge = saturate((dist - innerR) / _EdgeSoftness);
                 else edge = 1.0;
@@ -164,11 +164,10 @@
                 // Add flash color
                 baseColor.rgb = lerp(baseColor.rgb, baseColor.rgb + _DamageFlash * float3(1,0.6,0.2), flash);
 
-                // glow: create a radial glow outward from the outer edge, stronger on active segments
-                float glowFactor = 0.0;
                 // normalized distance from outer edge (0 at outerR, 1 beyond)
                 float outerDistNorm = saturate((dist - (outerR - _EdgeSoftness)) / (_Thickness + _EdgeSoftness));
-                glowFactor = (1.0 - outerDistNorm) * isActive;
+                // glow: create a radial glow outward from the outer edge, stronger on active segments
+                float glowFactor = (1.0 - outerDistNorm) * isActive;
                 float glow = pow(glowFactor, 1.2) * _GlowIntensity;
                 float3 glowCol = _GlowColor.rgb * glow;
 

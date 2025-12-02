@@ -118,7 +118,7 @@ namespace TheGame
         public void TransferOnce(bool allResource = true)
         {
             if (first.IsAlive() == false || second.IsAlive() == false || connectionDB.IsConnected(first, second) == false) return;
-            var total = (int)first.GetComponent<NodeComp>().resourceQuantity;
+            var total = (int)first.GetComponent<ResourceComp>().resourceQuantity;
             var send = allResource ? total : total * 0.5f;
             
             first.AddComponent(new SendResourceComp
@@ -132,17 +132,17 @@ namespace TheGame
         {
             if (first.IsAlive() == false || second.IsAlive() == false || connectionDB.IsConnected(first, second) == false) return;
             
-            first.AddComponent(new SendResourceContinuouslyComp
+            ref var nodeComp = ref first.GetComponent<NodeComp>();
+            first.AddComponent(new StartContinuousResourceTransferComp
             {
-                toEntity = second,
-                duration = assetReferences.generationConfigs[0].duration,
-                currentDuration = 0f
+                targetEntity = second,
+                sendInterval = assetReferences.generationConfigs[nodeComp.configIdx].duration,
             });
         }
 
         public void StopContinuousTransfer()
         {
-            first.RemoveComponent<SendResourceContinuouslyComp>();
+            if (first.HasComponent<SendResourceContinuouslyComp>()) first.AddTag<StopContinuousResourceTransferTag>();
         }
     }
 }
