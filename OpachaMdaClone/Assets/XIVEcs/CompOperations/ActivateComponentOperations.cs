@@ -8,15 +8,13 @@ namespace XIV.Ecs
     {
         static readonly int componentId = ComponentIdManager.GetComponentId<T>();
         static DynamicArray<EntityId> disabledComponentOwners;
-        static DynamicArray<T> disabledComponents;
         static DynamicArray<int> enabledComponentOwnerIndices;
 
         public static void Init()
         {
-            // ComponentOperationIndex.AddActivateComponentAction(ExecuteEnableComponent, true);
-            // ComponentOperationIndex.AddActivateComponentAction(ExecuteDisableComponent, false);
+            ComponentOperationIndex.AddActivateComponentAction(ExecuteEnableComponent, true);
+            ComponentOperationIndex.AddActivateComponentAction(ExecuteDisableComponent, false);
             disabledComponentOwners = new DynamicArray<EntityId>(64);
-            disabledComponents = new DynamicArray<T>(64);
             enabledComponentOwnerIndices = new DynamicArray<int>(64);
         }
 
@@ -33,7 +31,6 @@ namespace XIV.Ecs
             int idx = disabledComponentOwners.Exists(p => p.id == entityId.id && p.generation == entityId.generation);
             if (idx != -1) return; // already disabled
             disabledComponentOwners.Add() = entityId;
-            disabledComponents.Add() = world.GetComponent<T>(entityId);
         }
 
         public static void ExecuteEnableComponent(World world)
@@ -43,8 +40,6 @@ namespace XIV.Ecs
             {
                 ref var entityId = ref disabledComponentOwners[i];
                 world.entityDataList[entityId.id].disabledComponentBitset.SetBit0(componentId);
-                var idx = enabledComponentOwnerIndices[i];
-                ComponentOperationIndex.AddComponent<T>(disabledComponentOwners[idx], disabledComponents[idx]);
             }
             
             QuickSort(enabledComponentOwnerIndices.AsXIVMemory());
@@ -53,11 +48,8 @@ namespace XIV.Ecs
             {
                 var idx = enabledComponentOwnerIndices[i];
                 disabledComponentOwners.RemoveAt(idx);
-                disabledComponents.RemoveAt(idx);
             }
             enabledComponentOwnerIndices.Clear();
-            ComponentOperationIndex.ExecutePending(world);
-            // ComponentOperationIndex.ExecuteAddComponentAction<T>(world);
         }
 
         public static void ExecuteDisableComponent(World world)
@@ -67,10 +59,7 @@ namespace XIV.Ecs
             {
                 ref var entityId = ref disabledComponentOwners[i];
                 world.entityDataList[entityId.id].disabledComponentBitset.SetBit1(componentId);
-                ComponentOperationIndex.RemoveComponent<T>(entityId);
             }
-            ComponentOperationIndex.ExecutePending(world);
-            // ComponentOperationIndex.ExecuteRemoveComponentAction<T>(world);
         }
         
         public static void QuickSort(XIVMemory<int> arr)

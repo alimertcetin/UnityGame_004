@@ -34,19 +34,22 @@ namespace TheGame
             
             resourceComp.resourceQuantity = newQuantity;
             entity.RemoveComponent<NodeChangeTypeComp>();
-            entity.AddTag<UpdateResourceQuantityTextTag>();
             var shieldPoints = assetReferences.generationConfigs[nodeChangeTypeComp.newConfig].shieldPoints;
             if (shieldPoints > 0)
             {
-                entity.AddComponent(new AddShieldComp
+                world.NewEntity().AddComponent(new AddShieldEventComp
                 {
+                    targetEntity = entity,
                     max = shieldPoints,
-                    current = 0f
+                    current = 0f,
                 });
             }
             else
             {
-                entity.AddTag<RemoveShieldEventTag>();
+                world.NewEntity().AddComponent(new RemoveShieldEventComp
+                {
+                    targetEntity = entity,
+                });
             }
             nodeComp.configIdx = nodeChangeTypeComp.newConfig;
             

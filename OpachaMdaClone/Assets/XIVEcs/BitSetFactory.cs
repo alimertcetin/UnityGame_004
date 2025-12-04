@@ -4,8 +4,8 @@
     {
         static int GetBitBucketSize(int numberOfItems)
         {
-            var len = numberOfItems / Bitset.MAX_SET_SIZE;
-            if (numberOfItems % Bitset.MAX_SET_SIZE != 0)
+            var len = numberOfItems / Bitset.BITS_PER_BUCKET;
+            if (numberOfItems % Bitset.BITS_PER_BUCKET != 0)
             {
                 len++;
             }

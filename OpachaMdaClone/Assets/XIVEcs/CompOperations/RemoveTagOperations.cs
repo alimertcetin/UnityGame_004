@@ -11,6 +11,7 @@ namespace XIV.Ecs
 
         public static void Init()
         {
+            ComponentOperationIndex.AddTagAction(Execute, false);
             entityIds = new DynamicArray<EntityId>(64);
         }
 

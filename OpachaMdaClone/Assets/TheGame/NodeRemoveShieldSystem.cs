@@ -1,26 +1,31 @@
-﻿using XIV.Ecs;
+﻿using UnityEngine;
+using XIV.Ecs;
 
 namespace TheGame
 {
-    public struct RemoveShieldEventTag : ITag { }
-
+    public struct RemoveShieldEventComp : IComponent
+    {
+        public Entity targetEntity;
+    }
+    
     public class NodeRemoveShieldSystem : XIV.Ecs.System
     {
-        readonly Filter removeShieldFilter = new Filter().Tag<RemoveShieldEventTag>();
+        readonly Filter<RemoveShieldEventComp> removeShieldFilter = null;
 
         public override void Update()
         {
             removeShieldFilter.ForEach(RemoveShield);
         }
 
-        void RemoveShield(Entity entity)
+        void RemoveShield(Entity entity, ref RemoveShieldEventComp removeShieldEventComp)
         {
-            entity.RemoveTag<RemoveShieldEventTag>();
-            
-            entity.RemoveComponent<ShieldComp>();
-            entity.RemoveComponent<ShieldGeneratorComp>();
-            
-            entity.AddTag<RemoveShieldRendererEventTag>();
+            entity.Destroy();
+            removeShieldEventComp.targetEntity.RemoveComponent<ShieldComp>();
+            removeShieldEventComp.targetEntity.RemoveComponent<ShieldGeneratorComp>();
+            world.NewEntity().AddComponent(new RemoveShieldRendererEventComp
+            {
+                targetEntity = removeShieldEventComp.targetEntity,
+            });
         }
         
     }

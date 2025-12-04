@@ -2,30 +2,34 @@
 
 namespace TheGame
 {
-    public struct AddShieldComp : IComponent
+    public struct AddShieldEventComp : IComponent
     {
+        public Entity targetEntity;
         public float max;
         public float current;
     }
     
     public class NodeAddShieldSystem : XIV.Ecs.System
     {
-        readonly Filter<AddShieldComp> addShieldFilter = null;
+        readonly Filter<AddShieldEventComp> addShieldFilter = null;
 
         public override void Update()
         {
             addShieldFilter.ForEach(AddShield);
         }
 
-        void AddShield(Entity entity, ref AddShieldComp addShieldComp)
+        void AddShield(Entity entity, ref AddShieldEventComp addShieldEventComp)
         {
-            entity.AddComponent(new ShieldComp
+            entity.Destroy();
+            addShieldEventComp.targetEntity.AddComponent(new ShieldComp
             {
-                max = addShieldComp.max,
-                current = addShieldComp.current,
+                max = addShieldEventComp.max,
+                current = addShieldEventComp.current,
             });
-            entity.RemoveComponent<AddShieldComp>();
-            entity.AddTag<AddShieldRendererEventTag>();
+            world.NewEntity().AddComponent(new AddShieldRendererEventComp
+            {
+                targetEntity = addShieldEventComp.targetEntity,
+            });
         }
     }
 }

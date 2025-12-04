@@ -42,10 +42,11 @@ namespace TheGame
             // we already send required amount of resource
             if (totalAlly >= requiredResource) return;
 
-            entity.AddComponent(new SendResourceComp
+            world.NewEntity().AddComponent(new SendResourceEventComp
             {
-                resourceQuantity = (int)resourceComp.resourceQuantity,
+                fromEntity = entity,
                 toEntity = targetEntity,
+                resourceQuantity = (int)resourceComp.resourceQuantity,
             });
             // entity.AddTag<ReevaluateDecisionTag>();
 

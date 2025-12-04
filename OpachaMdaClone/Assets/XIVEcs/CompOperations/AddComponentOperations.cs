@@ -12,7 +12,7 @@ namespace XIV.Ecs
 
         public static void Init()
         {
-            // ComponentOperationIndex.AddComponentAction(Execute, true);
+            ComponentOperationIndex.AddComponentAction(Execute, true);
             entityIds = new DynamicArray<EntityId>(64);
             componentValues = new DynamicArray<T>(64);
         }

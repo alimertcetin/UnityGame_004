@@ -1,13 +1,7 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using TheGame.Extensions;
 using UnityEngine;
 using XIV.Core.DataStructures;
-using XIV.Core.Extensions;
-using XIV.Core.TweenSystem;
 using XIV.Core.Utils;
 using XIV.Core.XIVMath;
 using XIV.Ecs;
@@ -36,27 +30,26 @@ namespace TheGame
         public Timer sendTimer;
     }
 
-    public struct StartContinuousResourceTransferComp : IComponent
+    public struct StartContinuousResourceTransferEventComp : IComponent
     {
+        public Entity fromEntity;
         public Entity targetEntity;
         public float sendInterval; // in seconds
     }
     
-    public struct StopContinuousResourceTransferTag : ITag { }
-    
-    public struct SendResourceComp : IComponent
+    public struct SendResourceEventComp : IComponent
     {
-        public int resourceQuantity;
+        public Entity fromEntity;
         public Entity toEntity;
+        public int resourceQuantity;
     }
 
     public class ResourceTransferSystem : XIV.Ecs.System
     {
         readonly Filter<PositionComp, TransferableResourceComp> transferableResourceFilter = null;
-        readonly Filter<ResourceComp, ScaleComp, PositionComp, OccupiedNodeComp, SendResourceComp> sendResourceFilter = null;
+        readonly Filter<SendResourceEventComp> sendResourceFilter = null;
         readonly Filter<ResourceComp, SendResourceContinuouslyComp> sendResourceContinuouslyFilter = null;
-        readonly Filter<StartContinuousResourceTransferComp> startContinuousResourceTransferFilter = null;
-        readonly Filter<SendResourceContinuouslyComp> stopContinuousResourceTransferFilter = new Filter<SendResourceContinuouslyComp>().Tag<StopContinuousResourceTransferTag>();
+        readonly Filter<StartContinuousResourceTransferEventComp> startContinuousResourceTransferFilter = null;
         
         readonly AssetReferences assetReferences = null;
         readonly Queue<GameObject> resourcePool = new Queue<GameObject>();
@@ -87,32 +80,27 @@ namespace TheGame
 
         public override void Update()
         {
-            stopContinuousResourceTransferFilter.ForEach(StopContinuousResourceTransfer);
             startContinuousResourceTransferFilter.ForEach(StartContinuousResourceTransfer);
             transferableResourceFilter.ForEach(MoveResourceAlongLine);
             sendResourceFilter.ForEach(SendResource);
             sendResourceContinuouslyFilter.ForEach(SendResourceContinuously);
         }
 
-        void StopContinuousResourceTransfer(Entity entity)
+        void StartContinuousResourceTransfer(Entity entity, ref StartContinuousResourceTransferEventComp startContinuousResourceTransferComp)
         {
-            entity.RemoveComponent<SendResourceComp>();
-            entity.RemoveTag<StopContinuousResourceTransferTag>();
-            entity.RemoveComponent<SendResourceContinuouslyComp>();
-            entity.AddTag<RemoveResourceTransferIndicatorTag>();
-        }
-
-        void StartContinuousResourceTransfer(Entity entity, ref StartContinuousResourceTransferComp startContinuousResourceTransferComp)
-        {
-            entity.RemoveComponent<StartContinuousResourceTransferComp>();
+            entity.Destroy();
             var sendTimer = new Timer(startContinuousResourceTransferComp.sendInterval);
             sendTimer.Update(float.MaxValue); // send immediate
-            entity.AddComponent(new SendResourceContinuouslyComp
+            startContinuousResourceTransferComp.fromEntity.AddComponent(new SendResourceContinuouslyComp
             {
                 toEntity = startContinuousResourceTransferComp.targetEntity,
                 sendTimer = sendTimer,
             });
-            entity.AddTag<AddResourceTransferIndicatorTag>();
+            // world.NewEntity().AddComponent(new CreateResourceTransferIndicatorEventComp()
+            // {
+            //     fromEntity = startContinuousResourceTransferComp.fromEntity,
+            //     targetEntity = startContinuousResourceTransferComp.targetEntity,
+            // });
         }
 
         void MoveResourceAlongLine(Entity resourceEntity, ref PositionComp positionComp, ref TransferableResourceComp transferableResourceComp)
@@ -140,17 +128,22 @@ namespace TheGame
             resourceEntity.AddTag<ReturnToPoolTag>();
         }
 
-        void SendResource(Entity entity, ref ResourceComp resourceComp, ref ScaleComp scaleComp, ref PositionComp positionComp, ref OccupiedNodeComp occupiedNodeComp, ref SendResourceComp sendResourceComp)
+        void SendResource(Entity entity, ref SendResourceEventComp sendResourceEventComp)
         {
+            entity.Destroy();
+            ref var positionComp = ref sendResourceEventComp.fromEntity.GetComponent<PositionComp>();
+            ref var resourceComp = ref sendResourceEventComp.fromEntity.GetComponent<ResourceComp>();
+            ref var occupiedNodeComp = ref sendResourceEventComp.fromEntity.GetComponent<OccupiedNodeComp>();
+            
             var resourceEntity = GetResource(positionComp.position);
-            sendResourceComp.resourceQuantity = XIVMathInt.Clamp(sendResourceComp.resourceQuantity, 0, (int)resourceComp.resourceQuantity);
-            int connIdx = connectionDB.GetConnectionIndex(entity, sendResourceComp.toEntity);
+            sendResourceEventComp.resourceQuantity = XIVMathInt.Clamp(sendResourceEventComp.resourceQuantity, 0, (int)resourceComp.resourceQuantity);
+            int connIdx = connectionDB.GetConnectionIndex(sendResourceEventComp.fromEntity, sendResourceEventComp.toEntity);
             
             var transferableResourceComp = new TransferableResourceComp
             {
                 unitEntity = occupiedNodeComp.unitEntity,
-                endNodeEntity = sendResourceComp.toEntity,
-                quantity = sendResourceComp.resourceQuantity,
+                endNodeEntity = sendResourceEventComp.toEntity,
+                quantity = sendResourceEventComp.resourceQuantity,
                 connectionIndex = connIdx,
             };
             
@@ -160,15 +153,13 @@ namespace TheGame
             
             var resourceEntityRenderer = resourceEntity.GetComponent<TransformComp>().transform.GetComponent<SpriteRenderer>();
             resourceEntityRenderer.color = UnitIdLookup.GetColor(occupiedNodeComp.unitEntity.GetComponent<UnitComp>().unitType);
-            resourceComp.resourceQuantity -= sendResourceComp.resourceQuantity;
-            
-            entity.AddTag<UpdateResourceQuantityTextTag>();
-            entity.RemoveComponent<SendResourceComp>();
+            resourceComp.resourceQuantity -= sendResourceEventComp.resourceQuantity;
 
-            if (entity.HasTween() == false)
+            if (sendResourceEventComp.fromEntity.HasTween() == false)
             {
+                ref var scaleComp = ref sendResourceEventComp.fromEntity.GetComponent<ScaleComp>();
                 var scale = scaleComp.scale.ToVector3();
-                entity.XIVTween()
+                sendResourceEventComp.fromEntity.XIVTween()
                     .Scale(scale, scale * 1.1f, 0.5f, EasingFunction.EaseOutCubic, true)
                     .Start();
             }
@@ -181,10 +172,11 @@ namespace TheGame
             // we don't have resource to send
             if ((int)resourceComp.resourceQuantity == 0) return;
             
-            nodeEntity.AddComponent(new SendResourceComp
+            world.NewEntity().AddComponent(new SendResourceEventComp
             {
-                resourceQuantity = (int)resourceComp.resourceQuantity,
+                fromEntity = nodeEntity,
                 toEntity = sendResourceContinuouslyComp.toEntity,
+                resourceQuantity = (int)resourceComp.resourceQuantity,
             });
         }
 

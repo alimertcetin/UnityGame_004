@@ -8,8 +8,6 @@ namespace TheGame
     {
         public Timer timer;
     }
-    
-    public struct UpdateResourceQuantityTextTag : ITag { }
 
     public class ResourceGenerateSystem : XIV.Ecs.System
     {
@@ -32,11 +30,7 @@ namespace TheGame
             resourceGeneratorComp.resourceGenerationSpeed = assetReferences.generationConfigs[nodeComp.configIdx].resourceGenerationSpeed;
             var prev = resourceComp.resourceQuantity;
             resourceComp.resourceQuantity = XIVMathf.Min(prev + XTime.deltaTime * resourceGeneratorComp.resourceGenerationSpeed, GameConstants.MAX_RESOURCE_QUANTITY);
-            if (XIVMathf.Abs(resourceComp.resourceQuantity - GameConstants.MAX_RESOURCE_QUANTITY) > XIVMathf.Epsilon)
-            {
-                entity.AddTag<UpdateResourceQuantityTextTag>();
-            }
-            else
+            if (XIVMathf.Abs(resourceComp.resourceQuantity - GameConstants.MAX_RESOURCE_QUANTITY) < XIVMathf.Epsilon)
             {
                 entity.RemoveComponent<ResourceGeneratorComp>();
             }

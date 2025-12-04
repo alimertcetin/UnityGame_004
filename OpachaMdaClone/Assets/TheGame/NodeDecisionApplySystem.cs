@@ -1,13 +1,17 @@
 ﻿using System;
+using System.Threading;
 using UnityEngine;
+using XIV.Core.Collections;
+using XIV.Core.DataStructures;
 using XIV.Core.Utils;
 using XIV.Ecs;
+using Timer = XIV.Core.Utils.Timer;
 
 namespace TheGame
 {
     public class NodeDecisionApplySystem : XIV.Ecs.System
     {
-        readonly Filter<NodeComp, OccupiedNodeComp, NodeDecisionComp> nodeApplyDecisionFilter = new Filter<NodeComp, OccupiedNodeComp, NodeDecisionComp>().Tag<NodeDecidedTag>();
+        readonly Filter<NodeComp, OccupiedNodeComp, NodeDecisionComp> nodeApplyDecisionFilter = null;
         readonly ConnectionDB connectionDB = null;
 
         public override void Awake()
@@ -18,7 +22,6 @@ namespace TheGame
         public override void Update()
         {
             nodeApplyDecisionFilter.ForEach(ApplyDecision);
-            nodeApplyDecisionFilter.RemoveTagAll<NodeDecidedTag>();
         }
 
         void ApplyDecision(Entity entity, ref NodeComp nodeComp, ref OccupiedNodeComp occupiedNodeComp, ref NodeDecisionComp nodeDecisionComp)
@@ -27,7 +30,6 @@ namespace TheGame
             {
                 entity.RemoveComponent<NodeDefendComp>();
                 entity.RemoveComponent<NodeCaptureComp>();
-                entity.RemoveComponent<NodeHelpFrontierComp>();
             }
             using var entityBuffer = ArrayUtils.GetBuffer<Entity>();
 
@@ -37,15 +39,23 @@ namespace TheGame
                     entity.AddComponent(new NodeDefendComp());
                     if (nodeDecisionComp.decisionChanged)
                     {
-                        if (entity.HasComponent<SendResourceContinuouslyComp>()) entity.AddTag<StopContinuousResourceTransferTag>();
+                        entity.RemoveComponent<SendResourceContinuouslyComp>();
+                        // world.NewEntity().AddComponent(new RemoveResourceTransferIndicatorEventComp
+                        // {
+                        //     ownerEntity = entity,
+                        // });
                     }
-                    if (nodeComp.configIdx != AssetReferences.DEFEND_CONFIG)
+
+                    if (nodeDecisionComp.decisionChanged)
                     {
-                        entity.AddComponent(new NodeChangeTypeComp
+                        if (nodeComp.configIdx != AssetReferences.DEFEND_CONFIG)
                         {
-                            penalty = 10f,
-                            newConfig = AssetReferences.DEFEND_CONFIG,
-                        });
+                            entity.AddComponent(new NodeChangeTypeComp
+                            {
+                                penalty = 10f,
+                                newConfig = AssetReferences.DEFEND_CONFIG,
+                            });
+                        }
                     }
                     break;
                 case DecisionType.Capture:
@@ -57,48 +67,18 @@ namespace TheGame
                     });
                     break;
                 case DecisionType.HelpFrontier:
+                    entity.AddComponent(new FrontierHelperComp());
 
-                    var path = NodePathFinder.GetPathToFirstTarget(entity, connectionDB, GameConstants.MAX_RESOURCE_QUANTITY);
-                    var pathLength = path.Length;
-                    if (pathLength < 2)
+                    if (nodeDecisionComp.decisionChanged)
                     {
-                        // TODO: Add new component for path calculation
-                        Debug.LogWarning("NodeDecisionApplySystem: path is too short");
-                        break;
-                    }
-
-                    var target = path[pathLength - 1];
-                    var frontier = path[pathLength - 2];
-                    // var self = path[0]; // current entity  // first is current entity, second is the closest neighbor
-                    var neighbor = path[1];
-
-                    if (entity.HasComponent<NodeHelpFrontierComp>())
-                    {
-                        entity.AddComponent(new HelpFrontierTargetChangeComp
+                        if (nodeComp.configIdx != AssetReferences.RESOURCE_GENERATOR_CONFIG)
                         {
-                            newNeighborEntity = neighbor,
-                            newFrontierEntity = frontier,
-                            newTargetEntity = target,
-                        });
-                    }
-                    else
-                    {
-                        entity.AddComponent(new NodeHelpFrontierComp
-                        {
-                            neighborEntity = neighbor,
-                            frontierEntity = frontier,
-                            targetEntity = target,
-                            targetChangeDelayTimer = new Timer((1f - occupiedNodeComp.unitEntity.GetComponent<UnitComp>().smartness01) * 5f),
-                        });
-                    }
-
-                    if (nodeComp.configIdx != AssetReferences.RESOURCE_GENERATOR_CONFIG)
-                    {
-                        entity.AddComponent(new NodeChangeTypeComp
-                        {
-                            penalty = 10f,
-                            newConfig = AssetReferences.RESOURCE_GENERATOR_CONFIG,
-                        });
+                            entity.AddComponent(new NodeChangeTypeComp
+                            {
+                                penalty = 10f,
+                                newConfig = AssetReferences.RESOURCE_GENERATOR_CONFIG,
+                            });
+                        }
                     }
                     break;
                 case DecisionType.Idle:
@@ -133,6 +113,29 @@ namespace TheGame
             }
 
             return targetEntity;
+        }
+    }
+
+    public struct PathFinderComp : IComponent
+    {
+        public DynamicArray<Entity> path;
+    }
+
+    public class NodePathFindSystem : XIV.Ecs.System
+    {
+        readonly Filter<OccupiedNodeComp, PathFinderComp> pathFinderFilter = null;
+        readonly ConnectionDB connectionDB = null;
+        Timer pathFindTimer = new Timer(2f);
+
+        public override void Update()
+        {
+            if (pathFindTimer.Update(XTime.deltaTime) == false) return;
+            pathFindTimer.Restart();
+            
+            pathFinderFilter.ForEach((Entity entity, ref OccupiedNodeComp occupiedNodeComp, ref PathFinderComp pathFinderComp) =>
+            {
+                NodePathFinder.GetPathToFirstTarget(entity, connectionDB, GameConstants.MAX_RESOURCE_QUANTITY, ref pathFinderComp.path);
+            });
         }
     }
 }

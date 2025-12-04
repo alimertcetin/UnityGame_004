@@ -110,8 +110,8 @@ namespace TheGame
 
         public void Highlight(Entity selectedEntity, bool v)
         {
-            if (v) selectedEntity.AddTag<EnableHighlightTag>();
-            else selectedEntity.AddTag<DisableHighlightTag>();
+            if (v) selectedEntity.world.NewEntity().AddComponent(new EnableHighlightEventComp { targetEntity = selectedEntity });
+            else selectedEntity.world.NewEntity().AddComponent(new DisableHighlightEventComp { targetEntity = selectedEntity });
         }
         
 
@@ -121,8 +121,9 @@ namespace TheGame
             var total = (int)first.GetComponent<ResourceComp>().resourceQuantity;
             var send = allResource ? total : total * 0.5f;
             
-            first.AddComponent(new SendResourceComp
+            first.world.NewEntity().AddComponent(new SendResourceEventComp
             {
+                fromEntity = first,
                 toEntity = second,
                 resourceQuantity = (int)send,
             });
@@ -133,8 +134,9 @@ namespace TheGame
             if (first.IsAlive() == false || second.IsAlive() == false || connectionDB.IsConnected(first, second) == false) return;
             
             ref var nodeComp = ref first.GetComponent<NodeComp>();
-            first.AddComponent(new StartContinuousResourceTransferComp
+            first.world.NewEntity().AddComponent(new StartContinuousResourceTransferEventComp
             {
+                fromEntity = first,
                 targetEntity = second,
                 sendInterval = assetReferences.generationConfigs[nodeComp.configIdx].duration,
             });
@@ -142,7 +144,11 @@ namespace TheGame
 
         public void StopContinuousTransfer()
         {
-            if (first.HasComponent<SendResourceContinuouslyComp>()) first.AddTag<StopContinuousResourceTransferTag>();
+            first.RemoveComponent<SendResourceContinuouslyComp>();
+            // first.world.NewEntity().AddComponent(new RemoveResourceTransferIndicatorEventComp
+            // {
+            //     ownerEntity = first,
+            // });
         }
     }
 }

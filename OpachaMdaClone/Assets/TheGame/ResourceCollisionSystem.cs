@@ -46,15 +46,13 @@ namespace TheGame
             var attackerUnitEntity = nodeResourceCollisionComp.senderUnitEntity;
             if (connectionDB.IsTargetAlly(attackerUnitEntity, nodeEntity))
             {
-                nodeEntity.AddComponent(new AddResourceComp
-                {
-                    amount = nodeResourceCollisionComp.quantity,
-                });
+                resourceComp.resourceQuantity += nodeResourceCollisionComp.quantity;
             }
             else
             {
-                nodeEntity.AddComponent(new ResourceDamageComp
+                world.NewEntity().AddComponent(new ResourceDamageEventComp
                 {
+                    damagedEntity = nodeEntity,
                     attackerUnitEntity = nodeResourceCollisionComp.senderUnitEntity,
                     amount = nodeResourceCollisionComp.quantity,
                 });

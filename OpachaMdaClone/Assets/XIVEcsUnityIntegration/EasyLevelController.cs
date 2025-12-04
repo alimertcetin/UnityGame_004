@@ -68,7 +68,6 @@ namespace XIV.Ecs
             manager.AddSystem(new NodeOccupySystem(), States.Game);
             
             manager.AddSystem(new ResourceGenerateSystem(), States.Game);
-            manager.AddSystem(new ResourceIncreaseQuantitySystem(), States.Game);
             manager.AddSystem(new ResourceDamageSystem(), States.Game);
             
             manager.AddSystem(new NodeShieldSystem(), States.Game);
@@ -92,6 +91,7 @@ namespace XIV.Ecs
             // AI
             manager.AddSystem(new NodeDecisionSystem(), States.Game);
             manager.AddSystem(new NodeDecisionApplySystem(), States.Game);
+            manager.AddSystem(new NodePathFindSystem(), States.Game);
             manager.AddSystem(new NodeCaptureSystem(), States.Game);
             manager.AddSystem(new NodeHelpFrontierSystem(), States.Game);
             

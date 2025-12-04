@@ -46,10 +46,11 @@ namespace TheGame
                         ref var unitComp = ref neighborOccupiedNodeComp.unitEntity.GetComponent<UnitComp>();
                         if (unitComp.unitType == UnitIdLookup.UnitType.Green)
                         {
-                            nodeEntity.AddComponent(new SendResourceComp
+                            world.NewEntity().AddComponent(new SendResourceEventComp
                             {
-                                resourceQuantity = (int)(resourceComp.resourceQuantity * 0.5f),
+                                fromEntity = nodeEntity,
                                 toEntity = neighbor,
+                                resourceQuantity = (int)(resourceComp.resourceQuantity * 0.5f),
                             });
                         }
                     }
@@ -67,10 +68,11 @@ namespace TheGame
                 for (int i = 0; i < count; i++)
                 {
                     var neighbor = neighborBuffer[i];
-                    nodeEntity.AddComponent(new SendResourceComp
+                    world.NewEntity().AddComponent(new SendResourceEventComp
                     {
-                        resourceQuantity = sendQuantity,
+                        fromEntity = nodeEntity,
                         toEntity = neighbor,
+                        resourceQuantity = sendQuantity,
                     });
                 }
             });

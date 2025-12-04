@@ -2,8 +2,9 @@
 
 namespace TheGame
 {
-    public struct NodeOccupyComp : IComponent
+    public struct NodeOccupyEventComp : IComponent
     {
+        public Entity nodeEntity;
         public Entity unitEntity;
     }
 }

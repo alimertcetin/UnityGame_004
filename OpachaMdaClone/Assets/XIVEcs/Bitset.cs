@@ -1,181 +1,218 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics; // for BitOperations.PopCount (hardware-accelerated)
 
 namespace XIV.Ecs
 {
     public struct Bitset : ICloneable, IEquatable<Bitset>, IEnumerable<int>
     {
-        public const int MAX_SET_SIZE = sizeof(int) * 8; // sizeof returns the number bytes
+        public const int BITS_PER_BUCKET = sizeof(int) * 8; // 32 bits
         public int[] buckets;
 
-        static int GetBucketIndex(int idx) => idx / MAX_SET_SIZE;
-        static int GetBitPosition(int idx) => idx % MAX_SET_SIZE;
+        // -----------------------------
+        // Internal helpers
+        // -----------------------------
+
+        static int GetBucketIndex(int idx) => idx / BITS_PER_BUCKET;
+        static int GetBitPosition(int idx) => idx % BITS_PER_BUCKET;
+
+        void EnsureCapacity(int bitIndex)
+        {
+            int neededBucket = GetBucketIndex(bitIndex);
+
+            if (buckets == null)
+            {
+                buckets = new int[Math.Max(1, neededBucket + 1)];
+                return;
+            }
+
+            if (neededBucket >= buckets.Length)
+            {
+                Array.Resize(ref buckets, neededBucket + 1);
+            }
+        }
+
+        // -----------------------------
+        // Bit operations
+        // -----------------------------
 
         public bool IsBit1(int i)
         {
-            var bucketIdx = GetBucketIndex(i);
-            var bitPosition = GetBitPosition(i);
-            return (buckets[bucketIdx] & (1 << bitPosition)) != 0;
+            int bucketIdx = GetBucketIndex(i);
+            if (bucketIdx >= buckets.Length) return false;
+            int bitPos = GetBitPosition(i);
+            return (buckets[bucketIdx] & (1 << bitPos)) != 0;
         }
 
         public void SetBit1(int i)
         {
-            var bucketIdx = GetBucketIndex(i);
-            var bitPosition = GetBitPosition(i);
-            buckets[bucketIdx] |= 1 << bitPosition;
+            if (i < 0) return;
+            EnsureCapacity(i);
+            int bucketIdx = GetBucketIndex(i);
+            int bitPos = GetBitPosition(i);
+            buckets[bucketIdx] |= 1 << bitPos;
         }
 
         public void SetBit0(int i)
         {
-            var bucketIdx = GetBucketIndex(i);
-            var bitPosition = GetBitPosition(i);
-            buckets[bucketIdx] &= ~(1 << bitPosition);
+            if (i < 0) return;
+            int bucketIdx = GetBucketIndex(i);
+            if (bucketIdx >= buckets.Length) return; // nothing to clear
+            int bitPos = GetBitPosition(i);
+            buckets[bucketIdx] &= ~(1 << bitPos);
         }
 
         public void Clear()
         {
-            int length = buckets.Length;
-            for (int i = 0; i < length; i++)
-            {
-                buckets[i] = 0;
-            }
+            if (buckets == null) return;
+            Array.Clear(buckets, 0, buckets.Length);
         }
-        
-        public bool IsSubsetOf(ref Bitset other) 
+
+        // -----------------------------
+        // Set/Subset logic
+        // -----------------------------
+
+        public bool IsSubsetOf(ref Bitset other)
         {
-            var otherBuckets = other.buckets;
-            var bucketsLength = buckets.Length;
-            for (int i = 0; i < bucketsLength; i++) 
+            // If other has fewer buckets, it cannot contain this set
+            if (other.buckets.Length < buckets.Length)
+                return false;
+
+            for (int i = 0; i < buckets.Length; i++)
             {
-                var set = buckets[i];
-                if ((set & otherBuckets[i]) != set)
-                {
+                int a = buckets[i];
+                int b = other.buckets[i];
+
+                // a must be fully contained in b
+                if ((a & b) != a)
                     return false;
-                }
-            }
-            return true;
-        }
-        
-        /// Determines whether any of the bits in this instance are also set in the given bitset.
-        public bool AnyMatchingBits(ref Bitset other)
-        {
-            var otherBuckets = other.buckets;
-            var bucketsLength = buckets.Length;
-            for (int i = 0; i < bucketsLength; i++) 
-            {
-                var bit = buckets[i];
-                if ((bit & otherBuckets[i]) != 0)
-                {
-                    return true;
-                }
             }
 
+            return true;
+        }
+
+        public bool AnyMatchingBits(ref Bitset other)
+        {
+            int count = Math.Min(buckets.Length, other.buckets.Length);
+            for (int i = 0; i < count; i++)
+            {
+                if ((buckets[i] & other.buckets[i]) != 0)
+                    return true;
+            }
             return false;
         }
-        
+
+        // -----------------------------
+        // Bit counting
+        // -----------------------------
+
         public int GetSetBitCount()
         {
             int count = 0;
-            foreach (var set in this)
-            {
+
+            if (buckets == null) return 0;
+
+#if NET5_0_OR_GREATER
+            // Hardware accelerated (POPCNT)
+            for (int i = 0; i < buckets.Length; i++)
+                count += BitOperations.PopCount((uint)buckets[i]);
+#else
+            // Fallback (slower)
+            foreach (int bitIndex in this)
                 count++;
-            }
+#endif
             return count;
         }
 
+        // -----------------------------
+        // Clone / Copy
+        // -----------------------------
+
         public static Bitset Copy(ref Bitset bitset)
         {
-            int len = bitset.buckets.Length;
             var newSet = new Bitset
             {
-                buckets = new int[len],
+                buckets = (int[])bitset.buckets.Clone()
             };
-            for (int i = 0; i < len; i++)
-            {
-                newSet.buckets[i] = bitset.buckets[i];
-            }
-
             return newSet;
         }
 
-        public object Clone()
+        public object Clone() => Copy(ref this);
+
+        // -----------------------------
+        // Comparison
+        // -----------------------------
+
+        public bool Equals(Bitset other) => this == other;
+
+        public bool Equals(ref Bitset other)
         {
-            return Copy(ref this);
+            if (buckets.Length != other.buckets.Length) return false;
+
+            for (int i = 0; i < buckets.Length; i++)
+            {
+                if (buckets[i] != other.buckets[i])
+                    return false;
+            }
+
+            return true;
         }
 
         public static bool operator ==(Bitset a, Bitset b)
         {
-            var aBuckets = a.buckets;
-            var bBuckets = b.buckets;
-            int aBucketLen = aBuckets.Length;
-            if (aBucketLen != bBuckets.Length) return false;
-            for (int i = 0; i < aBucketLen; i++)
+            if (a.buckets.Length != b.buckets.Length) return false;
+
+            for (int i = 0; i < a.buckets.Length; i++)
             {
-                if (bBuckets[i] != aBuckets[i]) return false;
+                if (a.buckets[i] != b.buckets[i])
+                    return false;
             }
+
             return true;
         }
 
-        public static bool operator !=(Bitset a, Bitset b)
-        {
-            return !(a == b);
-        }
+        public static bool operator !=(Bitset a, Bitset b) => !(a == b);
 
-        public bool Equals(Bitset other)
-        {
-            return this == other;
-        }
+        public override bool Equals(object obj) =>
+            obj is Bitset other && this == other;
 
-        public bool Equals(ref Bitset other)
+        // MUCH better hash code than before
+        public override int GetHashCode()
         {
-            var aBuckets = this.buckets;
-            var bBuckets = other.buckets;
-            int aBucketLen = aBuckets.Length;
-            if (aBucketLen != bBuckets.Length) return false;
-            for (int i = 0; i < aBucketLen; i++)
+            unchecked
             {
-                if (bBuckets[i] != aBuckets[i]) return false;
+                int hash = 17;
+                for (int i = 0; i < buckets.Length; i++)
+                    hash = hash * 31 + buckets[i];
+                return hash;
             }
-            return true;
         }
+
+        // -----------------------------
+        // Enumerator
+        // -----------------------------
 
         public IEnumerator<int> GetEnumerator()
         {
-            for (int bucketIdx = 0; bucketIdx < buckets.Length; bucketIdx++)
+            if (buckets == null) yield break;
+
+            for (int bucketIndex = 0; bucketIndex < buckets.Length; bucketIndex++)
             {
-                int set = buckets[bucketIdx];
-                if (set == 0) continue;
-                
-                for (int j = 0; j < MAX_SET_SIZE; j++)
+                int bucket = buckets[bucketIndex];
+                if (bucket == 0) continue;
+
+                for (int bit = 0; bit < BITS_PER_BUCKET; bit++)
                 {
-                    if ((set & (1 << j)) != 0)
+                    int mask = 1 << bit;
+                    if ((bucket & mask) != 0)
                     {
-                        yield return bucketIdx * MAX_SET_SIZE + j;
+                        yield return bucketIndex * BITS_PER_BUCKET + bit;
                     }
                 }
             }
         }
 
-        public override bool Equals(object obj)
-        {
-            return obj is Bitset other && this == other;
-        }
-
-        public override int GetHashCode()
-        {
-            int hash = 0;
-            var len = buckets.Length;
-            for (int i = 0; i < len; i++)
-            {
-                hash |= buckets[i];
-            }
-            return hash;
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

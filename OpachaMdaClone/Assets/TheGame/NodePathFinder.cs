@@ -61,19 +61,23 @@ namespace TheGame
         static DynamicArray<Node<Entity>> openList;
         static HashSet<Entity> closedList;
         static DynamicArray<Node<Entity>> nodeBuffer;
-        static List<Entity> path;
+        static DynamicArray<Entity> path;
 
         public static void Init()
         {
             openList = new DynamicArray<Node<Entity>>();
             closedList = new HashSet<Entity>();
             nodeBuffer = new DynamicArray<Node<Entity>>();
-            path = new List<Entity>();
+            path = new DynamicArray<Entity>();
         }
         
         // Path to the nearest neutral or hostile
-        public static XIVMemory<Entity> GetPathToFirstTarget(Entity entity, ConnectionDB connectionDB, float maxResourceQuantity)
+        public static void GetPathToFirstTarget(Entity entity, ConnectionDB connectionDB, float maxResourceQuantity, ref DynamicArray<Entity> buffer)
         {
+            buffer ??= new DynamicArray<Entity>();
+            buffer.Clear();
+            if (entity.HasComponent<OccupiedNodeComp>() == false) return;
+            
             ref var occupiedNodeComp = ref entity.GetComponent<OccupiedNodeComp>();
             var attackerUnitEntity = occupiedNodeComp.unitEntity;
             ref var unitComp = ref attackerUnitEntity.GetComponent<UnitComp>();
@@ -95,8 +99,8 @@ namespace TheGame
                 if (connectionDB.IsTargetAlly(attackerUnitEntity, currentNode.value) == false)
                 {
                     var path = ReconstructPath(currentNode, connectionDB);
+                    buffer.AddRange(path);
                     ReturnWithParents(currentNode);
-                    return path;
                 }
 
                 int len = connectionDB.GetAllConnectionPairs(currentNode.value, indexBuffer);
@@ -113,8 +117,8 @@ namespace TheGame
                     int hostilePairs = connectionDB.GetHostileConnectionPairs(neighbor, attackerUnitEntity, tempIndexBuffer);
                     var hostileRatio = (float)hostilePairs / len; // e.g. 0.75f
                     var dangerScore = connectionDB.GetHostileNeighborResourceQuantity(neighbor, attackerUnitEntity) / maxResourceQuantity;
-                    var neigborPosition = connectionPair.GetPosition(neighbor);
-                    var distance = Vec3.Distance(currentPos, neigborPosition);
+                    var neighborPosition = connectionPair.GetPosition(neighbor);
+                    var distance = Vec3.Distance(currentPos, neighborPosition);
                     openList.Add() = GetNode(neighbor, cost: currentNode.cost + (hostileRatio * unitComp.smartness01) + (dangerScore * unitComp.smartness01) + distance, parent: currentNode);
                 }
 
@@ -124,12 +128,12 @@ namespace TheGame
             {
                 ReturnWithParents(node);
             }
-            return default;
         }
         
         // Path to target
-        public static XIVMemory<Entity> GetPathToTarget(Entity entity, Entity targetEntity, ConnectionDB connectionDB, float maxResourceQuantity)
+        public static void GetPathToTarget(Entity entity, Entity targetEntity, ConnectionDB connectionDB, float maxResourceQuantity, DynamicArray<Entity> buffer)
         {
+            buffer.Clear();
             ref var occupiedNodeComp = ref entity.GetComponent<OccupiedNodeComp>();
             var attackerUnitEntity = occupiedNodeComp.unitEntity;
             ref var unitComp = ref attackerUnitEntity.GetComponent<UnitComp>();
@@ -151,8 +155,8 @@ namespace TheGame
                 if (currentNode.value == targetEntity)
                 {
                     var path = ReconstructPath(currentNode, connectionDB);
+                    buffer.AddRange(path);
                     ReturnWithParents(currentNode);
-                    return path;
                 }
 
                 int len = connectionDB.GetAllConnectionPairs(currentNode.value, indexBuffer);
@@ -179,7 +183,6 @@ namespace TheGame
             {
                 ReturnWithParents(node);
             }
-            return default;
         }
 
         static Node<Entity> GetCurrent()
@@ -245,7 +248,7 @@ namespace TheGame
             path.Clear();
             while (node != null)
             {
-                path.Add(node.value);
+                path.Add() = node.value;
                 node = node.parent;
             }
 

@@ -13,8 +13,6 @@ namespace XIV.Ecs
         public MaterialPropertyBlock materialPropertyBlock;
     }
 
-    public struct RemoveShieldRendererEventTag : ITag { }
-
     public struct ShieldRenderAnimationComp : IComponent
     {
         public float maxShieldStart;
@@ -113,13 +111,21 @@ namespace XIV.Ecs
         // public float pulseFreq = 2f;
         // [Range(0,1)] public float damageFlash = 0.8f;
     }
-    
-    public struct AddShieldRendererEventTag : ITag { }
+
+    public struct AddShieldRendererEventComp : IComponent
+    {
+        public Entity targetEntity;
+    }
+
+    public struct RemoveShieldRendererEventComp : IComponent
+    {
+        public Entity targetEntity;
+    }
 
     public class ShieldRenderSystem : XIV.Ecs.System
     {
-        readonly Filter<PositionComp, ScaleComp, ShieldComp> addShieldFilter = new  Filter<PositionComp, ScaleComp, ShieldComp>().Tag<AddShieldRendererEventTag>();
-        readonly Filter removeShieldFilter = new Filter().Tag<RemoveShieldRendererEventTag>();
+        readonly Filter<AddShieldRendererEventComp> addShieldFilter = null;
+        readonly Filter<RemoveShieldRendererEventComp> removeShieldFilter = null;
         
         readonly Filter<ShieldComp> shieldFilter = null;
 
@@ -130,26 +136,32 @@ namespace XIV.Ecs
 
         public override void Update()
         {
-            addShieldFilter.ForEach(CreateShieldRenderer);
-            removeShieldFilter.ForEach(RemoveShieldRenderer);
+            addShieldFilter.ForEach(AddShieldRenderer);
+            removeShieldFilter.ForEach((Entity entity, ref RemoveShieldRendererEventComp removeShieldRendererEventComp) =>
+            {
+                entity.Destroy();
+                RemoveShield(removeShieldRendererEventComp.targetEntity);
+            });
             
             shieldFilter.ForEach(DetectChanges);
             shieldRenderAnimationFilter.ForEach(AnimateShieldRenderer);
             shieldRendererPropertyFilter.ForEach(UpdateShaderProperties);
         }
         
-        void CreateShieldRenderer(Entity entity, ref PositionComp positionComp, ref ScaleComp scaleComp, ref ShieldComp shieldComp)
+        void AddShieldRenderer(Entity entity, ref AddShieldRendererEventComp addShieldRendererEventComp)
         {
-            entity.RemoveTag<AddShieldRendererEventTag>();
-
+            entity.Destroy();
             bool hasRenderer = false;
+            var targetEntity = addShieldRendererEventComp.targetEntity;
             shieldRendererPropertyFilter.ForEach((ref ShieldRendererComp shieldRendererComp, ref ShieldRenderPropertyComp shieldRenderPropertyComp) =>
             {
                 if (hasRenderer) return;
-                if (shieldRendererComp.targetEntity == entity) hasRenderer = true;
+                if (shieldRendererComp.targetEntity == targetEntity) hasRenderer = true;
             });
             if (hasRenderer) return;
             
+            ref var positionComp = ref targetEntity.GetComponent<PositionComp>();
+            ref var shieldComp = ref targetEntity.GetComponent<ShieldComp>();
             var shieldEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeShieldPrefab, positionComp.position, Quaternion.identity);
 
             var renderer = shieldEntity.GetComponent<TransformComp>().transform.GetComponent<Renderer>();
@@ -157,7 +169,7 @@ namespace XIV.Ecs
             renderer.GetPropertyBlock(materialPropertyBlock);
             var rendererComp = new ShieldRendererComp
             {
-                targetEntity = entity,
+                targetEntity = addShieldRendererEventComp.targetEntity,
                 renderer = renderer,
                 materialPropertyBlock = materialPropertyBlock,
             };
@@ -183,9 +195,8 @@ namespace XIV.Ecs
             shieldEntity.AddComponent(propComp);
         }
 
-        void RemoveShieldRenderer(Entity entity)
+        void RemoveShield(Entity entity)
         {
-            entity.RemoveTag<RemoveShieldRendererEventTag>();
             shieldRendererPropertyFilter.ForEach((Entity rendererEntity, ref ShieldRendererComp shieldRendererComp, ref ShieldRenderPropertyComp shieldRenderPropertyComp) =>
             {
                 if (shieldRendererComp.targetEntity == entity) rendererEntity.Destroy();

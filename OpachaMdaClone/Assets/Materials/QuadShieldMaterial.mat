@@ -28,10 +28,10 @@ Material:
     - _EdgeSoftness: 0.008
     - _GapDeg: 6
     - _GlowIntensity: 1.5
-    - _PulseAmp: 0.03
+    - _PulseAmp: 0.01
     - _PulseFreq: 1.3
     - _PulseSeed: 0
-    - _Radius: 1
+    - _Radius: 0.98
     - _Thickness: 0.08
     - _TotalShield: 12
     m_Colors:

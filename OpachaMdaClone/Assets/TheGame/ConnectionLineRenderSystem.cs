@@ -20,16 +20,22 @@ namespace TheGame
         public Renderer renderer;
         public MaterialPropertyBlock materialPropertyBlock;
     }
+
+    public struct UpdateVisualLineConnectionEventComp : IComponent
+    {
+        public Entity targetEntity;
+    }
     
     public class ConnectionLineRenderSystem : XIV.Ecs.System
     {
         readonly LineRendererPositionData lineRendererPositionData = null;
-        readonly Filter<OccupiedNodeComp> updateConnectionVisualFilter = new Filter<OccupiedNodeComp>().Tag<UpdateVisualLineConnectionTag>();
+        readonly Filter<UpdateVisualLineConnectionEventComp> updateConnectionVisualFilter = null;
         readonly ConnectionDB connectionDB = null;
+        Thread resourceThread;
         
         public override void Start()
         {
-            Thread resourceThread = new Thread(p =>
+            resourceThread = new Thread(p =>
             {
 #if UNITY_EDITOR
                 bool continueThread = true;
@@ -61,6 +67,11 @@ namespace TheGame
         {
             updateConnectionVisualFilter.ForEach(UpdateConnectionVisuals);
             AssignLineRendererPositions();
+        }
+
+        public override void OnDestroy()
+        {
+            resourceThread.Abort();
         }
 
         void AssignLineRendererPositions()
@@ -123,13 +134,11 @@ namespace TheGame
         
         void FixLineRendererPositions()
         {
-            var dt = 0.016f;
+            var dt = XTime.deltaTime / 60f;
             int count = connectionDB.Count;
             for (int i = 0; i < count; i++)
             {
                 ref ConnectionPair connectionPair = ref connectionDB[i];
-                // if (connectionPair.resourceEntitiesOnConnection.Count == 0) continue;
-                
                 var startPos = connectionPair.startPosition;
                 var endPos = connectionPair.endPosition;
                 var positions = connectionPair.positions;
@@ -147,28 +156,28 @@ namespace TheGame
             }
         }
 
-        void UpdateConnectionVisuals(Entity nodeEntity, ref OccupiedNodeComp occupiedNodeComp)
+        void UpdateConnectionVisuals(Entity entity, ref UpdateVisualLineConnectionEventComp updateVisualLineConnectionEventComp)
         {
-            nodeEntity.RemoveTag<UpdateVisualLineConnectionTag>();
+            entity.Destroy();
+            ref var occupiedNodeComp = ref updateVisualLineConnectionEventComp.targetEntity.GetComponent<OccupiedNodeComp>();
+            
             ref var attackerUnitComp = ref occupiedNodeComp.unitEntity.GetComponent<UnitComp>();
-            var renderer = nodeEntity.GetUnityComponent<SpriteRenderer>();
+            var renderer = updateVisualLineConnectionEventComp.targetEntity.GetUnityComponent<SpriteRenderer>();
             var ca = renderer.color;
             var cb = UnitIdLookup.GetColor(attackerUnitComp.unitType);
-            nodeEntity.DisableComponent<ScaleComp>();
             renderer.CancelTween();
             renderer.XIVTween()
                 .ScaleBounceOnce()
                 .And()
                 .SpriteRendererColor(ca, cb, 0.5f, EasingFunction.SmoothStop3)
-                .OnComplete(() => nodeEntity.EnableComponent<ScaleComp>())
                 .Start();
 
             using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
-            int len = connectionDB.GetAllConnectionPairs(nodeEntity, indexBuffer);
+            int len = connectionDB.GetAllConnectionPairs(updateVisualLineConnectionEventComp.targetEntity, indexBuffer);
             for (int i = 0; i < len; i++)
             {
                 ref var connectionPair = ref connectionDB[indexBuffer[i]];
-                var neighborEntity = connectionPair.GetOpposite(nodeEntity);
+                var neighborEntity = connectionPair.GetOpposite(updateVisualLineConnectionEventComp.targetEntity);
                 UnitIdLookup.UnitType neighborUnitType = UnitIdLookup.UnitType.Black;
                 if (neighborEntity.HasComponent<OccupiedNodeComp>())
                 {
@@ -183,12 +192,12 @@ namespace TheGame
                     lineRendererComp.lineRenderer.XIVSetColor(UnitIdLookup.GetColor(attackerUnitComp.unitType));
                     
                     instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
-                    instancedRendererComp.materialPropertyBlock.SetFloat(ShaderConstants.Custom_LineWithShadow_Gradient_Sized.SegCount_Float, 1);
+                    instancedRendererComp.materialPropertyBlock.SetFloat(ShaderConstants.Custom_LineWithShadow_Gradient_Sized.SegCount_Float, 0);
                     instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
                     continue;
                 }
 
-                if (nodeEntity == connectionPair.entity1)
+                if (updateVisualLineConnectionEventComp.targetEntity == connectionPair.entity1)
                 {
                     lineRendererComp.lineRenderer.startColor = UnitIdLookup.GetColor(attackerUnitComp.unitType);
                     lineRendererComp.lineRenderer.endColor = UnitIdLookup.GetColor(neighborUnitType);

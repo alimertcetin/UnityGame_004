@@ -64,8 +64,10 @@ namespace TheGame
                 XIVDebug.DrawCircle(nodeEntity.GetComponent<PositionComp>().position, 2f, XIVColor.red, 8f);
                 unitComp.occupiedNodeEntities = new DynamicArray<Entity>();
                 unitComp.smartness01 = unitComp.unitType == UnitIdLookup.UnitType.Green ? unitComp.smartness01 : (float)unitComp.unitType / (float)(UnitIdLookup.UnitType.NumberOfItems - 1);
-                nodeEntity.AddComponent(new NodeOccupyComp
+                
+                world.NewEntity().AddComponent(new NodeOccupyEventComp
                 {
+                    nodeEntity = nodeEntity,
                     unitEntity = e,
                 });
                 excludeArr[index++] = nodeEntity;
@@ -82,8 +84,13 @@ namespace TheGame
             {
                 resourceQuantity = 3f,
             });
-            entity.AddComponent(new AddShieldComp
+            entity.AddComponent(new PathFinderComp
             {
+                path = new DynamicArray<Entity>(8),
+            });
+            world.NewEntity().AddComponent(new AddShieldEventComp
+            {
+                targetEntity = entity,
                 max = 7f,
                 current = 3f,
             });

@@ -627,7 +627,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   levelSettings:
     levelGenerationSettings:
-      seed: 12611
+      seed: 6814
       mapSize: 4
       tightness: 0
       nodeRadius: 0.5
@@ -636,7 +636,7 @@ MonoBehaviour:
       linkDistance: 5
       sameDirectionCutThreshold: 0.8
     timeScale: 1
-    hostileUnits: 4
+    hostileUnits: 6
 --- !u!114 &1087117773
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -9,11 +9,12 @@ namespace TheGame
     {
         public DecisionType decisionType
         {
-            get => _decisionType;
+            get => activeDecision;
             set
             {
-                decisionChanged = value != _decisionType;
-                _decisionType = value;
+                prevDecision = activeDecision;
+                decisionChanged = value != activeDecision;
+                activeDecision = value;
             }
         }
 
@@ -25,7 +26,8 @@ namespace TheGame
         public float idleScore;
         public Timer decisionDelay;
 
-        DecisionType _decisionType;
+        public DecisionType prevDecision;
+        public DecisionType activeDecision;
     }
     
     public struct NodeDefendComp : IComponent{}
@@ -34,8 +36,6 @@ namespace TheGame
     {
         public Entity targetEntity;
     }
-    
-    public struct NodeDecidedTag : ITag { }
     
     public enum DecisionType
     {
@@ -53,7 +53,7 @@ namespace TheGame
     
     public class NodeDecisionSystem : XIV.Ecs.System
     {
-        readonly Filter<ResourceComp, OccupiedNodeComp, NodeDecisionComp> nodeDecisionFilter = new Filter<ResourceComp, OccupiedNodeComp, NodeDecisionComp>().ExcludeTag<NodeDecidedTag>();
+        readonly Filter<ResourceComp, OccupiedNodeComp, NodeDecisionComp> nodeDecisionFilter = null;
         readonly ConnectionDB connectionDB = null;
         readonly AssetReferences assetReferences = null;
 
@@ -157,8 +157,8 @@ namespace TheGame
             // ---------------------------
             float helpBase = allyRatio * (1f - hostileRatio) * (1f - neutralRatio);
 
-            // smart nodes help less (more selective)
-            float helpSmartness = Mathf.Lerp(1f, 0.4f, smartness);
+            // smart nodes help more (less selective)
+            float helpSmartness = Mathf.Lerp(0.4f, 1f, smartness);
 
             // Do not help if a capture is available
             // Do not help if got hostile neighbor
@@ -183,11 +183,11 @@ namespace TheGame
             // ---------------------------
             // WRITE OUT SCORES
             // ---------------------------
-            nodeDecisionComp.dangerScore = dangerScore;
-            nodeDecisionComp.defendScore = defendScore;
-            nodeDecisionComp.captureScore = captureScore;
-            nodeDecisionComp.helpFrontierScore = helpFrontierScore;
-            nodeDecisionComp.idleScore = idleScore;
+            nodeDecisionComp.dangerScore = float.IsNaN(dangerScore) ? 0f : dangerScore;
+            nodeDecisionComp.defendScore = float.IsNaN(defendScore) ? 0f : defendScore;
+            nodeDecisionComp.captureScore = float.IsNaN(captureScore) ? 0f : captureScore;
+            nodeDecisionComp.helpFrontierScore = float.IsNaN(helpFrontierScore) ? 0f : helpFrontierScore;
+            nodeDecisionComp.idleScore = float.IsNaN(idleScore) ? 0f : idleScore;
 
             // Done
             unsafe
@@ -196,10 +196,10 @@ namespace TheGame
                 const int len = 4;
                 DecisionScore* scores = stackalloc DecisionScore[len]
                 {
+                    new() { decisionType = DecisionType.Idle, score = nodeDecisionComp.idleScore },
                     new() { decisionType = DecisionType.Defend, score = nodeDecisionComp.defendScore },
                     new() { decisionType = DecisionType.Capture, score = nodeDecisionComp.captureScore },
                     new() { decisionType = DecisionType.HelpFrontier, score = nodeDecisionComp.helpFrontierScore },
-                    new() { decisionType = DecisionType.Idle, score = nodeDecisionComp.idleScore },
                 };
 
                 var best = scores[0];
@@ -208,8 +208,6 @@ namespace TheGame
                     if (scores[i].score > best.score) best = scores[i];
                 }
 
-                // var currentDecision = nodeDecisionComp.decisionType;
-                entity.AddTag<NodeDecidedTag>();
                 nodeDecisionComp.decisionType = best.decisionType;
             }
         }

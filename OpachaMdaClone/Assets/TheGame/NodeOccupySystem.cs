@@ -2,6 +2,7 @@
 using UnityEngine;
 using XIV.Core.TweenSystem;
 using XIV.Core.Utils;
+using XIV.Core.XIVMath;
 using XIV.Ecs;
 
 namespace TheGame
@@ -10,42 +11,46 @@ namespace TheGame
     {
         public Entity unitEntity;
     }
-    
-    public struct UpdateVisualLineConnectionTag : ITag { }
 
     public class NodeOccupySystem : XIV.Ecs.System
     {
         readonly ConnectionDB connectionDB = null;
         readonly AssetReferences assetReferences = null;
-        readonly Filter<NodeOccupyComp> occupyFilter = null;
+        readonly Filter<NodeOccupyEventComp> occupyFilter = null;
 
         public override void Update()
         {
             occupyFilter.ForEach(OccupyNode);
         }
 
-        void OccupyNode(Entity nodeEntity, ref NodeOccupyComp nodeOccupyComp)
+        void OccupyNode(Entity entity, ref NodeOccupyEventComp nodeOccupyEventComp)
         {
-            nodeEntity.AddTag<UpdateVisualLineConnectionTag>();
-            nodeEntity.RemoveComponent<NodeOccupyComp>();
-            if (nodeEntity.HasComponent<OccupiedNodeComp>())
+            entity.Destroy();
+            world.NewEntity().AddComponent(new UpdateVisualLineConnectionEventComp
             {
-                ref var occupiedNodeComp = ref nodeEntity.GetComponent<OccupiedNodeComp>();
-                occupiedNodeComp.unitEntity.GetComponent<UnitComp>().occupiedNodeEntities.Remove(ref nodeEntity);
+                targetEntity = nodeOccupyEventComp.nodeEntity,
+            });
+            if (nodeOccupyEventComp.nodeEntity.HasComponent<OccupiedNodeComp>())
+            {
+                ref var occupiedNodeComp = ref nodeOccupyEventComp.nodeEntity.GetComponent<OccupiedNodeComp>();
+                occupiedNodeComp.unitEntity.GetComponent<UnitComp>().occupiedNodeEntities.Remove(ref nodeOccupyEventComp.nodeEntity);
             }
 
-            if (nodeEntity.HasComponent<SendResourceContinuouslyComp>()) nodeEntity.AddTag<StopContinuousResourceTransferTag>();
-            nodeEntity.RemoveComponent<SendResourceComp>();
-            nodeEntity.RemoveComponent<NodeChangeTypeComp>();
+            nodeOccupyEventComp.nodeEntity.RemoveComponent<SendResourceContinuouslyComp>();
+            nodeOccupyEventComp.nodeEntity.RemoveComponent<NodeChangeTypeComp>();
+            // world.NewEntity().AddComponent(new RemoveResourceTransferIndicatorEventComp
+            // {
+            //     ownerEntity = nodeOccupyEventComp.nodeEntity,
+            // });
             
-            ref var nodeComp = ref nodeEntity.GetComponent<NodeComp>();
-            ref var attackerUnitComp = ref nodeOccupyComp.unitEntity.GetComponent<UnitComp>();
-            attackerUnitComp.occupiedNodeEntities.Add() = nodeEntity;
-            nodeEntity.AddComponent(new OccupiedNodeComp
+            ref var nodeComp = ref nodeOccupyEventComp.nodeEntity.GetComponent<NodeComp>();
+            ref var attackerUnitComp = ref nodeOccupyEventComp.unitEntity.GetComponent<UnitComp>();
+            attackerUnitComp.occupiedNodeEntities.Add() = nodeOccupyEventComp.nodeEntity;
+            nodeOccupyEventComp.nodeEntity.AddComponent(new OccupiedNodeComp
             {
-                unitEntity = nodeOccupyComp.unitEntity,
+                unitEntity = nodeOccupyEventComp.unitEntity,
             });
-            nodeEntity.AddComponent(new NodeChangeTypeComp
+            nodeOccupyEventComp.nodeEntity.AddComponent(new NodeChangeTypeComp
             {
                 penalty = 0f,
                 newConfig = 0,
@@ -53,22 +58,22 @@ namespace TheGame
             
             if (attackerUnitComp.unitType == UnitIdLookup.UnitType.Green)
             {
-                nodeEntity.RemoveComponent<NodeDecisionComp>();
+                nodeOccupyEventComp.nodeEntity.RemoveComponent<NodeDecisionComp>();
             }
             else
             {
                 var nodeDecisionComp = new NodeDecisionComp();
-                nodeDecisionComp.decisionDelay = new Timer(1f - attackerUnitComp.smartness01);
-                nodeEntity.AddComponent(nodeDecisionComp);
+                nodeDecisionComp.decisionDelay = new Timer(XIVMathf.Max(1f - attackerUnitComp.smartness01, 0.1f));
+                nodeOccupyEventComp.nodeEntity.AddComponent(nodeDecisionComp);
             }
 
             if (attackerUnitComp.unitType == UnitIdLookup.UnitType.Black)
             {
-                nodeEntity.RemoveComponent<ResourceGeneratorComp>();
+                nodeOccupyEventComp.nodeEntity.RemoveComponent<ResourceGeneratorComp>();
             }
             else
             {
-                nodeEntity.AddComponent(new ResourceGeneratorComp
+                nodeOccupyEventComp.nodeEntity.AddComponent(new ResourceGeneratorComp
                 {
                     resourceGenerationSpeed = assetReferences.generationConfigs[nodeComp.configIdx].resourceGenerationSpeed,
                 });
