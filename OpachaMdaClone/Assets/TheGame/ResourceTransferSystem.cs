@@ -27,7 +27,6 @@ namespace TheGame
     public struct SendResourceContinuouslyComp : IComponent
     {
         public Entity toEntity;
-        public Timer sendTimer;
     }
 
     public struct StartContinuousResourceTransferEventComp : IComponent
@@ -48,7 +47,7 @@ namespace TheGame
     {
         readonly Filter<PositionComp, TransferableResourceComp> transferableResourceFilter = null;
         readonly Filter<SendResourceEventComp> sendResourceFilter = null;
-        readonly Filter<ResourceComp, SendResourceContinuouslyComp> sendResourceContinuouslyFilter = null;
+        readonly Filter<ResourceComp, OccupiedNodeComp, SendResourceContinuouslyComp> sendResourceContinuouslyFilter = null;
         readonly Filter<StartContinuousResourceTransferEventComp> startContinuousResourceTransferFilter = null;
         
         readonly AssetReferences assetReferences = null;
@@ -89,18 +88,10 @@ namespace TheGame
         void StartContinuousResourceTransfer(Entity entity, ref StartContinuousResourceTransferEventComp startContinuousResourceTransferComp)
         {
             entity.Destroy();
-            var sendTimer = new Timer(startContinuousResourceTransferComp.sendInterval);
-            sendTimer.Update(float.MaxValue); // send immediate
             startContinuousResourceTransferComp.fromEntity.AddComponent(new SendResourceContinuouslyComp
             {
                 toEntity = startContinuousResourceTransferComp.targetEntity,
-                sendTimer = sendTimer,
             });
-            // world.NewEntity().AddComponent(new CreateResourceTransferIndicatorEventComp()
-            // {
-            //     fromEntity = startContinuousResourceTransferComp.fromEntity,
-            //     targetEntity = startContinuousResourceTransferComp.targetEntity,
-            // });
         }
 
         void MoveResourceAlongLine(Entity resourceEntity, ref PositionComp positionComp, ref TransferableResourceComp transferableResourceComp)
@@ -155,20 +146,18 @@ namespace TheGame
             resourceEntityRenderer.color = UnitIdLookup.GetColor(occupiedNodeComp.unitEntity.GetComponent<UnitComp>().unitType);
             resourceComp.resourceQuantity -= sendResourceEventComp.resourceQuantity;
 
-            if (sendResourceEventComp.fromEntity.HasTween() == false)
-            {
-                ref var scaleComp = ref sendResourceEventComp.fromEntity.GetComponent<ScaleComp>();
-                var scale = scaleComp.scale.ToVector3();
-                sendResourceEventComp.fromEntity.XIVTween()
-                    .Scale(scale, scale * 1.1f, 0.5f, EasingFunction.EaseOutCubic, true)
-                    .Start();
-            }
+            ref var scaleComp = ref sendResourceEventComp.fromEntity.GetComponent<ScaleComp>();
+            var scale = scaleComp.scale.ToVector3();
+            sendResourceEventComp.fromEntity.CancelTween();
+            sendResourceEventComp.fromEntity.XIVTween()
+                .Scale(scale, scale * 1.1f, 0.5f, EasingFunction.EaseOutCubic, true)
+                .Start();
         }
 
-        void SendResourceContinuously(Entity nodeEntity, ref ResourceComp resourceComp, ref SendResourceContinuouslyComp sendResourceContinuouslyComp)
+        void SendResourceContinuously(Entity nodeEntity, ref ResourceComp resourceComp, ref OccupiedNodeComp occupiedNodeComp, ref SendResourceContinuouslyComp sendResourceContinuouslyComp)
         {
-            if (sendResourceContinuouslyComp.sendTimer.Update(XTime.deltaTime) == false) return;
-            sendResourceContinuouslyComp.sendTimer.Restart();
+            ref var unitComp = ref occupiedNodeComp.unitEntity.GetComponent<UnitComp>();
+            if (unitComp.resourceTransferTimer.IsDone == false) return;
             // we don't have resource to send
             if ((int)resourceComp.resourceQuantity == 0) return;
             

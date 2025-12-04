@@ -74,6 +74,7 @@ namespace XIV.Ecs
             manager.AddSystem(new NodeAddShieldSystem(), States.Game);
             manager.AddSystem(new NodeRemoveShieldSystem(), States.Game);
             manager.AddSystem(new UnitNodeSelectionSystem(), States.Game);
+            manager.AddSystem(new UnitSystem(), States.Game);
             
             manager.AddSystem(new NodeHighlightSystem(), States.Game);
             
