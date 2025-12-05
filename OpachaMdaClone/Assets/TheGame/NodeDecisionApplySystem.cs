@@ -5,7 +5,6 @@ using XIV.Core.Collections;
 using XIV.Core.DataStructures;
 using XIV.Core.Utils;
 using XIV.Ecs;
-using Timer = XIV.Core.Utils.Timer;
 
 namespace TheGame
 {
@@ -30,6 +29,7 @@ namespace TheGame
             {
                 entity.RemoveComponent<NodeDefendComp>();
                 entity.RemoveComponent<NodeCaptureComp>();
+                entity.RemoveComponent<SendResourceContinuouslyComp>();
             }
             using var entityBuffer = ArrayUtils.GetBuffer<Entity>();
 
@@ -37,14 +37,6 @@ namespace TheGame
             {
                 case DecisionType.Defend:
                     entity.AddComponent(new NodeDefendComp());
-                    if (nodeDecisionComp.decisionChanged)
-                    {
-                        entity.RemoveComponent<SendResourceContinuouslyComp>();
-                        // world.NewEntity().AddComponent(new RemoveResourceTransferIndicatorEventComp
-                        // {
-                        //     ownerEntity = entity,
-                        // });
-                    }
 
                     if (nodeDecisionComp.decisionChanged)
                     {
@@ -113,29 +105,6 @@ namespace TheGame
             }
 
             return targetEntity;
-        }
-    }
-
-    public struct PathFinderComp : IComponent
-    {
-        public DynamicArray<Entity> path;
-    }
-
-    public class NodePathFindSystem : XIV.Ecs.System
-    {
-        readonly Filter<OccupiedNodeComp, PathFinderComp> pathFinderFilter = null;
-        readonly ConnectionDB connectionDB = null;
-        Timer pathFindTimer = new Timer(2f);
-
-        public override void Update()
-        {
-            if (pathFindTimer.Update(XTime.deltaTime) == false) return;
-            pathFindTimer.Restart();
-            
-            pathFinderFilter.ForEach((Entity entity, ref OccupiedNodeComp occupiedNodeComp, ref PathFinderComp pathFinderComp) =>
-            {
-                NodePathFinder.GetPathToFirstTarget(entity, connectionDB, GameConstants.MAX_RESOURCE_QUANTITY, ref pathFinderComp.path);
-            });
         }
     }
 }

@@ -6,33 +6,37 @@ namespace TheGame
 {
     public struct ResourceGenerationDelayComp : IComponent
     {
+        public Entity resourceEntity;
         public Timer timer;
     }
 
     public class ResourceGenerateSystem : XIV.Ecs.System
     {
         readonly Filter<ResourceGenerationDelayComp> generationDelayFilter = null;
-        readonly Filter<NodeComp, ResourceComp, ResourceGeneratorComp> resourceGeneratorFilter = new Filter<NodeComp, ResourceComp, ResourceGeneratorComp>().Exclude<ResourceGenerationDelayComp>();
+        readonly Filter<NodeComp, ResourceComp> resourceGeneratorFilter = null;
         readonly AssetReferences assetReferences = null;
 
         public override void Update()
         {
-            generationDelayFilter.ForEach((Entity e, ref ResourceGenerationDelayComp resourceGeneratorFilter) =>
+            generationDelayFilter.ForEach((Entity e, ref ResourceGenerationDelayComp resourceGenerationDelayComp) =>
             {
-                if (resourceGeneratorFilter.timer.Update(XTime.deltaTime) == false) return;
-                e.RemoveComponent<ResourceGenerationDelayComp>();
+                resourceGenerationDelayComp.resourceEntity.GetComponent<ResourceComp>().isGeneratingResource = false;
+                if (resourceGenerationDelayComp.timer.Update(XTime.deltaTime) == false) return;
+                e.Destroy();
+                resourceGenerationDelayComp.resourceEntity.GetComponent<ResourceComp>().isGeneratingResource = true;
             });
             resourceGeneratorFilter.ForEach(GenerateResource);
         }
 
-        void GenerateResource(Entity entity, ref NodeComp nodeComp, ref ResourceComp resourceComp, ref ResourceGeneratorComp resourceGeneratorComp)
+        void GenerateResource(Entity entity, ref NodeComp nodeComp, ref ResourceComp resourceComp)
         {
-            resourceGeneratorComp.resourceGenerationSpeed = assetReferences.generationConfigs[nodeComp.configIdx].resourceGenerationSpeed;
-            var prev = resourceComp.resourceQuantity;
-            resourceComp.resourceQuantity = XIVMathf.Min(prev + XTime.deltaTime * resourceGeneratorComp.resourceGenerationSpeed, GameConstants.MAX_RESOURCE_QUANTITY);
+            if (resourceComp.isGeneratingResource == false) return;
+            
+            var speed = assetReferences.generationConfigs[nodeComp.configIdx].resourceGenerationSpeed;
+            resourceComp.resourceQuantity = XIVMathf.Min(resourceComp.resourceQuantity + XTime.deltaTime * speed, GameConstants.MAX_RESOURCE_QUANTITY);
             if (XIVMathf.Abs(resourceComp.resourceQuantity - GameConstants.MAX_RESOURCE_QUANTITY) < XIVMathf.Epsilon)
             {
-                entity.RemoveComponent<ResourceGeneratorComp>();
+                resourceComp.isGeneratingResource = false;
             }
         }
     }

@@ -64,19 +64,4 @@ namespace TheGame
     
     public struct SendResourceToPlayerTag : ITag { }
     public struct SendResourceToAllNeighborsTag : ITag { }
-
-    public struct ResourceComp : IComponent
-    {
-        public float resourceQuantity;
-    }
-
-    public struct ResourceGeneratorComp : IComponent
-    {
-        public float resourceGenerationSpeed;
-    }
-
-    public struct ShieldGeneratorComp : IComponent
-    {
-        public float shieldGenerationSpeed;
-    }
 }

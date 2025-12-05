@@ -35,8 +35,9 @@ namespace TheGame
             if (resourceDamageEventComp.amount <= 0) entity.Destroy();
             if (diff > 0f)
             {
-                resourceDamageEventComp.damagedEntity.AddComponent(new ShieldGenerationDelayComp
+                world.NewEntity().AddComponent(new ShieldGenerationDelayComp
                 {
+                    shieldEntity = resourceDamageEventComp.damagedEntity,
                     timer = new Timer(0.8f),
                 });
             }

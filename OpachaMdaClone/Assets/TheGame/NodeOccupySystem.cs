@@ -69,14 +69,11 @@ namespace TheGame
 
             if (attackerUnitComp.unitType == UnitIdLookup.UnitType.Black)
             {
-                nodeOccupyEventComp.nodeEntity.RemoveComponent<ResourceGeneratorComp>();
+                nodeOccupyEventComp.nodeEntity.GetComponent<ResourceComp>().isGeneratingResource = false;
             }
             else
             {
-                nodeOccupyEventComp.nodeEntity.AddComponent(new ResourceGeneratorComp
-                {
-                    resourceGenerationSpeed = assetReferences.generationConfigs[nodeComp.configIdx].resourceGenerationSpeed,
-                });
+                nodeOccupyEventComp.nodeEntity.GetComponent<ResourceComp>().isGeneratingResource = true;
             }
         }
 

@@ -23,7 +23,7 @@ namespace TheGame
 
     public struct FrontierHelperComp : IComponent
     {
-        
+        // TODO: To help the frontier we should read data from OccupiedNodeComp, NodeDecisionComp. We don't need any of these.
     }
     
     public class NodeHelpFrontierSystem : XIV.Ecs.System
