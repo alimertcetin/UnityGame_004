@@ -40,10 +40,20 @@ namespace XIV.Ecs
                     continue;
                 }
                 entityData.componentBitset.SetBit1(componentId);
+            }
+
+            // Do not change archetypes until entities' final state has determined
+            for (int i = 0; i < len; i++)
+            {
+                var entityId = entityIds[i];
+                var component = componentValues[i];
+                ref var entityData = ref entityDataList[entityId.id];
                 
+                //--- If entity had this component early on, we already set it. We are doing it again, there are guard clauses but still it is a waste
                 var newArchetype = archetypeMap.GetArchetype(entityData.componentBitset, entityData.tagBitset, out var newArchetypeGenerated);
                 archetypeMap.ChangeArchetype(world, entityId, entityDataList, newArchetype);
                 archetypeMap.SetNewComponent<T>(entityData, in component);
+                //---
                 if (newArchetypeGenerated)
                 {
                     world.UpdateQueries(newArchetype);

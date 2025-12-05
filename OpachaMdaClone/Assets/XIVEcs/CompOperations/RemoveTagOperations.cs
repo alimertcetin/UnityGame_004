@@ -38,6 +38,12 @@ namespace XIV.Ecs
                 }
 
                 entityData.tagBitset.SetBit0(tagId);
+            }
+
+            for (int i = 0; i < len; i++)
+            {
+                ref var entityId = ref entityIds[i];
+                ref var entityData = ref entityDataList[entityId.id];
 
                 var newArchetype = archetypeMap.GetArchetype(entityData.componentBitset, entityData.tagBitset, out var newArchetypeGenerated);
 

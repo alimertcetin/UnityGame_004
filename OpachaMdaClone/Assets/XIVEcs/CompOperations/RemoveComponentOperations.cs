@@ -39,9 +39,14 @@ namespace XIV.Ecs
                 }
 
                 entityData.componentBitset.SetBit0(removedComponentId);
+            }
 
-                var newArchetype = archetypeMap.GetArchetype(
-                    entityData.componentBitset, entityData.tagBitset, out var newArchetypeGenerated);
+            for (int i = 0; i < entityCount; i++)
+            {
+                var entityId = entityIds[i];
+                ref var entityData = ref entityDataList[entityId.id];
+
+                var newArchetype = archetypeMap.GetArchetype(entityData.componentBitset, entityData.tagBitset, out var newArchetypeGenerated);
 
                 archetypeMap.ChangeArchetype(world, entityId, entityDataList, newArchetype);
 

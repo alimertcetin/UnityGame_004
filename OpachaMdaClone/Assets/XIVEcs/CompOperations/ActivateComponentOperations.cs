@@ -8,6 +8,7 @@ namespace XIV.Ecs
     {
         static readonly int componentId = ComponentIdManager.GetComponentId<T>();
         static DynamicArray<EntityId> disabledComponentOwners;
+        static DynamicArray<T> disabledComponents;
         static DynamicArray<int> enabledComponentOwnerIndices;
 
         public static void Init()
@@ -15,6 +16,7 @@ namespace XIV.Ecs
             ComponentOperationIndex.AddActivateComponentAction(ExecuteEnableComponent, true);
             ComponentOperationIndex.AddActivateComponentAction(ExecuteDisableComponent, false);
             disabledComponentOwners = new DynamicArray<EntityId>(64);
+            disabledComponents = new DynamicArray<T>(64);
             enabledComponentOwnerIndices = new DynamicArray<int>(64);
         }
 
@@ -31,6 +33,7 @@ namespace XIV.Ecs
             int idx = disabledComponentOwners.Exists(p => p.id == entityId.id && p.generation == entityId.generation);
             if (idx != -1) return; // already disabled
             disabledComponentOwners.Add() = entityId;
+            disabledComponents.Add() = world.GetComponent<T>(entityId);
         }
 
         public static void ExecuteEnableComponent(World world)
@@ -38,13 +41,30 @@ namespace XIV.Ecs
             int len = enabledComponentOwnerIndices.Count;
             for (int i = 0; i < len; i++)
             {
-                ref var entityId = ref disabledComponentOwners[i];
+                ref var entityId = ref disabledComponentOwners[enabledComponentOwnerIndices[i]];
                 world.entityDataList[entityId.id].disabledComponentBitset.SetBit0(componentId);
+                world.entityDataList[entityId.id].componentBitset.SetBit1(componentId);
+            }
+
+            for (int i = 0; i < len; i++)
+            {
+                var index = enabledComponentOwnerIndices[i];
+                
+                ref var entityId = ref disabledComponentOwners[index];
+                var entityData = world.entityDataList[entityId.id];
+                var archetype = world.archetypeMap.GetArchetype(entityData.componentBitset, entityData.tagBitset, out var newArchetypeGenerated);
+                world.archetypeMap.ChangeArchetype(world, entityId, world.entityDataList, archetype);
+                world.archetypeMap.SetNewComponent(entityData, disabledComponents[index]);
+
+                if (newArchetypeGenerated)
+                {
+                    world.UpdateQueries(archetype);
+                }
             }
             
             QuickSort(enabledComponentOwnerIndices.AsXIVMemory());
 
-            for (int i = len - 1; i >= 0; i--)
+            for (int i = 0; i < len; i++)
             {
                 var idx = enabledComponentOwnerIndices[i];
                 disabledComponentOwners.RemoveAt(idx);
@@ -59,6 +79,20 @@ namespace XIV.Ecs
             {
                 ref var entityId = ref disabledComponentOwners[i];
                 world.entityDataList[entityId.id].disabledComponentBitset.SetBit1(componentId);
+                world.entityDataList[entityId.id].componentBitset.SetBit0(componentId);
+            }
+
+            for (int i = 0; i < len; i++)
+            {
+                ref var entityId = ref disabledComponentOwners[i];
+                var entityData = world.entityDataList[entityId.id];
+                var archetype = world.archetypeMap.GetArchetype(entityData.componentBitset, entityData.tagBitset, out var newArchetypeGenerated);
+                world.archetypeMap.ChangeArchetype(world, entityId, world.entityDataList, archetype);
+
+                if (newArchetypeGenerated)
+                {
+                    world.UpdateQueries(archetype);
+                }
             }
         }
         

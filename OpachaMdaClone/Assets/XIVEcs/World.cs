@@ -40,10 +40,10 @@ namespace XIV.Ecs
             // TODO : World.UnlockComponentOperation -> Order of operation, addComp after removeComp can cause component to not added, removeComp after addComp can cause component to not removed
             // Quick, kinda fix: Do Remove operations before Add operations
             HandleDestroyOperations();
+            ComponentOperationIndex.ExecuteEnableComponentActions(this);
             ComponentOperationIndex.ExecuteDisableComponentActions(this);
             ComponentOperationIndex.ExecuteRemoveComponentActions(this);
             ComponentOperationIndex.ExecuteRemoveTagActions(this);
-            ComponentOperationIndex.ExecuteEnableComponentActions(this);
             ComponentOperationIndex.ExecuteAddComponentActions(this);
             ComponentOperationIndex.ExecuteAddTagActions(this);
         }
