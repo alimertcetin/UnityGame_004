@@ -7,7 +7,7 @@ using XIV.Ecs;
 
 namespace TheGame
 {
-    public struct ShieldGenerationDelayComp : IComponent
+    public struct ShieldGenerationDelayEventComp : IComponent
     {
         public Entity shieldEntity;
         public Timer timer;
@@ -23,22 +23,22 @@ namespace TheGame
     public class NodeShieldSystem : XIV.Ecs.System
     {
         readonly Filter<NodeComp, ShieldComp> shieldGeneratorFilter = null;
-        readonly Filter<ShieldGenerationDelayComp> shieldGenerationDelayFilter = null;
+        readonly Filter<ShieldGenerationDelayEventComp> shieldGenerationDelayFilter = null;
         readonly AssetReferences assetReferences = null;
 
         public override void Update()
         {
-            shieldGenerationDelayFilter.ForEach((Entity entity, ref ShieldGenerationDelayComp shieldGenerationDelayComp) =>
+            shieldGenerationDelayFilter.ForEach((Entity entity, ref ShieldGenerationDelayEventComp shieldGenerationDelayEventComp) =>
             {
-                if (shieldGenerationDelayComp.shieldEntity.HasComponent<ShieldComp>() == false)
+                if (shieldGenerationDelayEventComp.shieldEntity.HasComponent<ShieldComp>() == false)
                 {
                     entity.Destroy();
                     return;
                 }
-                shieldGenerationDelayComp.shieldEntity.GetComponent<ShieldComp>().isGeneratingShield = false;
-                if (shieldGenerationDelayComp.timer.Update(XTime.deltaTime) == false) return;
+                shieldGenerationDelayEventComp.shieldEntity.GetComponent<ShieldComp>().isGeneratingShield = false;
+                if (shieldGenerationDelayEventComp.timer.Update(XTime.deltaTime) == false) return;
                 entity.Destroy();
-                shieldGenerationDelayComp.shieldEntity.GetComponent<ShieldComp>().isGeneratingShield = true;
+                shieldGenerationDelayEventComp.shieldEntity.GetComponent<ShieldComp>().isGeneratingShield = true;
             });
             shieldGeneratorFilter.ForEach(GenerateShieldPoints);
         }
