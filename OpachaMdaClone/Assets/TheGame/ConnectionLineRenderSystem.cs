@@ -6,6 +6,7 @@ using XIV.Core.TweenSystem;
 using XIV.Core.Utils;
 using XIV.Core.XIVMath;
 using XIV.Ecs;
+using XIVEcsUnityIntegration.Extensions;
 using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame
@@ -13,12 +14,6 @@ namespace TheGame
     public struct LineRendererComp : IComponent
     {
         public LineRenderer lineRenderer;
-    }
-
-    public struct InstancedRendererComp : IComponent
-    {
-        public Renderer renderer;
-        public MaterialPropertyBlock materialPropertyBlock;
     }
 
     public struct UpdateVisualLineConnectionEventComp : IComponent
@@ -31,6 +26,7 @@ namespace TheGame
         readonly LineRendererPositionData lineRendererPositionData = null;
         readonly Filter<UpdateVisualLineConnectionEventComp> updateConnectionVisualFilter = null;
         readonly ConnectionDB connectionDB = null;
+        readonly AssetReferences assetReferences = null;
         Thread resourceThread;
         
         public override void Start()
@@ -162,14 +158,15 @@ namespace TheGame
             ref var occupiedNodeComp = ref updateVisualLineConnectionEventComp.targetEntity.GetComponent<OccupiedNodeComp>();
             
             ref var attackerUnitComp = ref occupiedNodeComp.unitEntity.GetComponent<UnitComp>();
-            var renderer = updateVisualLineConnectionEventComp.targetEntity.GetUnityComponent<SpriteRenderer>();
-            var ca = renderer.color;
+            ref var targetEntityInstancedRendererComp = ref updateVisualLineConnectionEventComp.targetEntity.GetComponent<InstancedRendererComp>();
+            targetEntityInstancedRendererComp.renderer.GetPropertyBlock(targetEntityInstancedRendererComp.materialPropertyBlock);
+            var colorPropId = ShaderConstants.Custom_SpriteWithShadow_Instanced.Color_ColorID;
+            var ca = targetEntityInstancedRendererComp.materialPropertyBlock.GetColor(colorPropId);
             var cb = UnitIdLookup.GetColor(attackerUnitComp.unitType);
-            renderer.CancelTween();
-            renderer.XIVTween()
-                .ScaleBounceOnce()
-                .And()
-                .SpriteRendererColor(ca, cb, 0.5f, EasingFunction.SmoothStop3)
+            updateVisualLineConnectionEventComp.targetEntity.CancelTween();
+            updateVisualLineConnectionEventComp.targetEntity.XIVTween()
+                .Mpb(targetEntityInstancedRendererComp.materialPropertyBlock, colorPropId, ca, cb, 0.5f, EasingFunction.SmoothStop3)
+                .UseCustomDeltaTime(() => XTime.deltaTime)
                 .Start();
 
             using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
@@ -185,15 +182,16 @@ namespace TheGame
                 }
 
                 ref var lineRendererComp = ref connectionPair.lineRendererEntity.GetComponent<LineRendererComp>();
-                ref var instancedRendererComp = ref connectionPair.lineRendererEntity.GetComponent<InstancedRendererComp>();
+                ref var lineRendererEntityInstancedRendererComp = ref connectionPair.lineRendererEntity.GetComponent<InstancedRendererComp>();
                 
                 if (neighborUnitType == attackerUnitComp.unitType)
                 {
                     lineRendererComp.lineRenderer.XIVSetColor(UnitIdLookup.GetColor(attackerUnitComp.unitType));
                     
-                    instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
-                    instancedRendererComp.materialPropertyBlock.SetFloat(ShaderConstants.Custom_LineWithShadow_Gradient_Sized.SegCount_Float, 0);
-                    instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
+                    // lineRendererEntityInstancedRendererComp.renderer.GetPropertyBlock(lineRendererEntityInstancedRendererComp.materialPropertyBlock);
+                    lineRendererEntityInstancedRendererComp.renderer.material = assetReferences.connectionLineMaterial;
+                    // lineRendererEntityInstancedRendererComp.materialPropertyBlock.SetFloat(ShaderConstants.Custom_LineWithShadow_Gradient_Sized.SegCount_Float, 0);
+                    // lineRendererEntityInstancedRendererComp.renderer.SetPropertyBlock(lineRendererEntityInstancedRendererComp.materialPropertyBlock);
                     continue;
                 }
 
@@ -208,9 +206,10 @@ namespace TheGame
                     lineRendererComp.lineRenderer.endColor = UnitIdLookup.GetColor(attackerUnitComp.unitType);
                 }
 
-                instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
-                instancedRendererComp.materialPropertyBlock.SetFloat(ShaderConstants.Custom_LineWithShadow_Gradient_Sized.SegCount_Float, 7);
-                instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
+                lineRendererEntityInstancedRendererComp.renderer.material = assetReferences.connectionLineSlicedMaterial;
+                // lineRendererEntityInstancedRendererComp.renderer.GetPropertyBlock(lineRendererEntityInstancedRendererComp.materialPropertyBlock);
+                // lineRendererEntityInstancedRendererComp.materialPropertyBlock.SetFloat(ShaderConstants.Custom_LineWithShadow_Gradient_Sized.SegCount_Float, 7);
+                // lineRendererEntityInstancedRendererComp.renderer.SetPropertyBlock(lineRendererEntityInstancedRendererComp.materialPropertyBlock);
             }
         }
 

@@ -142,8 +142,11 @@ namespace TheGame
             resourceEntity.GetComponent<TextComp>().txt.text = transferableResourceComp.quantity.ToString();
             connectionDB[transferableResourceComp.connectionIndex].AddResourceTransfer(resourceEntity, ref transferableResourceComp);
             
-            var resourceEntityRenderer = resourceEntity.GetComponent<TransformComp>().transform.GetComponent<SpriteRenderer>();
-            resourceEntityRenderer.color = UnitIdLookup.GetColor(occupiedNodeComp.unitEntity.GetComponent<UnitComp>().unitType);
+            ref var instancedRendererComp = ref resourceEntity.GetComponent<InstancedRendererComp>();
+            instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
+            instancedRendererComp.materialPropertyBlock.SetColor(ShaderConstants.Custom_SpriteWithShadow_Instanced.Color_ColorID, UnitIdLookup.GetColor(occupiedNodeComp.unitEntity.GetComponent<UnitComp>().unitType));
+            instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
+            
             resourceComp.resourceQuantity -= sendResourceEventComp.resourceQuantity;
 
             ref var scaleComp = ref sendResourceEventComp.fromEntity.GetComponent<ScaleComp>();

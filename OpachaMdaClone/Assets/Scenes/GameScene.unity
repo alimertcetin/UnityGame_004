@@ -613,6 +613,8 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 5edb1dcef10e4f84e8e83a503c519310, type: 2}
     nodeTypeChangeParticle: {fileID: 3977356816492299822, guid: 2a846e25caf815343ab2cec310cd1c00, type: 3}
     resourceTransferIndicatorPrefab: {fileID: 2785822155958330631, guid: 28e6dfc763b5b214e9306e8e285c60a8, type: 3}
+    connectionLineMaterial: {fileID: 2100000, guid: e3a751fe06bc034438b793f3df3ae370, type: 2}
+    connectionLineSlicedMaterial: {fileID: 2100000, guid: 413609e3cb7242c409edfbe13593d2ef, type: 2}
 --- !u!114 &1087117772
 MonoBehaviour:
   m_ObjectHideFlags: 0

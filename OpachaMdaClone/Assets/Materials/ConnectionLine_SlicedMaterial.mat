@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: ConnectionMaterial
+  m_Name: ConnectionLine_SlicedMaterial
   m_Shader: {fileID: 4800000, guid: b2b93ba778a64ab88c7d234e8a770982, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []
@@ -70,7 +70,7 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _SegCount: 0
+    - _SegCount: 7
     - _SegGap: 0.6
     - _ShadowSize: 1.04
     - _SmoothnessTextureChannel: 0

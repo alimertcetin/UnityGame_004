@@ -15,6 +15,8 @@ namespace XIV.Ecs
         public GenerationStepSO[] generationConfigs; // 0 = default, 1 = adc, 2 = tank
         public GameObject nodeTypeChangeParticle;
         public GameObject resourceTransferIndicatorPrefab;
+        public Material connectionLineMaterial;
+        public Material connectionLineSlicedMaterial;
         
         public const int RESOURCE_GENERATOR_CONFIG = 1;
         public const int DEFEND_CONFIG = 2;

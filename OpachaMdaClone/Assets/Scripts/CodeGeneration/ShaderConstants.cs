@@ -108,6 +108,22 @@ public static class ShaderConstants
 		
 	} // class Custom_LineWithShadow_Gradient_Sized
 	
+	public static class Custom_LineWithShadow_Gradient_Sized_Instanced
+	{
+		// Members
+		public const string MainTex_Texture = "_MainTex";
+		public static readonly int MainTex_TextureID = Shader.PropertyToID("_MainTex");
+		public const string ShadowColor_Color = "_ShadowColor";
+		public static readonly int ShadowColor_ColorID = Shader.PropertyToID("_ShadowColor");
+		public const string ShadowOffset_Vector = "_ShadowOffset";
+		public static readonly int ShadowOffset_VectorID = Shader.PropertyToID("_ShadowOffset");
+		public const string ShadowSize_Vector = "_ShadowSize";
+		public static readonly int ShadowSize_VectorID = Shader.PropertyToID("_ShadowSize");
+		public const string SegCount_Float = "_SegCount";
+		public static readonly int SegCount_FloatID = Shader.PropertyToID("_SegCount");
+		
+	} // class Custom_LineWithShadow_Gradient_Sized_Instanced
+	
 	public static class Custom_ShieldCircle
 	{
 		// Members
@@ -163,6 +179,22 @@ public static class ShaderConstants
 		public static readonly int DamageFlash_FloatID = Shader.PropertyToID("_DamageFlash");
 		
 	} // class Custom_ShieldCircleAdvanced
+	
+	public static class Custom_SpriteWithShadow_Instanced
+	{
+		// Members
+		public const string MainTex_Texture = "_MainTex";
+		public static readonly int MainTex_TextureID = Shader.PropertyToID("_MainTex");
+		public const string Color_Color = "_Color";
+		public static readonly int Color_ColorID = Shader.PropertyToID("_Color");
+		public const string ShadowColor_Color = "_ShadowColor";
+		public static readonly int ShadowColor_ColorID = Shader.PropertyToID("_ShadowColor");
+		public const string ShadowOffset_Vector = "_ShadowOffset";
+		public static readonly int ShadowOffset_VectorID = Shader.PropertyToID("_ShadowOffset");
+		public const string ShadowSize_Vector = "_ShadowSize";
+		public static readonly int ShadowSize_VectorID = Shader.PropertyToID("_ShadowSize");
+		
+	} // class Custom_SpriteWithShadow_Instanced
 	
 	public static class Custom_TriangleAttachedToCircle
 	{

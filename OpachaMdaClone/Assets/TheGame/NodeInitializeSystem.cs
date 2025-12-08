@@ -91,8 +91,10 @@ namespace TheGame
         {
             transformComp.transform.gameObject.name = "Node: " + entity.ToString();
             nodeComp.configIdx = 0;
-            var renderer = transformComp.transform.GetComponent<SpriteRenderer>();
-            renderer.color = UnitIdLookup.GetColor(UnitIdLookup.UnitType.Black);
+            ref var instancedRendererComp = ref entity.GetComponent<InstancedRendererComp>();
+            instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
+            instancedRendererComp.materialPropertyBlock.SetColor(ShaderConstants.Custom_SpriteWithShadow_Instanced.Color_ColorID, UnitIdLookup.GetColor(UnitIdLookup.UnitType.Black));
+            instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
             entity.AddComponent(new ResourceComp
             {
                 resourceQuantity = 3f,
