@@ -53,6 +53,7 @@ namespace TheGame
                 nodeHighlightEntity.CancelTween();
                 nodeHighlightEntity.XIVTween()
                     .Scale(scale, scale * 1.2f, 1f, EasingFunction.SmoothStop2, true, int.MaxValue)
+                    .UseCustomDeltaTime(() => XTime.deltaTime)
                     .Start();
             });
             

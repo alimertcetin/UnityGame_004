@@ -151,6 +151,7 @@ namespace TheGame
             sendResourceEventComp.fromEntity.CancelTween();
             sendResourceEventComp.fromEntity.XIVTween()
                 .Scale(scale, scale * 1.1f, 0.5f, EasingFunction.EaseOutCubic, true)
+                .UseCustomDeltaTime(() => XTime.deltaTime)
                 .Start();
         }
 

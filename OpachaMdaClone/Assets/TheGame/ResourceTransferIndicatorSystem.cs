@@ -59,6 +59,7 @@ namespace TheGame
                     indicatorEntity.CancelTween();
                     indicatorEntity.XIVTween()
                         .RotateZ(currentAngle, targetAngle, 1.1f - (dist / 720f), EasingFunction.EaseOutCubic)
+                        .UseCustomDeltaTime(() => XTime.deltaTime)
                         .Start();
                 });
 
@@ -74,6 +75,7 @@ namespace TheGame
                 indicatorEntity.CancelTween();
                 indicatorEntity.XIVTween()
                     .Scale(Vector3.zero, scale, 0.25f, EasingFunction.EaseInBounce)
+                    .UseCustomDeltaTime(() => XTime.deltaTime)
                     .Start();
             
                 indicatorEntity.AddComponent(new ResourceTransferIndicatorComp
@@ -92,6 +94,7 @@ namespace TheGame
                 indicatorEntity.XIVTween()
                     .Scale(scale, Vector3.zero, 1.25f, EasingFunction.EaseOutBack)
                     .OnComplete(() => indicatorEntity.Destroy())
+                    .UseCustomDeltaTime(() => XTime.deltaTime)
                     .Start();
             });
             // addResourceTransferIndicatorFilter.ForEach(AddResourceTransferIndicator);

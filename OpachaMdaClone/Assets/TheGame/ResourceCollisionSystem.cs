@@ -63,6 +63,7 @@ namespace TheGame
                 var scale = scaleComp.scale.ToVector3();
                 nodeEntity.XIVTween()
                     .Scale(scale, scale * 1.1f, 0.5f, EasingFunction.EaseOutCubic, true)
+                    .UseCustomDeltaTime(() => XTime.deltaTime)
                     .Start();
             }
         }
