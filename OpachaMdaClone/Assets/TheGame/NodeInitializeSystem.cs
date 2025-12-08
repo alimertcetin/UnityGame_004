@@ -45,23 +45,36 @@ namespace TheGame
             var unitEntityCount = unitFilter.NumberOfEntities;
             Entity[] excludeArr = new Entity[unitEntityCount];
             Vector3 mapCenter = Vector3.zero;
+            Vec3 min = Vec3.zero;
+            Vec3 max = Vec3.zero;
             for (int i = 0; i < nodeEntityCount; i++)
             {
                 ref var entity = ref arr[i];
                 var pos = entity.GetComponent<PositionComp>().position;
                 mapCenter += pos.ToVector3();
+                
+                min.x = XIVMathf.Min(min.x, pos.x);
+                min.y = XIVMathf.Min(min.y, pos.y);
+                max.x = XIVMathf.Max(max.x, pos.x);
+                max.y = XIVMathf.Max(max.y, pos.y);
             }
             mapCenter /= nodeEntityCount;
-            var angle = 180f / unitEntityCount;
-
+            var minMaxDiff = max - min;
+            var directionLen = minMaxDiff.magnitude / 2f;
+            var angleStep = 360f / unitEntityCount;
             int index = 0;
-            var directionVector = (Vector3)XIVRandom.insideUnitCircle.ToVector2() * (mapCenter.sqrMagnitude * 0.5f);
+#if UNITY_EDITOR
+            XIVDebug.DrawCircle(mapCenter, 0.25f, XIVColor.green, 10f);
+#endif
+            var startDir = (Vector3)XIVRandom.insideUnitCircle.ToVector2();
             unitFilter.ForEach((Entity e, ref UnitComp unitComp) =>
             {
-                XIVDebug.DrawLine(mapCenter, directionVector, XIVColor.red, 10f);
+                var directionVector = mapCenter + (startDir.RotateAroundZ(angleStep * index, Vector3.zero).normalized * directionLen);
                 var nodeEntity = arr.XIVGetClosest(nodeEntityCount, directionVector, out _, out _, (n) => n.GetComponent<PositionComp>().position, excludeArr, index);
-                directionVector = directionVector.RotateAroundZ(angle, mapCenter);
+#if UNITY_EDITOR
+                XIVDebug.DrawLine(mapCenter, directionVector, XIVColor.red, 10f);
                 XIVDebug.DrawCircle(nodeEntity.GetComponent<PositionComp>().position, 2f, XIVColor.red, 8f);
+#endif
                 unitComp.occupiedNodeEntities = new DynamicArray<Entity>();
                 unitComp.smartness01 = unitComp.unitType == UnitIdLookup.UnitType.Green ? unitComp.smartness01 : (float)unitComp.unitType / (float)(UnitIdLookup.UnitType.NumberOfItems - 1);
                 
