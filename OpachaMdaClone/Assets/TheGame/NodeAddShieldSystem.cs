@@ -26,10 +26,6 @@ namespace TheGame
                 max = addShieldEventComp.max,
                 current = addShieldEventComp.current,
             });
-            world.NewEntity().AddComponent(new AddShieldRendererEventComp
-            {
-                targetEntity = addShieldEventComp.targetEntity,
-            });
         }
     }
 }

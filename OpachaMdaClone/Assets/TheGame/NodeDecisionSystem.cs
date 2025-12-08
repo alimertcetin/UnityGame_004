@@ -30,13 +30,6 @@ namespace TheGame
         public DecisionType activeDecision;
     }
     
-    public struct NodeDefendComp : IComponent{}
-
-    public struct NodeCaptureComp : IComponent
-    {
-        public Entity targetEntity;
-    }
-    
     public enum DecisionType
     {
         Defend,
@@ -110,8 +103,7 @@ namespace TheGame
             // Evaluate capture feasibility relative to resource advantage
             {
                 using var entityBuffer = ArrayUtils.GetBuffer<Entity>(16);
-                int neighborCount = connectionDB.GetNeighbors(entity, entityBuffer,
-                    (opp) => connectionDB.IsTargetHostile(unitEntity, opp) || connectionDB.IsNeutralNode(opp));
+                int neighborCount = connectionDB.GetHostileAndNeutralNeighbors(entity, unitEntity, entityBuffer);
 
                 float bestCapture = 0f;
                 float have = resourceComp.resourceQuantity;

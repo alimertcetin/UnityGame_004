@@ -1,6 +1,7 @@
 ﻿using System;
 using TheGame;
 using UnityEngine;
+using XIV.Core.Collections;
 using XIV.Core.Utils;
 using XIV.Core.XIVMath;
 
@@ -112,64 +113,37 @@ namespace XIV.Ecs
         // [Range(0,1)] public float damageFlash = 0.8f;
     }
 
-    public struct AddShieldRendererEventComp : IComponent
-    {
-        public Entity targetEntity;
-    }
-
-    public struct RemoveShieldRendererEventComp : IComponent
-    {
-        public Entity targetEntity;
-    }
-
     public class ShieldRenderSystem : XIV.Ecs.System
     {
-        readonly Filter<AddShieldRendererEventComp> addShieldFilter = null;
-        readonly Filter<RemoveShieldRendererEventComp> removeShieldFilter = null;
-        
-        readonly Filter<ShieldComp> shieldFilter = null;
+        readonly Filter<PositionComp, ShieldComp> shieldFilter = null;
 
         readonly Filter<ShieldRendererComp, ShieldRenderPropertyComp> shieldRendererPropertyFilter = null; // Update only if has UpdateShieldRendererTag
         readonly Filter<ShieldRendererComp, ShieldRenderPropertyComp, ShieldRenderAnimationComp> shieldRenderAnimationFilter = null;
         
         readonly AssetReferences assetReferences = null;
+        readonly DynamicArray<Entity> rendererEntities = new DynamicArray<Entity>();
 
         public override void Update()
         {
-            addShieldFilter.ForEach(AddShieldRenderer);
-            removeShieldFilter.ForEach((Entity entity, ref RemoveShieldRendererEventComp removeShieldRendererEventComp) =>
-            {
-                entity.Destroy();
-                RemoveShield(removeShieldRendererEventComp.targetEntity);
-            });
+            shieldFilter.ForEach(AddShieldRenderer);
+            DestroyRenderersWithNoShield();
             
-            shieldFilter.ForEach(DetectChanges);
+            shieldRendererPropertyFilter.ForEach(DetectChanges);
             shieldRenderAnimationFilter.ForEach(AnimateShieldRenderer);
             shieldRendererPropertyFilter.ForEach(UpdateShaderProperties);
         }
-        
-        void AddShieldRenderer(Entity entity, ref AddShieldRendererEventComp addShieldRendererEventComp)
-        {
-            entity.Destroy();
-            bool hasRenderer = false;
-            var targetEntity = addShieldRendererEventComp.targetEntity;
-            shieldRendererPropertyFilter.ForEach((ref ShieldRendererComp shieldRendererComp, ref ShieldRenderPropertyComp shieldRenderPropertyComp) =>
-            {
-                if (hasRenderer) return;
-                if (shieldRendererComp.targetEntity == targetEntity) hasRenderer = true;
-            });
-            if (hasRenderer) return;
-            
-            ref var positionComp = ref targetEntity.GetComponent<PositionComp>();
-            ref var shieldComp = ref targetEntity.GetComponent<ShieldComp>();
-            var shieldEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeShieldPrefab, positionComp.position, Quaternion.identity);
 
-            var renderer = shieldEntity.GetComponent<TransformComp>().transform.GetComponent<Renderer>();
+        void AddShieldRenderer(Entity entity, ref PositionComp positionComp, ref ShieldComp shieldComp)
+        {
+            if (HasRenderer(entity)) return;
+
+            var shieldRendererEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeShieldPrefab, positionComp.position, Quaternion.identity);
+            var renderer = shieldRendererEntity.GetUnityComponent<Renderer>();
             var materialPropertyBlock = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(materialPropertyBlock);
             var rendererComp = new ShieldRendererComp
             {
-                targetEntity = addShieldRendererEventComp.targetEntity,
+                targetEntity = entity,
                 renderer = renderer,
                 materialPropertyBlock = materialPropertyBlock,
             };
@@ -190,42 +164,59 @@ namespace XIV.Ecs
                 activeColor = renderer.sharedMaterial.GetColor(ShaderConstants.Custom_ShieldCircleAdvanced.ColorActive_ColorID),
                 glowColor = renderer.sharedMaterial.GetColor(ShaderConstants.Custom_ShieldCircleAdvanced.GlowColor_ColorID),
             };
-            
-            shieldEntity.AddComponent(rendererComp);
-            shieldEntity.AddComponent(propComp);
+
+            shieldRendererEntity.AddComponent(rendererComp);
+            shieldRendererEntity.AddComponent(propComp);
+            rendererEntities.Add() = shieldRendererEntity;
         }
 
-        void RemoveShield(Entity entity)
+        bool HasRenderer(Entity entity)
         {
-            shieldRendererPropertyFilter.ForEach((Entity rendererEntity, ref ShieldRendererComp shieldRendererComp, ref ShieldRenderPropertyComp shieldRenderPropertyComp) =>
+            int len = rendererEntities.Count;
+            for (int i = 0; i < len; i++)
             {
-                if (shieldRendererComp.targetEntity == entity) rendererEntity.Destroy();
-            });
+                ref var shieldRendererEntity = ref rendererEntities[i];
+                ref var shieldRendererComp = ref shieldRendererEntity.GetComponent<ShieldRendererComp>();
+                if (shieldRendererComp.targetEntity == entity) return true;
+            }
+
+            return false;
         }
 
-        void DetectChanges(Entity entity, ref ShieldComp shieldComp)
+        void DestroyRenderersWithNoShield()
         {
-            var shield = shieldComp;
-            shieldRendererPropertyFilter.ForEach((Entity rendererEntity, ref ShieldRendererComp shieldRendererComp, ref ShieldRenderPropertyComp shieldRenderPropertyComp) =>
+            int len = rendererEntities.Count;
+            for (int i = len - 1; i >= 0; i--)
             {
-                if (shieldRendererComp.targetEntity != entity) return;
-
-                if (rendererEntity.HasComponent<ShieldRenderAnimationComp>() == false)
+                ref var shieldRendererEntity = ref rendererEntities[i];
+                ref var shieldRendererComp = ref shieldRendererEntity.GetComponent<ShieldRendererComp>();
+                if (shieldRendererComp.targetEntity.HasComponent<ShieldComp>() == false)
                 {
-                    var propertyChangeComp = new ShieldRenderAnimationComp();
-                    propertyChangeComp.Init(ref shieldRenderPropertyComp);
-                    if (WriteChanges(ref shieldRendererComp, ref shieldRenderPropertyComp, ref propertyChangeComp, ref shield))
-                    {
-                        rendererEntity.AddComponent(propertyChangeComp);
-                    }
+                    shieldRendererEntity.Destroy();
+                    rendererEntities.RemoveAt(i);
                 }
-                else
-                {
-                    ref var shieldRendererAnimationComp = ref rendererEntity.GetComponent<ShieldRenderAnimationComp>();
-                    WriteChanges(ref shieldRendererComp, ref shieldRenderPropertyComp, ref shieldRendererAnimationComp, ref shield);
-                }
+            }
+        }
 
-            });
+        void DetectChanges(Entity rendererEntity, ref ShieldRendererComp shieldRendererComp, ref ShieldRenderPropertyComp shieldRenderPropertyComp)
+        {
+            if (shieldRendererComp.targetEntity.HasComponent<ShieldComp>() == false) return;
+            ref var shieldComp = ref shieldRendererComp.targetEntity.GetComponent<ShieldComp>();
+                
+            if (rendererEntity.HasComponent<ShieldRenderAnimationComp>() == false)
+            {
+                var propertyChangeComp = new ShieldRenderAnimationComp();
+                propertyChangeComp.Init(ref shieldRenderPropertyComp);
+                if (WriteChanges(ref shieldRendererComp, ref shieldRenderPropertyComp, ref propertyChangeComp, ref shieldComp))
+                {
+                    rendererEntity.AddComponent(propertyChangeComp);
+                }
+            }
+            else
+            {
+                ref var shieldRendererAnimationComp = ref rendererEntity.GetComponent<ShieldRenderAnimationComp>();
+                WriteChanges(ref shieldRendererComp, ref shieldRenderPropertyComp, ref shieldRendererAnimationComp, ref shieldComp);
+            }
         }
 
         static bool WriteChanges(ref ShieldRendererComp shieldRendererComp, ref ShieldRenderPropertyComp shieldRenderPropertyComp, ref ShieldRenderAnimationComp propertyChangeComp, ref ShieldComp shieldComp)

@@ -21,10 +21,6 @@ namespace TheGame
         {
             entity.Destroy();
             removeShieldEventComp.targetEntity.RemoveComponent<ShieldComp>();
-            world.NewEntity().AddComponent(new RemoveShieldRendererEventComp
-            {
-                targetEntity = removeShieldEventComp.targetEntity,
-            });
         }
         
     }

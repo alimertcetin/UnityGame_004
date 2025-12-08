@@ -70,7 +70,7 @@ Material:
     - _Mode: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
-    - _SegCount: 0.97
+    - _SegCount: 0
     - _SegGap: 0.6
     - _ShadowSize: 1.04
     - _SmoothnessTextureChannel: 0

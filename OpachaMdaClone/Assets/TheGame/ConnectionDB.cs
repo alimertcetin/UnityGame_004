@@ -121,17 +121,52 @@ namespace TheGame
 
         public float GetAllNeighborResourceQuantity(Entity entity, Entity unitEntity)
         {
-            return GetNeighborResourceQuantity(entity, (opposite) => true);
+            using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
+            var pairLen = GetAllConnectionPairs(entity, indexBuffer);
+            float resourceQuantity = 0f;
+            for (int i = 0; i < pairLen; i++)
+            {
+                ref var pair = ref this[indexBuffer[i]];
+                var opposite = pair.GetOpposite(entity);
+                ref var oppositeResourceCompComp = ref opposite.GetComponent<ResourceComp>();
+                resourceQuantity += oppositeResourceCompComp.resourceQuantity;
+            }
+
+            return resourceQuantity;
         }
 
         public float GetHostileNeighborResourceQuantity(Entity entity, Entity unitEntity)
         {
-            return GetNeighborResourceQuantity(entity, (opposite) => IsTargetHostile(unitEntity, opposite));
+            using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
+            var pairLen = GetAllConnectionPairs(entity, indexBuffer);
+            float resourceQuantity = 0f;
+            for (int i = 0; i < pairLen; i++)
+            {
+                ref var pair = ref this[indexBuffer[i]];
+                var opposite = pair.GetOpposite(entity);
+                if (IsTargetHostile(unitEntity, opposite) == false) continue;
+                ref var oppositeResourceCompComp = ref opposite.GetComponent<ResourceComp>();
+                resourceQuantity += oppositeResourceCompComp.resourceQuantity;
+            }
+
+            return resourceQuantity;
         }
 
         public float GetAllyNeighborResourceQuantity(Entity entity, Entity unitEntity)
         {
-            return GetNeighborResourceQuantity(entity, (opposite) => IsTargetAlly(unitEntity, opposite));
+            using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
+            var pairLen = GetAllConnectionPairs(entity, indexBuffer);
+            float resourceQuantity = 0f;
+            for (int i = 0; i < pairLen; i++)
+            {
+                ref var pair = ref this[indexBuffer[i]];
+                var opposite = pair.GetOpposite(entity);
+                if (IsTargetAlly(unitEntity, opposite) == false) continue;
+                ref var oppositeResourceCompComp = ref opposite.GetComponent<ResourceComp>();
+                resourceQuantity += oppositeResourceCompComp.resourceQuantity;
+            }
+
+            return resourceQuantity;
         }
 
         public float GetNeighborResourceQuantity(Entity entity, Func<Entity, bool> predicate)
@@ -153,17 +188,66 @@ namespace TheGame
 
         public int GetAllNeighbors(Entity entity, Entity[] entityBuffer)
         {
-            return GetNeighbors(entity, entityBuffer, (_) => true);
+            using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
+            int pairLen = GetAllConnectionPairs(entity, indexBuffer);
+            int entityBufferLen = entityBuffer.Length;
+            int count = 0;
+            for (int i = 0; i < pairLen && count < entityBufferLen; i++)
+            {
+                ref var pair = ref this[indexBuffer[i]];
+                var opposite = pair.GetOpposite(entity);
+                entityBuffer[count++] = opposite;
+            }
+
+            return count;
         }
 
         public int GetHostileNeighbors(Entity entity, Entity unitEntity, Entity[] entityBuffer)
         {
-            return GetNeighbors(entity, entityBuffer, (opposite) => IsTargetHostile(unitEntity, opposite));
+            using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
+            int pairLen = GetAllConnectionPairs(entity, indexBuffer);
+            int entityBufferLen = entityBuffer.Length;
+            int count = 0;
+            for (int i = 0; i < pairLen && count < entityBufferLen; i++)
+            {
+                ref var pair = ref this[indexBuffer[i]];
+                var opposite = pair.GetOpposite(entity);
+                if (IsTargetHostile(unitEntity, opposite)) entityBuffer[count++] = opposite;
+            }
+
+            return count;
         }
 
         public int GetAllyNeighbors(Entity entity, Entity unitEntity, Entity[] entityBuffer)
         {
-            return GetNeighbors(entity, entityBuffer, (opposite) => IsTargetAlly(unitEntity, opposite));
+            using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
+            int pairLen = GetAllConnectionPairs(entity, indexBuffer);
+            int entityBufferLen = entityBuffer.Length;
+            int count = 0;
+            for (int i = 0; i < pairLen && count < entityBufferLen; i++)
+            {
+                ref var pair = ref this[indexBuffer[i]];
+                var opposite = pair.GetOpposite(entity);
+                if (IsTargetAlly(unitEntity, opposite)) entityBuffer[count++] = opposite;
+            }
+
+            return count;
+        }
+
+        public int GetHostileAndNeutralNeighbors(Entity entity, Entity unitEntity, Entity[] entityBuffer)
+        {
+            using var indexBuffer = ArrayUtils.GetBuffer<int>(16);
+            int pairLen = GetAllConnectionPairs(entity, indexBuffer);
+            int entityBufferLen = entityBuffer.Length;
+            int count = 0;
+            for (int i = 0; i < pairLen && count < entityBufferLen; i++)
+            {
+                ref var pair = ref this[indexBuffer[i]];
+                var opposite = pair.GetOpposite(entity);
+                if (IsTargetHostile(unitEntity, opposite) || IsNeutralNode(opposite)) entityBuffer[count++] = opposite;
+            }
+
+            return count;
         }
 
         public int GetNeighbors(Entity entity, Entity[] entityBuffer, Func<Entity, bool> predicate)
@@ -185,27 +269,91 @@ namespace TheGame
 
         public int GetAllConnectionPairs(Entity entity, int[] indexBuffer)
         {
-            return GetPairs(entity, indexBuffer, (_) => true);
+            int connectionLength = connections.Count;
+            var bufferLength = indexBuffer.Length;
+            int count = 0;
+            for (int i = 0; i < connectionLength && count < bufferLength; i++)
+            {
+                ref var pair = ref connections[i];
+                if (pair.Contains(entity))
+                {
+                    indexBuffer[count++] = i;
+                }
+            }
+
+            return count;
         }
 
         public int GetAlliedConnectionPairs(Entity entity, Entity unitEntity, int[] indexBuffer)
         {
-            return GetPairs(entity, indexBuffer, (opposite) => IsTargetAlly(unitEntity, opposite));
+            int connectionLength = connections.Count;
+            var bufferLength = indexBuffer.Length;
+            int count = 0;
+            for (int i = 0; i < connectionLength && count < bufferLength; i++)
+            {
+                ref var pair = ref connections[i];
+                if (pair.Contains(entity))
+                {
+                    var opposite = pair.GetOpposite(entity);
+                    if (IsTargetAlly(unitEntity, opposite)) indexBuffer[count++] = i;
+                }
+            }
+
+            return count;
         }
 
         public int GetHostileConnectionPairs(Entity entity, Entity unitEntity, int[] indexBuffer)
         {
-            return GetPairs(entity, indexBuffer, (opposite) => IsTargetHostile(unitEntity, opposite));
+            int connectionLength = connections.Count;
+            var bufferLength = indexBuffer.Length;
+            int count = 0;
+            for (int i = 0; i < connectionLength && count < bufferLength; i++)
+            {
+                ref var pair = ref connections[i];
+                if (pair.Contains(entity))
+                {
+                    var opposite = pair.GetOpposite(entity);
+                    if (IsTargetHostile(unitEntity, opposite)) indexBuffer[count++] = i;
+                }
+            }
+
+            return count;
         }
 
         public int GetHostileAndNeutralPairs(Entity entity, Entity unitEntity, int[] indexBuffer)
         {
-            return GetPairs(entity, indexBuffer, (opposite) => IsNeutralNode(opposite) || IsTargetHostile(unitEntity, opposite));
+            int connectionLength = connections.Count;
+            var bufferLength = indexBuffer.Length;
+            int count = 0;
+            for (int i = 0; i < connectionLength && count < bufferLength; i++)
+            {
+                ref var pair = ref connections[i];
+                if (pair.Contains(entity))
+                {
+                    var opposite = pair.GetOpposite(entity);
+                    if (IsNeutralNode(opposite) || IsTargetHostile(unitEntity, opposite)) indexBuffer[count++] = i;
+                }
+            }
+
+            return count;
         }
 
         public int GetNeutralConnectionPairs(Entity entity, int[] indexBuffer)
         {
-            return GetPairs(entity, indexBuffer, IsNeutralNode);
+            int connectionLength = connections.Count;
+            var bufferLength = indexBuffer.Length;
+            int count = 0;
+            for (int i = 0; i < connectionLength && count < bufferLength; i++)
+            {
+                ref var pair = ref connections[i];
+                if (pair.Contains(entity))
+                {
+                    var opposite = pair.GetOpposite(entity);
+                    if (IsNeutralNode(opposite)) indexBuffer[count++] = i;
+                }
+            }
+
+            return count;
         }
 
         public int GetPairs(Entity entity, int[] indexBuffer, Func<Entity, bool> predicate)

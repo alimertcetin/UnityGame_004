@@ -9,6 +9,8 @@ using XIV.Ecs;
 
 namespace TheGame
 {
+    // TODO: Write an optimized path finding
+    
     public static class NodePathFinder
     {
         class Node<T>
@@ -61,14 +63,18 @@ namespace TheGame
         static DynamicArray<Node<Entity>> openList;
         static HashSet<Entity> closedList;
         static DynamicArray<Node<Entity>> nodeBuffer;
+        static DynamicArray<Node<Entity>> nodesInUse;
         static DynamicArray<Entity> path;
 
         public static void Init()
         {
             openList = new DynamicArray<Node<Entity>>();
             closedList = new HashSet<Entity>();
-            nodeBuffer = new DynamicArray<Node<Entity>>();
+            nodeBuffer = new DynamicArray<Node<Entity>>(64);
+            nodesInUse = new DynamicArray<Node<Entity>>(64);
             path = new DynamicArray<Entity>();
+
+            for (int i = 0; i < 64; i++) nodeBuffer.Add() = new Node<Entity>();
         }
         
         // Path to the nearest neutral or hostile
@@ -99,8 +105,13 @@ namespace TheGame
                 if (connectionDB.IsTargetAlly(attackerUnitEntity, currentNode.value) == false)
                 {
                     var path = ReconstructPath(currentNode, connectionDB);
-                    buffer.AddRange(path);
+                    int length = path.Length;
+                    for (int i = 0; i < length; i++)
+                    {
+                        buffer.Add() = path[i];
+                    }
                     ReturnWithParents(currentNode);
+                    break;
                 }
 
                 int len = connectionDB.GetAllConnectionPairs(currentNode.value, indexBuffer);
@@ -119,15 +130,17 @@ namespace TheGame
                     var dangerScore = connectionDB.GetHostileNeighborResourceQuantity(neighbor, attackerUnitEntity) / maxResourceQuantity;
                     var neighborPosition = connectionPair.GetPosition(neighbor);
                     var distance = Vec3.Distance(currentPos, neighborPosition);
-                    openList.Add() = GetNode(neighbor, cost: currentNode.cost + (hostileRatio * unitComp.smartness01) + (dangerScore * unitComp.smartness01) + distance, parent: currentNode);
+                    openList.Add() = GetNode(neighbor, currentNode.cost + (hostileRatio * unitComp.smartness01) + (dangerScore * unitComp.smartness01) + distance, currentNode);
                 }
 
             }
 
-            foreach (var node in openList)
+            var count = nodesInUse.Count;
+            for (var i = 0; i < count; i++)
             {
-                ReturnWithParents(node);
+                ReturnWithParents(nodesInUse[i]);
             }
+            nodesInUse.Clear();
         }
         
         // Path to target
@@ -155,8 +168,13 @@ namespace TheGame
                 if (currentNode.value == targetEntity)
                 {
                     var path = ReconstructPath(currentNode, connectionDB);
-                    buffer.AddRange(path);
+                    int length = path.Length;
+                    for (int i = 0; i < length; i++)
+                    {
+                        buffer.Add() = path[i];
+                    }
                     ReturnWithParents(currentNode);
+                    break;
                 }
 
                 int len = connectionDB.GetAllConnectionPairs(currentNode.value, indexBuffer);
@@ -174,14 +192,15 @@ namespace TheGame
                     var dangerScore = connectionDB.GetHostileNeighborResourceQuantity(neighbor, attackerUnitEntity) / maxResourceQuantity;
                     var neigborPosition = connectionPair.GetPosition(neighbor);
                     var distance = Vec3.Distance(currentPos, neigborPosition);
-                    openList.Add() = GetNode(neighbor, cost: currentNode.cost + (hostileRatio * unitComp.smartness01) + (dangerScore * unitComp.smartness01) + distance, parent: currentNode);
+                    openList.Add() = GetNode(neighbor, currentNode.cost + (hostileRatio * unitComp.smartness01) + (dangerScore * unitComp.smartness01) + distance, currentNode);
                 }
 
             }
 
-            foreach (var node in openList)
+            var count = nodesInUse.Count;
+            for (var i = 0; i < count; i++)
             {
-                ReturnWithParents(node);
+                ReturnWithParents(nodesInUse[i]);
             }
         }
 
@@ -204,6 +223,7 @@ namespace TheGame
             var last = openList.RemoveLast();
             if (idx < openList.Count) openList[idx] = last;
 
+            nodesInUse.Add() = currentNode;
             return currentNode;
         }
 
@@ -212,6 +232,7 @@ namespace TheGame
             var node = nodeBuffer.Count > 0 ? nodeBuffer.RemoveLast() : new Node<Entity>();
             node.Set(value, cost, parent, null);
             if (parent != null) parent.child = node;
+            nodesInUse.Add() = node;
             return node;
         }
 
@@ -233,11 +254,12 @@ namespace TheGame
             }
         }
 
-        static bool Contains(IEnumerable<Node<Entity>> collection, Entity e)
+        static bool Contains(DynamicArray<Node<Entity>> collection, Entity e)
         {
-            foreach (var node in collection)
+            var count = collection.Count;
+            for (var i = 0; i < count; i++)
             {
-                if (node.value == e) return true;
+                if (collection[i].value == e) return true;
             }
 
             return false;

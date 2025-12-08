@@ -3,28 +3,39 @@ using XIV.Ecs;
 
 namespace TheGame
 {
+    public struct NodeCaptureEventComp : IComponent
+    {
+        public Entity nodeEntity;
+        public Entity targetNodeEntity;
+    }
+    
     public class NodeCaptureSystem : XIV.Ecs.System
     {
         readonly ConnectionDB connectionDB = null;
         readonly AssetReferences assetReferences = null;
-        readonly Filter<ResourceComp, OccupiedNodeComp, NodeCaptureComp> nodeCaptureFilter;
+        readonly Filter<NodeCaptureEventComp> nodeCaptureFilter = null;
 
         public override void Update()
         {
             nodeCaptureFilter.ForEach(CaptureTarget);
-            nodeCaptureFilter.RemoveComponentAll<NodeCaptureComp>();
         }
 
-        void CaptureTarget(Entity entity, ref ResourceComp resourceComp, ref OccupiedNodeComp occupiedNodeComp, ref NodeCaptureComp nodeCaptureComp)
+        void CaptureTarget(Entity entity, ref NodeCaptureEventComp nodeCaptureEventComp)
         {
-            var targetEntity = nodeCaptureComp.targetEntity;
-            if (targetEntity.IsAlive() == false || connectionDB.IsTargetAlly(occupiedNodeComp.unitEntity, targetEntity)) return;
+            entity.Destroy();
+            var nodeEntity = nodeCaptureEventComp.nodeEntity;
+            var targetEntity = nodeCaptureEventComp.targetNodeEntity;
+            if (nodeEntity.HasComponent<OccupiedNodeComp>() == false) return;
+            
+            ref var occupiedNodeComp = ref nodeEntity.GetComponent<OccupiedNodeComp>();
+            if (connectionDB.IsTargetAlly(occupiedNodeComp.unitEntity, targetEntity)) return;
 
+            ref var resourceComp = ref nodeEntity.GetComponent<ResourceComp>();
             ref var otherNodeComp = ref targetEntity.GetComponent<NodeComp>();
             ref var otherResourceComp = ref targetEntity.GetComponent<ResourceComp>();
 
             GenerationStepSO config = assetReferences.generationConfigs[otherNodeComp.configIdx];
-            float resourceTravelTime = GetResourceTravelTime();
+            float resourceTravelTime = GetResourceTravelTime(nodeEntity, targetEntity);
             float generatedQuantityAtArrival = config.resourceGenerationSpeed / resourceTravelTime;
             
             var otherNodeShieldPoints = 0f;
@@ -44,16 +55,15 @@ namespace TheGame
 
             world.NewEntity().AddComponent(new SendResourceEventComp
             {
-                fromEntity = entity,
+                fromEntity = nodeEntity,
                 toEntity = targetEntity,
                 resourceQuantity = (int)resourceComp.resourceQuantity,
             });
-            // entity.AddTag<ReevaluateDecisionTag>();
 
-            float GetResourceTravelTime()
+            float GetResourceTravelTime(Entity nodeA, Entity nodeB)
             {
-                var p0 = entity.GetComponent<PositionComp>().position;
-                var p1 = targetEntity.GetComponent<PositionComp>().position;
+                var p0 = nodeA.GetComponent<PositionComp>().position;
+                var p1 = nodeB.GetComponent<PositionComp>().position;
                 var distance = Vec3.Distance(p0, p1);
                 return distance / GameConstants.RESOURCE_MOVEMENT_SPEED;
             }

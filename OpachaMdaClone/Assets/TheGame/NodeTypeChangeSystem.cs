@@ -3,6 +3,7 @@ using XIV.Ecs;
 
 namespace TheGame
 {
+    // TODO: Make it an event comp
     public struct NodeChangeTypeComp : IComponent
     {
         public float penalty;

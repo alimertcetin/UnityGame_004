@@ -27,8 +27,6 @@ namespace TheGame
         {
             if (nodeDecisionComp.decisionChanged)
             {
-                entity.RemoveComponent<NodeDefendComp>();
-                entity.RemoveComponent<NodeCaptureComp>();
                 entity.RemoveComponent<SendResourceContinuouslyComp>();
             }
             using var entityBuffer = ArrayUtils.GetBuffer<Entity>();
@@ -36,8 +34,6 @@ namespace TheGame
             switch (nodeDecisionComp.decisionType)
             {
                 case DecisionType.Defend:
-                    entity.AddComponent(new NodeDefendComp());
-
                     if (nodeDecisionComp.decisionChanged)
                     {
                         if (nodeComp.configIdx != AssetReferences.DEFEND_CONFIG)
@@ -53,9 +49,10 @@ namespace TheGame
                 case DecisionType.Capture:
                     var entityToCapture = GetEntityToCapture(entity, ref nodeComp, ref occupiedNodeComp);
                     if (entityToCapture.IsAlive() == false) break;
-                    entity.AddComponent(new NodeCaptureComp
+                    world.NewEntity().AddComponent(new NodeCaptureEventComp
                     {
-                        targetEntity = entityToCapture,
+                        nodeEntity = entity,
+                        targetNodeEntity = entityToCapture,
                     });
                     break;
                 case DecisionType.HelpFrontier:

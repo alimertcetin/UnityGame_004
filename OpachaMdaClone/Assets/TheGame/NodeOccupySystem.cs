@@ -38,12 +38,7 @@ namespace TheGame
 
             nodeOccupyEventComp.nodeEntity.RemoveComponent<SendResourceContinuouslyComp>();
             nodeOccupyEventComp.nodeEntity.RemoveComponent<NodeChangeTypeComp>();
-            // world.NewEntity().AddComponent(new RemoveResourceTransferIndicatorEventComp
-            // {
-            //     ownerEntity = nodeOccupyEventComp.nodeEntity,
-            // });
             
-            ref var nodeComp = ref nodeOccupyEventComp.nodeEntity.GetComponent<NodeComp>();
             ref var attackerUnitComp = ref nodeOccupyEventComp.unitEntity.GetComponent<UnitComp>();
             attackerUnitComp.occupiedNodeEntities.Add() = nodeOccupyEventComp.nodeEntity;
             nodeOccupyEventComp.nodeEntity.AddComponent(new OccupiedNodeComp
