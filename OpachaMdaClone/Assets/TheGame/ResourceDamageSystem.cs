@@ -8,7 +8,7 @@ namespace TheGame
     {
         public Entity damagedEntity;
         public Entity attackerUnitEntity;
-        public float amount;
+        public int amount;
     }
     
     public class ResourceDamageSystem : XIV.Ecs.System
@@ -26,16 +26,16 @@ namespace TheGame
             if (resourceDamageEventComp.damagedEntity.HasComponent<ShieldComp>() == false) return;
             
             ref var shieldComp = ref resourceDamageEventComp.damagedEntity.GetComponent<ShieldComp>();
-            var prev = shieldComp.current;
-            var remainingShield = shieldComp.current - resourceDamageEventComp.amount;
+            var prev = (int)shieldComp.current;
+            var remainingShield = prev - resourceDamageEventComp.amount;
             shieldComp.current = XIVMathf.Max(remainingShield, 0f);
-            var diff = prev - shieldComp.current;
+            var diff = prev - (int)shieldComp.current;
             resourceDamageEventComp.amount -= diff;
             
             if (resourceDamageEventComp.amount <= 0) entity.Destroy();
             if (diff > 0f)
             {
-                world.NewEntity().AddComponent(new ShieldGenerationDelayComp
+                world.NewEntity().AddComponent(new ShieldGenerationDelayEventComp
                 {
                     shieldEntity = resourceDamageEventComp.damagedEntity,
                     timer = new Timer(0.8f),
@@ -46,13 +46,12 @@ namespace TheGame
         void HandleResourceImpact(Entity e, ref ResourceDamageEventComp resourceDamageEventComp)
         {
             e.Destroy();
+            if (resourceDamageEventComp.amount == 0) return;
             if (resourceDamageEventComp.damagedEntity.HasComponent<ResourceComp>() == false) return;
             
             ref var resourceComp = ref resourceDamageEventComp.damagedEntity.GetComponent<ResourceComp>();
-            float resourceImpact = resourceDamageEventComp.amount;
-            var currentResourceQuantity = resourceComp.resourceQuantity;
-            var targetQuantity = currentResourceQuantity - resourceImpact;
-            if (XIVMathf.Abs(currentResourceQuantity - targetQuantity) < XIVMathf.Epsilon) return;
+            var currentResourceQuantity = (int)resourceComp.resourceQuantity;
+            var targetQuantity = currentResourceQuantity - resourceDamageEventComp.amount;
             
             if (targetQuantity <= 0f)
             {
@@ -63,6 +62,8 @@ namespace TheGame
                     unitEntity = resourceDamageEventComp.attackerUnitEntity,
                 });
             }
+
+            // var remainder = resourceComp.resourceQuantity - (int)resourceComp.resourceQuantity;
             resourceComp.resourceQuantity = targetQuantity;
         }
     }
