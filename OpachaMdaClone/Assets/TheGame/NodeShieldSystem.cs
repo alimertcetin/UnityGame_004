@@ -45,8 +45,8 @@ namespace TheGame
 
         void GenerateShieldPoints(Entity entity, ref NodeComp nodeComp, ref ShieldComp shieldComp)
         {
-            if (XIVMathf.Abs(shieldComp.current - shieldComp.max) > XIVMathf.Epsilon) shieldComp.isGeneratingShield = true;
             if (shieldComp.isGeneratingShield == false) return;
+            if (XIVMathf.Abs(shieldComp.current - shieldComp.max) > XIVMathf.Epsilon) shieldComp.isGeneratingShield = true;
             
             var speed = assetReferences.generationConfigs[nodeComp.configIdx].shieldGenerationSpeed;
             if (XIVMathf.Abs(shieldComp.current - shieldComp.max) < XIVMathf.Epsilon)

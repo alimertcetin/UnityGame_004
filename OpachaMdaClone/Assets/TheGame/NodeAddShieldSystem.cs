@@ -23,6 +23,7 @@ namespace TheGame
             entity.Destroy();
             addShieldEventComp.targetEntity.AddComponent(new ShieldComp
             {
+                isGeneratingShield = true,
                 max = addShieldEventComp.max,
                 current = addShieldEventComp.current,
             });
