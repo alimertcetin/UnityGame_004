@@ -2,10 +2,11 @@
 
 namespace TheGame
 {
-    public struct NodeResourceCollisionComp : IComponent
+    public struct NodeResourceCollisionEventComp : IComponent
     {
+        // TODO: Make it an event comp
         public Entity senderEntity;
-        // public Entity receiver; // receiver is component owner
+        public Entity receiver;
         public Entity senderUnitEntity;
         public int quantity;
     }

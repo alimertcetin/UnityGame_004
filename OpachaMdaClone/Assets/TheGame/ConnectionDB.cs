@@ -18,6 +18,7 @@ namespace TheGame
         public Vector3[] positions; // lineRenderer positions
         public Entity lineRendererEntity;
         public DynamicArray<Entity> resourceEntitiesOnConnection;
+        byte incrementalId;
 
         public bool Contains(Entity entity) => entity1 == entity || entity2 == entity;
 
@@ -28,6 +29,7 @@ namespace TheGame
         public void AddResourceTransfer(Entity resourceEntity, ref TransferableResourceComp transferableResourceComp)
         {
             resourceEntitiesOnConnection.Add() = resourceEntity;
+            transferableResourceComp.localId = (byte)(++incrementalId & 31);
         }
 
         public void RemoveResourceTransfer(Entity resourceEntity, ref TransferableResourceComp transferableResourceComp)
@@ -381,6 +383,7 @@ namespace TheGame
             return attackerUnitEntity != oppositeOccupiedNodeComp.unitEntity;
         }
 
+        // TODO: Rename
         public bool IsTargetAlly(Entity attackerUnitEntity, Entity targetNode)
         {
             if (IsNeutralNode(targetNode)) return false;

@@ -13,10 +13,17 @@ namespace TheGame
     public struct TransferableResourceComp : IComponent
     {
         public Entity unitEntity;
+        public Entity startNodeEntity;
         public Entity endNodeEntity;
+        public Vec3 startPos;
+        public Vec3 endPos;
+        public Vec3 movementDirection; // Not normalized, endPos - startPos
         // TODO: Integrate with ResourceComp
         public int quantity;
         public int connectionIndex;
+        
+        public byte localId; // id on the connection, not the index
+        public int collisionMask;
     }
 
     public struct PooledComp : IComponent
@@ -45,10 +52,11 @@ namespace TheGame
 
     public class ResourceTransferSystem : XIV.Ecs.System
     {
-        readonly Filter<PositionComp, TransferableResourceComp> transferableResourceFilter = null;
+        readonly Filter<PositionComp, TransferableResourceComp> transferableResourceFilter = new Filter<PositionComp, TransferableResourceComp>().ExcludeTag<ReturnToPoolTag>();
         readonly Filter<SendResourceEventComp> sendResourceFilter = null;
         readonly Filter<ResourceComp, OccupiedNodeComp, SendResourceContinuouslyComp> sendResourceContinuouslyFilter = null;
         readonly Filter<StartContinuousResourceTransferEventComp> startContinuousResourceTransferFilter = null;
+        readonly Filter<TransferableResourceComp, PooledComp> pooledResourceFilter = new  Filter<TransferableResourceComp, PooledComp>().Tag<ReturnToPoolTag>();
         
         readonly AssetReferences assetReferences = null;
         readonly Queue<GameObject> resourcePool = new Queue<GameObject>();
@@ -79,10 +87,17 @@ namespace TheGame
 
         public override void Update()
         {
+            pooledResourceFilter.ForEach(ReturnToPool);
             startContinuousResourceTransferFilter.ForEach(StartContinuousResourceTransfer);
             transferableResourceFilter.ForEach(MoveResourceAlongLine);
             sendResourceFilter.ForEach(SendResource);
             sendResourceContinuouslyFilter.ForEach(SendResourceContinuously);
+        }
+
+        void ReturnToPool(Entity entity, ref TransferableResourceComp transferableResourceComp, ref PooledComp pooledComp)
+        {
+            connectionDB[transferableResourceComp.connectionIndex].RemoveResourceTransfer(entity, ref transferableResourceComp);
+            pooledComp.releaseToPoolAction(entity);
         }
 
         void StartContinuousResourceTransfer(Entity entity, ref StartContinuousResourceTransferEventComp startContinuousResourceTransferComp)
@@ -96,23 +111,60 @@ namespace TheGame
 
         void MoveResourceAlongLine(Entity resourceEntity, ref PositionComp positionComp, ref TransferableResourceComp transferableResourceComp)
         {
-            int idx = transferableResourceComp.connectionIndex;
-            ref ConnectionPair pair = ref connectionDB[idx];
-            
-            GetStartAndTargetPositions(ref transferableResourceComp, ref pair, out var startTransformPosition, out var targetTransformPosition);
-            var pos = Vec3.MoveTowards(positionComp.position, targetTransformPosition, GameConstants.RESOURCE_MOVEMENT_SPEED * XTime.deltaTime);
-            var movementDirection = targetTransformPosition - startTransformPosition;
-            
-            lineRendererPositionData.connectionIndices.Add() = idx;
-            lineRendererPositionData.movementPositions.Add() = pos;
-            lineRendererPositionData.movementDirections.Add() = movementDirection;
-            positionComp.Set(pos);
+            int connectionIndex = transferableResourceComp.connectionIndex;
+            var nextPos = Vec3.MoveTowards(positionComp.position, transferableResourceComp.endPos, GameConstants.RESOURCE_MOVEMENT_SPEED * XTime.deltaTime);
+            lineRendererPositionData.connectionIndices.Add() = connectionIndex;
+            lineRendererPositionData.movementPositions.Add() = nextPos;
+            lineRendererPositionData.movementDirections.Add() = transferableResourceComp.movementDirection;
 
-            if (Vec3.Distance(pos, targetTransformPosition) < 0.02f == false) return;
-            
-            transferableResourceComp.endNodeEntity.AddComponent(new NodeResourceCollisionComp
+            // Check collision
+            ref var connectionPair = ref connectionDB[connectionIndex];
+            const float step = GameConstants.RESOURCE_RADIUS * 0.5f;
+            var resourceEntitiesOnConnection = connectionPair.resourceEntitiesOnConnection;
+            int count = resourceEntitiesOnConnection.Count;
+            bool isCollided = false;
+            for (int i = 0; i < count && isCollided == false; i++)
             {
-                senderEntity = connectionDB[transferableResourceComp.connectionIndex].GetOpposite(transferableResourceComp.endNodeEntity),
+                ref var otherResourceEntity = ref resourceEntitiesOnConnection[i];
+                if (otherResourceEntity == resourceEntity) continue;
+                ref var otherTransferableResourceComp = ref otherResourceEntity.GetComponent<TransferableResourceComp>();
+                bool isCollidedBefore = (transferableResourceComp.collisionMask & (1 << otherTransferableResourceComp.localId)) != 0;
+                if (otherTransferableResourceComp.unitEntity == transferableResourceComp.unitEntity || isCollidedBefore) continue;
+                
+                Vec3 p1 = positionComp.position;
+                Vec3 p3 = otherResourceEntity.GetComponent<PositionComp>().position;
+
+                do
+                {
+                    if (Vec3.Distance(p1, p3) > GameConstants.RESOURCE_RADIUS)
+                    {
+                        // No collision
+                        p1 = Vec3.MoveTowards(p1, nextPos, step);
+                    }
+                    else
+                    {
+                        isCollided = true;
+                        transferableResourceComp.collisionMask |= 1 << otherTransferableResourceComp.localId;
+                        otherTransferableResourceComp.collisionMask |= 1 << transferableResourceComp.localId;
+                        nextPos = p1;
+                        world.NewEntity().AddComponent(new ResourceTransferCollisionEventComp
+                        {
+                            resourceEntity1 = resourceEntity,
+                            resourceEntity2 = otherResourceEntity,
+                        });
+                    }
+                } while (Vec3.Distance(p1, nextPos) > step);
+            }
+            
+            positionComp.Set(nextPos);
+            
+            if (isCollided || Vec3.Distance(nextPos, transferableResourceComp.endPos) < 0.02f == false) return;
+            
+            // Reached the target position
+            world.NewEntity().AddComponent(new NodeResourceCollisionEventComp
+            {
+                senderEntity = connectionPair.GetOpposite(transferableResourceComp.endNodeEntity),
+                receiver = transferableResourceComp.endNodeEntity,
                 senderUnitEntity = transferableResourceComp.unitEntity,
                 quantity = transferableResourceComp.quantity,
             });
@@ -129,18 +181,25 @@ namespace TheGame
             var resourceEntity = GetResource(positionComp.position);
             sendResourceEventComp.resourceQuantity = XIVMathInt.Clamp(sendResourceEventComp.resourceQuantity, 0, (int)resourceComp.resourceQuantity);
             int connIdx = connectionDB.GetConnectionIndex(sendResourceEventComp.fromEntity, sendResourceEventComp.toEntity);
+            ref var connectionPair = ref connectionDB[connIdx];
+            Vec3 startPos = sendResourceEventComp.fromEntity == connectionPair.entity1 ? connectionPair.startPosition : connectionPair.endPosition;
+            Vec3 endPos = sendResourceEventComp.toEntity == connectionPair.entity2 ? connectionPair.endPosition : connectionPair.startPosition;
             
             var transferableResourceComp = new TransferableResourceComp
             {
                 unitEntity = occupiedNodeComp.unitEntity,
+                startNodeEntity = sendResourceEventComp.fromEntity,
                 endNodeEntity = sendResourceEventComp.toEntity,
+                startPos = startPos,
+                endPos = endPos,
+                movementDirection = endPos - startPos,
                 quantity = sendResourceEventComp.resourceQuantity,
                 connectionIndex = connIdx,
             };
             
+            connectionPair.AddResourceTransfer(resourceEntity, ref transferableResourceComp);
             resourceEntity.AddComponent(transferableResourceComp);
-            resourceEntity.GetComponent<TextComp>().txt.text = transferableResourceComp.quantity.ToString();
-            connectionDB[transferableResourceComp.connectionIndex].AddResourceTransfer(resourceEntity, ref transferableResourceComp);
+            resourceEntity.GetComponent<TextComp>().txt.WriteScoreText(transferableResourceComp.quantity);
             
             ref var instancedRendererComp = ref resourceEntity.GetComponent<InstancedRendererComp>();
             instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
@@ -171,20 +230,6 @@ namespace TheGame
                 toEntity = sendResourceContinuouslyComp.toEntity,
                 resourceQuantity = (int)resourceComp.resourceQuantity,
             });
-        }
-
-        static void GetStartAndTargetPositions(ref TransferableResourceComp transferableResourceComp, ref ConnectionPair connectionPairComp, out Vec3 startTransformPosition, out Vec3 targetTransformPosition)
-        {
-            if (connectionPairComp.GetOpposite(transferableResourceComp.endNodeEntity) == connectionPairComp.entity1)
-            {
-                startTransformPosition = connectionPairComp.startPosition;
-                targetTransformPosition = connectionPairComp.endPosition;
-            }
-            else
-            {
-                startTransformPosition = connectionPairComp.endPosition;
-                targetTransformPosition = connectionPairComp.startPosition;
-            }
         }
 
         Entity GetResource(Vec3 position)
