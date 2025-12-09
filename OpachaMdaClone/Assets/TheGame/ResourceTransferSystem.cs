@@ -103,6 +103,20 @@ namespace TheGame
         void StartContinuousResourceTransfer(Entity entity, ref StartContinuousResourceTransferEventComp startContinuousResourceTransferComp)
         {
             entity.Destroy();
+            if (startContinuousResourceTransferComp.fromEntity.HasComponent<SendResourceContinuouslyComp>()) return;
+            
+            ref var resourceComp = ref startContinuousResourceTransferComp.fromEntity.GetComponent<ResourceComp>();
+            var quantityToSend = (int)resourceComp.resourceQuantity;
+            if (quantityToSend == 0) return;
+            
+            resourceComp.resourceQuantity -= quantityToSend;
+            // send immediately
+            world.NewEntity().AddComponent(new SendResourceEventComp
+            {
+                fromEntity = startContinuousResourceTransferComp.fromEntity,
+                toEntity = startContinuousResourceTransferComp.targetEntity,
+                resourceQuantity = quantityToSend,
+            });
             startContinuousResourceTransferComp.fromEntity.AddComponent(new SendResourceContinuouslyComp
             {
                 toEntity = startContinuousResourceTransferComp.targetEntity,
@@ -175,11 +189,9 @@ namespace TheGame
         {
             entity.Destroy();
             ref var positionComp = ref sendResourceEventComp.fromEntity.GetComponent<PositionComp>();
-            ref var resourceComp = ref sendResourceEventComp.fromEntity.GetComponent<ResourceComp>();
             ref var occupiedNodeComp = ref sendResourceEventComp.fromEntity.GetComponent<OccupiedNodeComp>();
             
             var resourceEntity = GetResource(positionComp.position);
-            sendResourceEventComp.resourceQuantity = XIVMathInt.Clamp(sendResourceEventComp.resourceQuantity, 0, (int)resourceComp.resourceQuantity);
             int connIdx = connectionDB.GetConnectionIndex(sendResourceEventComp.fromEntity, sendResourceEventComp.toEntity);
             ref var connectionPair = ref connectionDB[connIdx];
             Vec3 startPos = sendResourceEventComp.fromEntity == connectionPair.entity1 ? connectionPair.startPosition : connectionPair.endPosition;
@@ -205,8 +217,6 @@ namespace TheGame
             instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
             instancedRendererComp.materialPropertyBlock.SetColor(ShaderConstants.Custom_SpriteWithShadow_Instanced.Color_ColorID, UnitIdLookup.GetColor(occupiedNodeComp.unitEntity.GetComponent<UnitComp>().unitType));
             instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
-            
-            resourceComp.resourceQuantity -= sendResourceEventComp.resourceQuantity;
 
             ref var scaleComp = ref sendResourceEventComp.fromEntity.GetComponent<ScaleComp>();
             var scale = scaleComp.scale.ToVector3();
@@ -222,13 +232,15 @@ namespace TheGame
             ref var unitComp = ref occupiedNodeComp.unitEntity.GetComponent<UnitComp>();
             if (unitComp.resourceTransferTimer.IsDone == false) return;
             // we don't have resource to send
-            if ((int)resourceComp.resourceQuantity == 0) return;
+            var quantityToSend = (int)resourceComp.resourceQuantity;
+            if (quantityToSend == 0) return;
+            resourceComp.resourceQuantity -= quantityToSend;
             
             world.NewEntity().AddComponent(new SendResourceEventComp
             {
                 fromEntity = nodeEntity,
                 toEntity = sendResourceContinuouslyComp.toEntity,
-                resourceQuantity = (int)resourceComp.resourceQuantity,
+                resourceQuantity = quantityToSend,
             });
         }
 
