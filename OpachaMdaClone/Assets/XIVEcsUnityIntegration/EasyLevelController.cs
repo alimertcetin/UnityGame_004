@@ -65,10 +65,11 @@ namespace XIV.Ecs
             // Game
             manager.AddSystem(new NodeLevelGeneratorSystem(), States.Start);
             manager.AddSystem(new NodeInitializeSystem(), States.Game);
-            manager.AddSystem(new NodeOccupySystem(), States.Game);
             
             manager.AddSystem(new ResourceGenerateSystem(), States.Game);
             manager.AddSystem(new ResourceDamageSystem(), States.Game);
+            
+            manager.AddSystem(new NodeOccupySystem(), States.Game); // must run after damage system
             
             manager.AddSystem(new NodeShieldSystem(), States.Game);
             manager.AddSystem(new NodeAddShieldSystem(), States.Game);
@@ -97,7 +98,6 @@ namespace XIV.Ecs
             manager.AddSystem(new NodeHelpFrontierSystem(), States.Game);
             
             manager.AddSystem(new DebugSystem(), States.Game);
-            // manager.AddSystem(new NodePathSystem(), States.Game);
             
             manager.AddSystem(new TransformSystem(), States.All); // Awake
             manager.AddSystem(new ParentSystem(), States.All); // Update

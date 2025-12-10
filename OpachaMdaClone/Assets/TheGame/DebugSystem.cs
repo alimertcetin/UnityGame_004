@@ -48,6 +48,7 @@ namespace TheGame
                         {
                             world.NewEntity().AddComponent(new SendResourceEventComp
                             {
+                                fromUnitEntity = occupiedNodeComp.unitEntity,
                                 fromEntity = nodeEntity,
                                 toEntity = neighbor,
                                 resourceQuantity = (int)(resourceComp.resourceQuantity * 0.5f),
@@ -70,6 +71,7 @@ namespace TheGame
                     var neighbor = neighborBuffer[i];
                     world.NewEntity().AddComponent(new SendResourceEventComp
                     {
+                        fromUnitEntity = occupiedNodeComp.unitEntity,
                         fromEntity = nodeEntity,
                         toEntity = neighbor,
                         resourceQuantity = sendQuantity,

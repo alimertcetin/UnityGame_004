@@ -38,13 +38,14 @@ namespace TheGame
 
     public struct StartContinuousResourceTransferEventComp : IComponent
     {
+        public Entity fromUnitEntity;
         public Entity fromEntity;
         public Entity targetEntity;
-        public float sendInterval; // in seconds
     }
     
     public struct SendResourceEventComp : IComponent
     {
+        public Entity fromUnitEntity;
         public Entity fromEntity;
         public Entity toEntity;
         public int resourceQuantity;
@@ -104,6 +105,8 @@ namespace TheGame
         {
             entity.Destroy();
             if (startContinuousResourceTransferComp.fromEntity.HasComponent<SendResourceContinuouslyComp>()) return;
+            // this node is occupied after event fired
+            if (startContinuousResourceTransferComp.fromEntity.GetComponent<OccupiedNodeComp>().unitEntity != startContinuousResourceTransferComp.fromUnitEntity) return;
             
             ref var resourceComp = ref startContinuousResourceTransferComp.fromEntity.GetComponent<ResourceComp>();
             var quantityToSend = (int)resourceComp.resourceQuantity;
@@ -113,6 +116,7 @@ namespace TheGame
             // send immediately
             world.NewEntity().AddComponent(new SendResourceEventComp
             {
+                fromUnitEntity = startContinuousResourceTransferComp.fromUnitEntity,
                 fromEntity = startContinuousResourceTransferComp.fromEntity,
                 toEntity = startContinuousResourceTransferComp.targetEntity,
                 resourceQuantity = quantityToSend,
@@ -188,8 +192,10 @@ namespace TheGame
         void SendResource(Entity entity, ref SendResourceEventComp sendResourceEventComp)
         {
             entity.Destroy();
-            ref var positionComp = ref sendResourceEventComp.fromEntity.GetComponent<PositionComp>();
+            // unit has been changed
             ref var occupiedNodeComp = ref sendResourceEventComp.fromEntity.GetComponent<OccupiedNodeComp>();
+            if (occupiedNodeComp.unitEntity != sendResourceEventComp.fromUnitEntity) return;
+            ref var positionComp = ref sendResourceEventComp.fromEntity.GetComponent<PositionComp>();
             
             var resourceEntity = GetResource(positionComp.position);
             int connIdx = connectionDB.GetConnectionIndex(sendResourceEventComp.fromEntity, sendResourceEventComp.toEntity);
@@ -238,6 +244,7 @@ namespace TheGame
             
             world.NewEntity().AddComponent(new SendResourceEventComp
             {
+                fromUnitEntity = occupiedNodeComp.unitEntity,
                 fromEntity = nodeEntity,
                 toEntity = sendResourceContinuouslyComp.toEntity,
                 resourceQuantity = quantityToSend,

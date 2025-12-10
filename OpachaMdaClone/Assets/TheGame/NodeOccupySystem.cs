@@ -14,8 +14,6 @@ namespace TheGame
 
     public class NodeOccupySystem : XIV.Ecs.System
     {
-        readonly ConnectionDB connectionDB = null;
-        readonly AssetReferences assetReferences = null;
         readonly Filter<NodeOccupyEventComp> occupyFilter = null;
 
         public override void Update()
@@ -35,18 +33,24 @@ namespace TheGame
                 ref var occupiedNodeComp = ref nodeOccupyEventComp.nodeEntity.GetComponent<OccupiedNodeComp>();
                 occupiedNodeComp.unitEntity.GetComponent<UnitComp>().occupiedNodeEntities.Remove(ref nodeOccupyEventComp.nodeEntity);
             }
-
-            nodeOccupyEventComp.nodeEntity.RemoveComponent<SendResourceContinuouslyComp>();
-            nodeOccupyEventComp.nodeEntity.RemoveComponent<NodeChangeTypeComp>();
-            
             ref var attackerUnitComp = ref nodeOccupyEventComp.unitEntity.GetComponent<UnitComp>();
             attackerUnitComp.occupiedNodeEntities.Add() = nodeOccupyEventComp.nodeEntity;
+
+            nodeOccupyEventComp.nodeEntity.RemoveComponent<SendResourceContinuouslyComp>();
+            nodeOccupyEventComp.nodeEntity.RemoveComponent<NodeHelpFrontierComp>();
+            
+            ref var nodeComp = ref nodeOccupyEventComp.nodeEntity.GetComponent<NodeComp>();
+            nodeComp.isChangingType = nodeComp.configIdx != 0;
+            
             nodeOccupyEventComp.nodeEntity.AddComponent(new OccupiedNodeComp
             {
                 unitEntity = nodeOccupyEventComp.unitEntity,
             });
-            nodeOccupyEventComp.nodeEntity.AddComponent(new NodeChangeTypeComp
+            
+            world.NewEntity().AddComponent(new NodeChangeTypeEventComp
             {
+                nodeEntity = nodeOccupyEventComp.nodeEntity,
+                unitEntity = nodeOccupyEventComp.unitEntity,
                 penalty = 0f,
                 newConfig = 0,
             });
@@ -62,14 +66,7 @@ namespace TheGame
                 nodeOccupyEventComp.nodeEntity.AddComponent(nodeDecisionComp);
             }
 
-            if (attackerUnitComp.unitType == UnitIdLookup.UnitType.Black)
-            {
-                nodeOccupyEventComp.nodeEntity.GetComponent<ResourceComp>().isGeneratingResource = false;
-            }
-            else
-            {
-                nodeOccupyEventComp.nodeEntity.GetComponent<ResourceComp>().isGeneratingResource = true;
-            }
+            nodeOccupyEventComp.nodeEntity.GetComponent<ResourceComp>().isGeneratingResource = attackerUnitComp.unitType != UnitIdLookup.UnitType.Black;
         }
 
     }

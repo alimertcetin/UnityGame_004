@@ -118,14 +118,18 @@ namespace TheGame
         public void TransferOnce(bool allResource = true)
         {
             if (first.IsAlive() == false || second.IsAlive() == false || connectionDB.IsConnected(first, second) == false) return;
-            var total = (int)first.GetComponent<ResourceComp>().resourceQuantity;
-            var send = allResource ? total : total * 0.5f;
+            ref var resourceComp = ref first.GetComponent<ResourceComp>();
+            var total = resourceComp.resourceQuantity;
+            var send = (int)(allResource ? total : total * 0.5f);
+            if (send == 0) return;
+            resourceComp.resourceQuantity -= send;
             
             first.world.NewEntity().AddComponent(new SendResourceEventComp
             {
+                fromUnitEntity = first.GetComponent<OccupiedNodeComp>().unitEntity,
                 fromEntity = first,
                 toEntity = second,
-                resourceQuantity = (int)send,
+                resourceQuantity = send,
             });
         }
 
@@ -133,22 +137,17 @@ namespace TheGame
         {
             if (first.IsAlive() == false || second.IsAlive() == false || connectionDB.IsConnected(first, second) == false) return;
             
-            ref var nodeComp = ref first.GetComponent<NodeComp>();
             first.world.NewEntity().AddComponent(new StartContinuousResourceTransferEventComp
             {
+                fromUnitEntity = first.GetComponent<OccupiedNodeComp>().unitEntity,
                 fromEntity = first,
                 targetEntity = second,
-                sendInterval = assetReferences.generationConfigs[nodeComp.configIdx].duration,
             });
         }
 
         public void StopContinuousTransfer()
         {
             first.RemoveComponent<SendResourceContinuouslyComp>();
-            // first.world.NewEntity().AddComponent(new RemoveResourceTransferIndicatorEventComp
-            // {
-            //     ownerEntity = first,
-            // });
         }
     }
 }
