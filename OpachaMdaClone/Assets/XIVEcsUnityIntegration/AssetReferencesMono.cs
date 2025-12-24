@@ -17,6 +17,8 @@ namespace XIV.Ecs
         public GameObject resourceTransferIndicatorPrefab;
         public Material connectionLineMaterial;
         public Material connectionLineSlicedMaterial;
+        public Material defaultNodeMaterial;
+        public Material adcNodeMaterial;
         
         public const int RESOURCE_GENERATOR_CONFIG = 1;
         public const int DEFEND_CONFIG = 2;

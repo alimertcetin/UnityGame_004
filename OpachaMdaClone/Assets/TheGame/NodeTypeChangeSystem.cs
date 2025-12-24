@@ -4,7 +4,6 @@ using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame
 {
-    // TODO: Make it an event comp
     public struct NodeChangeTypeEventComp : IComponent
     {
         public Entity nodeEntity;
