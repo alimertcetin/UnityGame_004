@@ -32,6 +32,7 @@ namespace XIV.Ecs
             manager.Awake();
             XTime.fixedDeltaTime = Time.fixedDeltaTime;
             XTime.timeScale = Time.timeScale;
+            XTime.unscaledDeltaTime = Time.unscaledDeltaTime;
         }
 
         void Start()
@@ -50,18 +51,21 @@ namespace XIV.Ecs
         void Update()
         {
             XTime.deltaTime = Time.deltaTime * XTime.timeScale;
+            XTime.unscaledDeltaTime = Time.unscaledDeltaTime;
             manager.Update();
         }
 
         void FixedUpdate()
         {
             XTime.deltaTime = XTime.fixedDeltaTime * XTime.timeScale;
+            XTime.unscaledDeltaTime = Time.unscaledDeltaTime;
             manager.FixedUpdate();
         }
 
         void LateUpdate()
         {
             XTime.deltaTime = Time.deltaTime * XTime.timeScale;
+            XTime.unscaledDeltaTime = Time.unscaledDeltaTime;
             manager.LateUpdate();
         }
         
