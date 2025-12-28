@@ -7,4 +7,10 @@ namespace XIV.Ecs
         public Transform transform;
         public GameObjectEntity gameObjectEntity;
     }
+    
+    public struct RectTransformComp : IComponent
+    {
+        public RectTransform rectTransform;
+        public GameObjectEntity gameObjectEntity;
+    }
 }

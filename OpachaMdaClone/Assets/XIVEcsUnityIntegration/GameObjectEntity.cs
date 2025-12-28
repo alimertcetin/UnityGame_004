@@ -19,34 +19,48 @@ namespace XIV.Ecs
             serializedComponentBuffer.Clear();
             goEntity.entity = entity;
             goEntity.GetComponents<SerializedComponent>(serializedComponentBuffer);
-            
+
+            // Add component operations may create new archetypes
+            // 1st pass -> archetype1(TransformComp), archetype2(TransformComp, PositionComp), archetype3(TransformComp, PositionComp, ScaleComp)...
+            // 2nd pass will not create new, but it will move entity between archetypes.
             var goEntityTransform = goEntity.transform;
-            entity.AddComponent(new TransformComp()
+            if (goEntityTransform is RectTransform rectTransform)
             {
-                transform = goEntityTransform,
-                gameObjectEntity = goEntity
-            });
-            var position = goEntityTransform.localPosition.ToVec3();
-            entity.AddComponent(new PositionComp
+                entity.AddComponent(new RectTransformComp()
+                {
+                    rectTransform = rectTransform,
+                    gameObjectEntity = goEntity
+                });
+            }
+            else
             {
-                posX = position.x,
-                posY = position.y,
-                posZ = position.z,
-            });
-            var scale = goEntityTransform.localScale;
-            entity.AddComponent(new ScaleComp
-            {
-                scaleX = scale.x,
-                scaleY = scale.y,
-                scaleZ = scale.z,
-            });
-            var eulerAngles = goEntityTransform.eulerAngles.ToVec3();
-            entity.AddComponent(new RotationComp
-            {
-                rotX = eulerAngles.x,
-                rotY = eulerAngles.y,
-                rotZ = eulerAngles.z,
-            });
+                entity.AddComponent(new TransformComp()
+                {
+                    transform = goEntityTransform,
+                    gameObjectEntity = goEntity
+                });
+                var position = goEntityTransform.localPosition.ToVec3();
+                entity.AddComponent(new PositionComp
+                {
+                    posX = position.x,
+                    posY = position.y,
+                    posZ = position.z,
+                });
+                var scale = goEntityTransform.localScale;
+                entity.AddComponent(new ScaleComp
+                {
+                    scaleX = scale.x,
+                    scaleY = scale.y,
+                    scaleZ = scale.z,
+                });
+                var eulerAngles = goEntityTransform.eulerAngles.ToVec3();
+                entity.AddComponent(new RotationComp
+                {
+                    rotX = eulerAngles.x,
+                    rotY = eulerAngles.y,
+                    rotZ = eulerAngles.z,
+                });
+            }
 
 #if UNITY_EDITOR
             goEntity.entity.AddComponent(new DebugNameComp()
