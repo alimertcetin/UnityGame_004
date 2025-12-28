@@ -14,6 +14,7 @@ namespace XIV.Ecs
 
         public override void Awake()
         {
+            // TODO: Enable multi touch?
             UnityEngine.Input.multiTouchEnabled = false;
             float dpi = Screen.dpi;
             if (dpi <= 0)
@@ -105,7 +106,7 @@ namespace XIV.Ecs
             inputData.inputScreenPos = inputScreenPos;
             if (inputHandler.FingerDown())
             {
-                inputData.inputDuration += XTime.deltaTime;
+                inputData.inputDuration += XTime.unscaledDeltaTime;
             }
                 
             if (inputHandler.IsFingerUpThisFrame())
