@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: TriangleMaterial
+  m_Name: Custom_TransferIndicatorMaterial
   m_Shader: {fileID: 4800000, guid: 3184b173997f4003bd085bf78b45e07e, type: 3}
   m_ValidKeywords: []
   m_InvalidKeywords: []

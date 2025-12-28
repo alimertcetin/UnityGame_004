@@ -1,9 +1,10 @@
-﻿Shader "Custom/RotateCircleWithHoles"
+﻿Shader "Custom/Node_Fluid"
 {
     Properties
     {
         _MainTex ("Texture", 2D) = "white" {}
         _MaskTex ("Mask Texture", 2D) = "white" {}
+        _AnimTime ("Animation Time", Range(0, 1)) = 0.5
         _Color ("Tint", Color) = (1,1,1,1)
         _ShadowColor ("Shadow Color", Color) = (0,0,0,0.4)
         _ShadowOffset ("Shadow Offset", Vector) = (0, -0.1, 0, 0)
@@ -119,7 +120,6 @@
                 float4 vertex : POSITION;
                 float2 uv     : TEXCOORD0;
                 float4 color  : COLOR;
-
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -129,6 +129,7 @@
                 float2 uv   : TEXCOORD0;
                 float4 color : COLOR;
 
+                UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -139,19 +140,6 @@
             float Remap(float val, float min, float max, float newMin, float newMax)
             {
                 return (val - min) / (max - min) * (newMax - newMin) + newMin;
-            }
-
-            v2f vert (appdata v)
-            {
-                v2f o;
-
-                UNITY_SETUP_INSTANCE_ID(v);
-                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
-
-                o.pos = UnityObjectToClipPos(v.vertex);
-                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
-                o.color = v.color * UNITY_ACCESS_INSTANCED_PROP(Props, _Color); // combine vertex color & SpriteRenderer.color
-                return o;
             }
 
             float hash(float n)
@@ -270,15 +258,31 @@
                 float radius = length(uv); // Distance from center
                 return float2(cos(angle), sin(angle)) * radius;
             }
+
+            v2f vert (appdata v)
+            {
+                v2f o;
+
+                UNITY_SETUP_INSTANCE_ID(v);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
+                UNITY_TRANSFER_INSTANCE_ID(v, o);
+
+                o.pos = UnityObjectToClipPos(v.vertex);
+                o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+                o.color = v.color * UNITY_ACCESS_INSTANCED_PROP(Props, _Color); // combine vertex color & SpriteRenderer.color
+                return o;
+            }
             
             fixed4 frag(v2f i) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(i);
+                
                 float2 uv = i.uv * 2.0 - 1.0;
                 float circleCircumference = 1;
                 float2 rotatedUV = rotateUV(uv, _Time * 8);
                 float4 baseColor = UNITY_ACCESS_INSTANCED_PROP(Props, _Color);
 
-                float t = UNITY_ACCESS_INSTANCED_PROP(_Prop, _AnimTime);
+                float t = UNITY_ACCESS_INSTANCED_PROP(Props, _AnimTime);
                 t = 1 - (sin(t * 3.1415926535897931));
                 float disolveSpeed = 0.5;
                 float ringMask;

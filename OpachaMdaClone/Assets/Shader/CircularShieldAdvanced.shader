@@ -2,6 +2,7 @@
 {
     Properties
     {
+        _MainTex ("Texture", 2D) = "white" {}
         _ColorActive("Active Color", Color) = (0.1,0.8,1,1)
         _ColorInactive("Inactive Color", Color) = (0.02,0.01,0.12,1)
         _GlowColor("Glow Color", Color) = (0.08,0.9,1,1)
