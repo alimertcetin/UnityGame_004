@@ -49,7 +49,7 @@ namespace TheGame
         public void Run(ref InputData input)
         {
             if (currentState == null) return;
-            currentState.Update(ref input, swipeDetector.DetectSwipe(ref input, XTime.deltaTime));
+            currentState.Update(ref input, swipeDetector.DetectSwipe(ref input, XTime.unscaledDeltaTime));
         }
 
         public bool TryGetFirstFromInput(ref InputData input, out Entity entity)
