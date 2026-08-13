@@ -12,6 +12,9 @@ namespace TheGame
 
     public class TextCompSerialized : SerializedComponent<TextComp>
     {
-        
+        void OnValidate()
+        {
+            component.txt ??= GetComponentInChildren<TMP_Text>();
+        }
     }
 }

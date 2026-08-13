@@ -1,14 +1,37 @@
-﻿using UnityEngine;
+﻿using XIV.Core.DataStructures;
 
 namespace XIV.Ecs
 {
+    public enum InputTouchPhase
+    {
+        Began,
+        Moved,
+        Stationary,
+        Ended,
+        Canceled
+    }
+
+    public struct RawTouch
+    {
+        public int fingerId;
+        public Vec2 position;
+        public Vec2 deltaPosition;
+        public InputTouchPhase phase;
+    }
+    
     public interface IInputHandler
     {
-        public bool InputOnUI();
-        public bool FingerDownThisFrame();
-        public Vector3 FingerScreenPos();
-        public bool FingerDown();
-        public bool IsFingerUpThisFrame();
+        // --- Single Pointer / Desktop Compatibility ---
+        bool InputOnUI();
+        bool FingerDownThisFrame();
+        Vec3 FingerScreenPos();
+        bool FingerDown();
+        bool IsFingerUpThisFrame();
+
+        // --- Low-Level Multi-Touch Abstractions ---
+        bool InputOnUI(int fingerId);
+        int GetTouchCount();
+        bool TryGetTouch(int index, out RawTouch touch);
     }
     
     /*

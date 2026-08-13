@@ -17,7 +17,7 @@ namespace TheGame
         {
             pageRoot.CancelTween(false);
             
-            int screenWidth = Screen.width;
+            int screenWidth = Screen.width * 2;
             pageRoot.gameObject.SetActive(true);
             pageRoot.XIVTween()
                 .RectTransformMove(new Vector2(-screenWidth, 0f), Vector2.zero, animationDuration, EasingFunction.GetEasingFunction(easing))
@@ -29,7 +29,7 @@ namespace TheGame
         {
             pageRoot.CancelTween(false);
             
-            int screenWidth = Screen.width;
+            int screenWidth = Screen.width * 2;
             pageRoot.XIVTween()
                 .RectTransformMove(pageRoot.anchoredPosition, new Vector2(-screenWidth, 0f), animationDuration, EasingFunction.GetEasingFunction(easing))
                 .OnComplete(() => pageRoot.gameObject.SetActive(false))

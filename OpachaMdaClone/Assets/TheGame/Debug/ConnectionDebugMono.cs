@@ -23,36 +23,37 @@ namespace TheGame
             DEFAULT, ENABLED
         };
 
-        void Update()
-        {
-            var cam = Camera.main;
-            if (Input.GetMouseButtonDown(1))
-            {
-                // Right click
-                dragStartPos = Input.mousePosition;
-            }
+        // void Update()
+        // {
+        //     var cam = Camera.main;
+        //     if (Input.GetMouseButtonDown(1))
+        //     {
+        //         // Right click
+        //         dragStartPos = Input.mousePosition;
+        //     }
+        //
+        //     if (Input.GetMouseButton(1))
+        //     {
+        //         var targetPos = Input.mousePosition;
+        //         var diff = targetPos - dragStartPos;
+        //         
+        //         var pos = cam.transform.position;
+        //         pos -= (diff * Time.deltaTime);
+        //         cam.transform.position = pos;
+        //         dragStartPos = targetPos;
+        //     }
+        //
+        //     var size = cam.orthographicSize;
+        //     size -= Input.mouseScrollDelta.y;
+        //     cam.orthographicSize = XIVMathf.Max(size, 1f);
+        //     
+        //     if (Input.GetKeyDown(KeyCode.Alpha1)) mode = (mode + 1) % modes.Length;
+        //     if (mode != ENABLED) return;
+        //     if (Input.GetKeyDown(KeyCode.C)) ClearSelection();
+        //     if (Input.GetKeyDown(KeyCode.Mouse0)) HandleSelection();
+        // }
 
-            if (Input.GetMouseButton(1))
-            {
-                var targetPos = Input.mousePosition;
-                var diff = targetPos - dragStartPos;
-                
-                var pos = cam.transform.position;
-                pos -= (diff * Time.deltaTime);
-                cam.transform.position = pos;
-                dragStartPos = targetPos;
-            }
-
-            var size = cam.orthographicSize;
-            size -= Input.mouseScrollDelta.y;
-            cam.orthographicSize = XIVMathf.Max(size, 1f);
-            
-            if (GetKeyDown(KeyCode.Alpha1)) mode = (mode + 1) % modes.Length;
-            if (mode != ENABLED) return;
-            if (GetKeyDown(KeyCode.C)) ClearSelection();
-            if (GetKeyDown(KeyCode.Mouse0)) HandleSelection();
-        }
-
+#if UNITY_EDITOR
         void OnDrawGizmos()
         {
             if (this.enabled == false || this.gameObject.activeSelf == false) return;
@@ -61,7 +62,7 @@ namespace TheGame
             if (selected1 && (selected2 == false))
             {
                 var pos = GetCamera().ScreenToWorldPoint(Input.mousePosition);
-                XIVDebug.DrawLine(selected1.transform.position, pos, XIVColor.cyan);
+                XIVDebug.DrawLine(selected1.transform.position.ToVec3(), pos.ToVec3(), XIVColor.cyan);
             }
 
             if (selected1 && selected2)
@@ -115,5 +116,6 @@ namespace TheGame
             cam = Camera.main;
             return cam;
         }
+#endif
     }
 }

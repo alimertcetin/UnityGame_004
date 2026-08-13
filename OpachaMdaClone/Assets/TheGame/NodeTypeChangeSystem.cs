@@ -10,6 +10,7 @@ namespace TheGame
         public Entity unitEntity; // owner unit when event fired
         public float penalty;
         public int newConfig;
+        public int unitEpoch;
     }
     
     public class NodeTypeChangeSystem : XIV.Ecs.System
@@ -26,7 +27,7 @@ namespace TheGame
         {
             entity.Destroy();
             ref var nodeComp = ref nodeChangeTypeEventComp.nodeEntity.GetComponent<NodeComp>();
-            if (nodeComp.configIdx == nodeChangeTypeEventComp.newConfig) return;
+            if (nodeComp.configIdx == nodeChangeTypeEventComp.newConfig || nodeComp.unitEpoch != nodeChangeTypeEventComp.unitEpoch) return;
             
             ref var resourceComp = ref nodeChangeTypeEventComp.nodeEntity.GetComponent<ResourceComp>();
             
@@ -35,7 +36,6 @@ namespace TheGame
             if (newQuantity <= 0f) return;
             
             resourceComp.resourceQuantity = newQuantity;
-            nodeComp.isChangingType = false;
             
             var shieldPoints = assetReferences.generationConfigs[nodeChangeTypeEventComp.newConfig].shieldPoints;
             if (shieldPoints > 0)
@@ -61,7 +61,7 @@ namespace TheGame
             ref var positionComp = ref nodeChangeTypeEventComp.nodeEntity.GetComponent<PositionComp>();
             var particleEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeTypeChangeParticle, positionComp.position.ToVector3(), Quaternion.identity);
             var particleSystem = particleEntity.GetTransform().GetComponent<ParticleSystem>().main;
-            particleSystem.startColor = new ParticleSystem.MinMaxGradient(UnitIdLookup.GetColor(nodeChangeTypeEventComp.unitEntity.GetComponent<UnitComp>().unitType));
+            particleSystem.startColor = new ParticleSystem.MinMaxGradient(UnitIdLookup.GetColor(nodeChangeTypeEventComp.unitEntity.GetComponent<UnitComp>().unitType).ToUnityColor());
             particleEntity.AddComponent(new CallLaterComp
             {
                 timer = 1f,

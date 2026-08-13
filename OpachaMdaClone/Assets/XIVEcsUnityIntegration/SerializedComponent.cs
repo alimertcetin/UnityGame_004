@@ -26,12 +26,16 @@ namespace XIV.Ecs
 
     public abstract class SerializedTag : MonoBehaviour
     {
+        public bool add = true;
+
+        public abstract void AddTagForEntity(Entity entity);
+        
         public abstract int GetTagId();
 
         void Reset()
         {
             // if gameObject has GameObjectEntity AddComponent will return null, will not change existing one
-            gameObject.AddComponent<GameObjectEntity>();
+            gameObject.GetOrAddComponent<GameObjectEntity>();
         }
     }
     
@@ -92,6 +96,11 @@ namespace XIV.Ecs
     public class SerializedTag<T> : SerializedTag
         where T : struct, ITag
     {
+        public override void AddTagForEntity(Entity entity)
+        {
+            entity.AddTag<T>();
+        }
+
         public sealed override int GetTagId()
         {
             return TagIdManager.GetTagId<T>();

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SceneListSO
   m_EditorClassIdentifier: 
   sceneSOs:
-  - {fileID: 11400000, guid: 4ab10c11e6e146649b1e0903fbc59a0d, type: 2}
   - {fileID: 11400000, guid: 406c5061caa381846b240d9fe7c8b63a, type: 2}
-  - {fileID: 11400000, guid: ecd6f9dba23619845b7629b582e9ddff, type: 2}
   - {fileID: 11400000, guid: 1a81db0f4aca24e47915b9030f906bb5, type: 2}
+  - {fileID: 11400000, guid: ecd6f9dba23619845b7629b582e9ddff, type: 2}
+  - {fileID: 11400000, guid: 4ab10c11e6e146649b1e0903fbc59a0d, type: 2}

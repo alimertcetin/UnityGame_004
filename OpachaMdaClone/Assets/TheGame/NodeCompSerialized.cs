@@ -5,18 +5,11 @@ using XIV.UnityEngineIntegration;
 
 namespace TheGame
 {
-    public enum NodeType
-    {
-        Default,
-        ADC,
-        Tank,
-    }
-
     [Serializable]
     public struct NodeComp : IComponent
     {
-        public bool isChangingType;
         public int configIdx;
+        public int unitEpoch;
     }
     
     public class NodeCompSerialized : SerializedComponent<NodeComp>
@@ -36,39 +29,30 @@ namespace TheGame
         [Button]
         void ChangeTypeToTank()
         {
-            var entity = GetComponent<GameObjectEntity>().entity;
-            entity.world.NewEntity().AddComponent(new NodeChangeTypeEventComp
-            {
-                nodeEntity = entity,
-                unitEntity = entity.GetComponent<OccupiedNodeComp>().unitEntity,
-                penalty = 0f,
-                newConfig = AssetReferences.DEFEND_CONFIG,
-            });
+            ChangeType(GetComponent<GameObjectEntity>().entity, 0f, AssetReferences.DEFEND_CONFIG);
         }
-        
+
         [Button]
         void ChangeTypeToAdc()
         {
-            var entity = GetComponent<GameObjectEntity>().entity;
-            entity.world.NewEntity().AddComponent(new NodeChangeTypeEventComp
-            {
-                nodeEntity = entity,
-                unitEntity = entity.GetComponent<OccupiedNodeComp>().unitEntity,
-                penalty = 0f,
-                newConfig = AssetReferences.RESOURCE_GENERATOR_CONFIG,
-            });
+            ChangeType(GetComponent<GameObjectEntity>().entity, 0f, AssetReferences.RESOURCE_GENERATOR_CONFIG);
         }
         
         [Button]
         void ChangeTypeToDefault()
         {
-            var entity = GetComponent<GameObjectEntity>().entity;
+            ChangeType(GetComponent<GameObjectEntity>().entity, 0f, 0);
+        }
+        
+        static void ChangeType(Entity entity, float penalty, int config)
+        {
             entity.world.NewEntity().AddComponent(new NodeChangeTypeEventComp
             {
                 nodeEntity = entity,
                 unitEntity = entity.GetComponent<OccupiedNodeComp>().unitEntity,
-                penalty = 0f,
-                newConfig = 0,
+                penalty = penalty,
+                newConfig = config,
+                unitEpoch = entity.GetComponent<NodeComp>().unitEpoch,
             });
         }
 

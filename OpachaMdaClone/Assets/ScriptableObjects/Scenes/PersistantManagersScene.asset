@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: PersistantManagersScene
   m_EditorClassIdentifier: 
   sceneName: PersistantManagersScene
-  sceneBuildIndex: 3
+  sceneBuildIndex: 1
   scenePath: Assets/Scenes/PersistantManagersScene.unity
   sceneAsset: {fileID: 102900000, guid: 14bbbf93fb2cb5b4183b9cdd601fe98b, type: 3}

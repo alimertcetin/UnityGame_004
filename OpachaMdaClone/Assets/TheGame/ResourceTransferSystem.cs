@@ -65,13 +65,38 @@ namespace TheGame
         readonly LineRendererPositionData lineRendererPositionData = null;
         
         readonly Action<Entity> releaseResourceAction;
+
+        bool isPrewarmed;
         
         public ResourceTransferSystem() : base()
         {
             releaseResourceAction = ReleaseResource;
         }
 
-        public override void Start()
+        public override void Update()
+        {
+            if (isPrewarmed == false)
+            {
+                isPrewarmed = true;
+                PrewarmPool();
+            }
+            pooledResourceFilter.ForEach(ReturnToPool);
+            startContinuousResourceTransferFilter.ForEach(StartContinuousResourceTransfer);
+            transferableResourceFilter.ForEach(MoveResourceAlongLine);
+            sendResourceFilter.ForEach(SendResource);
+            sendResourceContinuouslyFilter.ForEach(SendResourceContinuously);
+        }
+
+        public override void OnDestroy()
+        {
+            foreach (var resourceGo in resourcePool)
+            {
+                UnityEngine.Object.Destroy(resourceGo);
+            }
+            resourcePool.Clear();
+        }
+
+        public void PrewarmPool()
         {
             const int PREWARM_COUNT = 250;
             using var entityBuffer = ArrayUtils.GetBuffer<Entity>(PREWARM_COUNT);
@@ -84,15 +109,6 @@ namespace TheGame
             {
                 ReleaseResource(entityBuffer[i]);
             }
-        }
-
-        public override void Update()
-        {
-            pooledResourceFilter.ForEach(ReturnToPool);
-            startContinuousResourceTransferFilter.ForEach(StartContinuousResourceTransfer);
-            transferableResourceFilter.ForEach(MoveResourceAlongLine);
-            sendResourceFilter.ForEach(SendResource);
-            sendResourceContinuouslyFilter.ForEach(SendResourceContinuously);
         }
 
         void ReturnToPool(Entity entity, ref TransferableResourceComp transferableResourceComp, ref PooledComp pooledComp)
@@ -221,7 +237,7 @@ namespace TheGame
             
             ref var instancedRendererComp = ref resourceEntity.GetComponent<InstancedRendererComp>();
             instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
-            instancedRendererComp.materialPropertyBlock.SetColor(ShaderConstants.Custom_SpriteWithShadow_Instanced.Color_ColorID, UnitIdLookup.GetColor(occupiedNodeComp.unitEntity.GetComponent<UnitComp>().unitType));
+            instancedRendererComp.materialPropertyBlock.SetColor(ShaderConstants.Custom_SpriteWithShadow_Instanced.Color_ColorID, UnitIdLookup.GetColor(occupiedNodeComp.unitEntity.GetComponent<UnitComp>().unitType).ToUnityColor());
             instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
 
             ref var scaleComp = ref sendResourceEventComp.fromEntity.GetComponent<ScaleComp>();
@@ -261,7 +277,7 @@ namespace TheGame
             else
             {
                 var go = resourcePool.Dequeue();
-                go.transform.position = position;
+                go.transform.position = position.ToVector3();
                 go.SetActive(true);
                 entity = GameObjectEntity.BindGameObjectToEntity(world, go);
             }

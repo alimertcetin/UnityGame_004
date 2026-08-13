@@ -7,8 +7,8 @@ using UnityEngine;
 using XIV.Core.DataStructures;
 using XIV.Core.Extensions;
 using XIV.UnityEngineIntegration;
-using XIV.UnityEngineIntegration.XIVEditor.Utils;
 #if UNITY_EDITOR
+using XIV.UnityEngineIntegration.XIVEditor.Utils;
 using Directory = UnityEngine.Windows.Directory;
 #endif
 
@@ -104,12 +104,11 @@ namespace TheGame.SceneManagement
             var sceneSOs = this.sceneSOs.AsXIVMemory();
             if (sceneSOs.Length == 0)
             {
-                Debug.LogWarning("No scenes found under Assets/.");
+                Debug.LogWarning("No scenes exists in the list");
                 return;
             }
             ClearScenesInBuildSettings();
             AddScenesToBuildSettings(sceneSOs);
-            GatherAllScenes();
             EditorUtility.SetDirty(this);
         }
 

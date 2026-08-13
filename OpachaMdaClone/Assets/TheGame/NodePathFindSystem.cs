@@ -12,8 +12,14 @@ namespace TheGame
     public class NodePathFindSystem : XIV.Ecs.System
     {
         readonly Filter<OccupiedNodeComp, PathFinderComp> pathFinderFilter = null;
+        // readonly Filter<OccupiedNodeComp, PathFollowerComp> pathFollowerFilter = null;
         readonly ConnectionDB connectionDB = null;
         Timer pathFindTimer = new Timer(2f);
+
+        public override void Start()
+        {
+            NodePathFinder.Init();
+        }
 
         public override void Update()
         {
@@ -24,6 +30,7 @@ namespace TheGame
             {
                 NodePathFinder.GetPathToFirstTarget(entity, connectionDB, GameConstants.MAX_RESOURCE_QUANTITY, ref pathFinderComp.path);
             });
+            
         }
     }
 }

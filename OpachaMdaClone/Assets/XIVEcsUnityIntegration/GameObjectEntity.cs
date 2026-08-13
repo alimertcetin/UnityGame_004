@@ -12,13 +12,17 @@ namespace XIV.Ecs
         public Entity entity;
 
         static List<SerializedComponent> serializedComponentBuffer = new();
+        static List<SerializedTag> serializedTagBuffer = new();
         
         public static void SetupEntity(World world, Entity entity, GameObjectEntity goEntity)
         {
             serializedComponentBuffer ??= new List<SerializedComponent>();
+            serializedTagBuffer ??= new List<SerializedTag>();
             serializedComponentBuffer.Clear();
+            serializedTagBuffer.Clear();
             goEntity.entity = entity;
             goEntity.GetComponents<SerializedComponent>(serializedComponentBuffer);
+            goEntity.GetComponents<SerializedTag>(serializedTagBuffer);
 
             // Add component operations may create new archetypes
             // 1st pass -> archetype1(TransformComp), archetype2(TransformComp, PositionComp), archetype3(TransformComp, PositionComp, ScaleComp)...
@@ -63,7 +67,7 @@ namespace XIV.Ecs
             }
 
 #if UNITY_EDITOR
-            goEntity.entity.AddComponent(new DebugNameComp()
+            entity.AddComponent(new DebugNameComp()
             {
                 name = goEntity.name
             });
@@ -72,7 +76,13 @@ namespace XIV.Ecs
             foreach (var serializedComponent in serializedComponentBuffer)
             {
                 if (!serializedComponent.add) continue;
-                serializedComponent.AddComponentForEntity(goEntity.entity);
+                serializedComponent.AddComponentForEntity(entity);
+            }
+
+            foreach (var serializedTag in serializedTagBuffer)
+            {
+                if (!serializedTag.add) continue;
+                serializedTag.AddTagForEntity(entity);
             }
 
             // var serializedActions = goEntity.GetComponents<SerializedAction>();

@@ -1,5 +1,6 @@
 ﻿using System;
 using TheGame;
+using TheGame.SceneManagement;
 using UnityEngine;
 
 namespace XIV.Ecs
@@ -17,8 +18,7 @@ namespace XIV.Ecs
         public GameObject resourceTransferIndicatorPrefab;
         public Material connectionLineMaterial;
         public Material connectionLineSlicedMaterial;
-        public Material defaultNodeMaterial;
-        public Material adcNodeMaterial;
+        public SceneListSO sceneList;
         
         public const int RESOURCE_GENERATOR_CONFIG = 1;
         public const int DEFEND_CONFIG = 2;

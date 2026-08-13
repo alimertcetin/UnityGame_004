@@ -18,16 +18,16 @@ namespace TheGame
             manager.Highlight(manager.first, true);
         }
 
-        public override void Update(ref InputData input, SwipeResult swipe)
+        public override void Update(ref SingleInputData singleInput, SwipeResult swipe)
         {
-            if (input.isFingerDownNoUI && input.inputDuration >= LONG_PRESS_TIME)
+            if (singleInput.isFingerDownNoUI && singleInput.inputDuration >= LONG_PRESS_TIME)
             {
                 manager.ChangeState<SelectionStateHighlighted>();
                 return;
             }
 
             // Swipe detection
-            if (input.isFingerDownNoUI)
+            if (singleInput.isFingerDownNoUI)
             {
                 if (swipe.direction != SwipeResult.Direction.None)
                 {
@@ -43,9 +43,9 @@ namespace TheGame
             }
 
             // Finger released → click detection
-            if (input.isFingerDownThisFrameNoUI)
+            if (singleInput.isFingerDownThisFrameNoUI)
             {
-                if (manager.TryGetEntityFromInput(ref input, out var entity))
+                if (manager.TryGetEntityFromInput(ref singleInput, out var entity))
                 {
                     // TODO : SelectionStateFirstSelected -> Are we trying to retrieve second? if so why we are comparing it to first?
                     // Clicked on same

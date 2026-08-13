@@ -13,11 +13,6 @@ namespace TheGame
         readonly Filter<NodeComp, OccupiedNodeComp, NodeDecisionComp> nodeApplyDecisionFilter = null;
         readonly ConnectionDB connectionDB = null;
 
-        public override void Awake()
-        {
-            NodePathFinder.Init();
-        }
-
         public override void Update()
         {
             nodeApplyDecisionFilter.ForEach(ApplyDecision);
@@ -36,13 +31,13 @@ namespace TheGame
                     
                     if (nodeComp.configIdx != AssetReferences.DEFEND_CONFIG)
                     {
-                        nodeComp.isChangingType = true;
                         world.NewEntity().AddComponent(new NodeChangeTypeEventComp
                         {
                             nodeEntity = entity,
                             unitEntity = occupiedNodeComp.unitEntity,
                             penalty = 10f,
                             newConfig = AssetReferences.DEFEND_CONFIG,
+                            unitEpoch = nodeComp.unitEpoch,
                         });
                     }
                     break;
@@ -51,13 +46,13 @@ namespace TheGame
                 case DecisionType.HelpFrontier:
                     if (nodeComp.configIdx != AssetReferences.RESOURCE_GENERATOR_CONFIG)
                     {
-                        nodeComp.isChangingType = true;
                         world.NewEntity().AddComponent(new NodeChangeTypeEventComp
                         {
                             nodeEntity = entity,
                             unitEntity = occupiedNodeComp.unitEntity,
                             penalty = 10f,
                             newConfig = AssetReferences.RESOURCE_GENERATOR_CONFIG,
+                            unitEpoch = nodeComp.unitEpoch,
                         });
                     }
                     break;

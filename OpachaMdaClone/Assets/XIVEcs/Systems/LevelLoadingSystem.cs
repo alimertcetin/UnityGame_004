@@ -1,4 +1,6 @@
 using UnityEngine;
+using XIV.Core.DataStructures;
+using XIV.Core.Utils;
 
 namespace XIV.Ecs
 {
@@ -7,17 +9,18 @@ namespace XIV.Ecs
         public override void Awake()
         {
             GameObjectEntity[] gameObjectEntities = Object.FindObjectsOfType<GameObjectEntity>();
-            Entity[] entities = new Entity[gameObjectEntities.Length];
+            using XIVBuffer<Entity> entities = ArrayUtils.GetBuffer<Entity>(gameObjectEntities.Length);
 
             for (int i = 0; i < gameObjectEntities.Length; i++)
             {
-                entities[i] = world.NewEntity();
-                gameObjectEntities[i].entity = entities[i];
+                var newEntity = world.NewEntity();
+                entities[i] = newEntity;
+                gameObjectEntities[i].entity = newEntity;
             }
 
             for (int i = 0; i < gameObjectEntities.Length; i++)
             {
-                GameObjectEntity.SetupEntity(world,entities[i],  gameObjectEntities[i]);
+                GameObjectEntity.SetupEntity(world, entities[i], gameObjectEntities[i]);
             }
 
 #if UNITY_EDITOR

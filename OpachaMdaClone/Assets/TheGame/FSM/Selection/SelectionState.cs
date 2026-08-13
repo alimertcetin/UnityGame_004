@@ -15,7 +15,7 @@ namespace TheGame
         {
         }
 
-        public virtual void Update(ref InputData input, SwipeResult swipe)
+        public virtual void Update(ref SingleInputData singleInput, SwipeResult swipe)
         {
         }
 

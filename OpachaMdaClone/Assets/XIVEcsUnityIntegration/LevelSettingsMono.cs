@@ -19,15 +19,8 @@ namespace XIV.Ecs
     public class LevelSettings
     {
         public LevelGenerationSettings levelGenerationSettings = new LevelGenerationSettings(MapSize.Giant, XIVRandom.seed, 0, 0.8f, 0.5f);
-        [Range(0f, 10f), OnValueChanged(nameof(ChangeTimeScale), true)]
-        public float timeScale = 1f;
         [Range(1, UnitIdLookup.MAX_UNIT_ID_LENGTH - 2)]
         public int hostileUnits = 1;
-
-        void ChangeTimeScale()
-        {
-            XTime.timeScale = timeScale;
-        }
 
         [Button]
         void RandomSeed()
@@ -39,10 +32,5 @@ namespace XIV.Ecs
     public class LevelSettingsMono : MonoBehaviour
     {
         public LevelSettings levelSettings;
-
-        void Start()
-        {
-            XTime.timeScale = levelSettings.timeScale;
-        }
     }
 }

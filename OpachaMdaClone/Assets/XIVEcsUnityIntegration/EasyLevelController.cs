@@ -1,4 +1,5 @@
 ﻿using TheGame;
+using Unity.VisualScripting;
 
 namespace XIV.Ecs
 {
@@ -27,13 +28,12 @@ namespace XIV.Ecs
             public const int Paused = 2;
             public const int LevelCompleted = 3;
             public const int LevelFailed = 4;
-            public const int SceneLoadingStart = 5;
-            public const int SceneLoading = 6;
-            public const int SceneLoadingEnd = 7;
+            public const int InitializeNodes = 5;
+            public const int EndGame = 6;
 
             public static readonly int[] All =
             {
-                Start, Game, Paused, LevelCompleted, LevelFailed
+                Start, Game, Paused, LevelCompleted, LevelFailed, InitializeNodes, EndGame
             };
         }
         
@@ -49,7 +49,6 @@ namespace XIV.Ecs
             manager.Inject(new ConnectionDB());
             manager.Inject(new LineRendererPositionData());
             
-            // Set start state to Game and don't instantiate startUI if you don't have a start menu
             manager.ChangeState(States.Start);
         }
 
@@ -58,16 +57,22 @@ namespace XIV.Ecs
         {
             manager.AddSystem(new LevelLoadingSystem(), States.All); // PreUpdate - Only Works During Start
             manager.AddSystem(new CallLaterSystem(), States.All); // PreUpdate
-            manager.AddSystem(new InputSystem(), States.Game); // PreUpdate - Only Works During Game
             manager.AddSystem(new UISystem(), States.All);
+            
             manager.AddSystem(new StartGameSystem(), States.Start);
+            manager.AddSystem(new InputSystem(), States.Game); // PreUpdate - Only Works During Game
             
             // Game
-            manager.AddSystem(new NodeLevelGeneratorSystem(), States.Start);
-            manager.AddSystem(new NodeInitializeSystem(), States.Game);
+            manager.AddSystem(new NodeLevelGeneratorSystem(), States.InitializeNodes);
+            manager.AddSystem(new NodeInitializeSystem(), States.InitializeNodes);
+            
+            manager.AddSystem(new GameEndDetectionSystem(), States.Game);
+            manager.AddSystem(new LevelCompletedSystem(), States.LevelCompleted);
             
             manager.AddSystem(new ResourceGenerateSystem(), States.Game);
             manager.AddSystem(new ResourceDamageSystem(), States.Game);
+            manager.AddSystem(new TimeScaleManagementSystem(), States.Game);
+            manager.AddSystem(new CameraSystem(), States.Game);
             
             manager.AddSystem(new NodeOccupySystem(), States.Game); // must run after damage system
             

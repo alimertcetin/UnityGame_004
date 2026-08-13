@@ -1,11 +1,15 @@
 ﻿using UnityEngine;
 using UnityEngine.EventSystems;
+using XIV.Core.Collections;
+using XIV.Core.DataStructures;
+using XIVUnityEngineIntegration.Extensions;
 
 namespace XIV.Ecs
 {
     public class InputSystem : XIV.Ecs.System
     {
-        public InputData inputData;
+        public SingleInputData singleInputData;
+        public MultiInputData multiInputData;
         public readonly IInputHandler inputHandler = new UnityInputHandler();
         
         readonly Filter<InputListenerComp> inputListenerFilter = null;
@@ -14,15 +18,17 @@ namespace XIV.Ecs
 
         public override void Awake()
         {
-            // TODO: Enable multi touch?
-            UnityEngine.Input.multiTouchEnabled = false;
+            UnityEngine.Input.multiTouchEnabled = true;
             float dpi = Screen.dpi;
             if (dpi <= 0)
             {
                 dpi = 128f;
             }
 
-            inputData.dpi = dpi;
+            singleInputData.dpi = dpi;
+            multiInputData.dpi = dpi;
+            multiInputData.activeTouches = new DynamicArray<TouchData>();
+            multiInputData.prevActiveTouches = new DynamicArray<TouchData>();
 
             if (EventSystem.current == null)
             {
@@ -32,20 +38,20 @@ namespace XIV.Ecs
 
             if (joystickFilter.NumberOfEntities == 1)
             {
-                Iterator.Iterate(joystickFilter,joystickListenerFilter, (Entity joystickEntity, ref JoystickComp _,
-                    Entity joystickListenerEntity,ref JoystickListenerComp joystickListenerComp) =>
+                Iterator.Iterate(joystickFilter, joystickListenerFilter, (Entity joystickEntity, ref JoystickComp _,
+                    Entity joystickListenerEntity, ref JoystickListenerComp joystickListenerComp) =>
                 {
                     if (joystickListenerComp.joystickEntities == null)
                     {
-                        joystickListenerComp.joystickEntities = new []{joystickEntity};
+                        joystickListenerComp.joystickEntities = new [] { joystickEntity };
                         joystickListenerComp.inputs = new JoystickInputData[1];
                     }
                 });
             }
 
 #if UNITY_EDITOR
-            Iterator.Iterate(joystickFilter,joystickListenerFilter, (Entity joystickEntity, ref JoystickComp _,
-                Entity joystickListenerEntity,ref JoystickListenerComp joystickListenerComp) =>
+            Iterator.Iterate(joystickFilter, joystickListenerFilter, (Entity joystickEntity, ref JoystickComp _,
+                Entity joystickListenerEntity, ref JoystickListenerComp joystickListenerComp) =>
             {
                 if (joystickListenerComp.joystickEntities == null)
                 {
@@ -58,12 +64,15 @@ namespace XIV.Ecs
         public override void PreUpdate()
         {
             UpdateInputData();
+            UpdateMultiInputData();
+
             joystickFilter.ForEach(UpdateJoystick);
             
-            inputListenerFilter.ForEach(((ref InputListenerComp inputListenerComp) =>
+            inputListenerFilter.ForEach((ref InputListenerComp inputListenerComp) =>
             {
-                inputListenerComp.input = inputData;
-            } ));
+                inputListenerComp.singleInput = singleInputData;
+                inputListenerComp.multiInput = multiInputData;
+            });
             
             joystickListenerFilter.ForEach((ref JoystickListenerComp joystickListenerComp) =>
             {
@@ -72,51 +81,177 @@ namespace XIV.Ecs
                     ref var joystickComp = ref joystickListenerComp.joystickEntities[i].GetComponent<JoystickComp>();
                     joystickListenerComp.inputs[i] = joystickComp.joystickInputData;
                 }
-            } );
+            });
         }
 
         void UpdateInputData()
         {
-            inputData.isFingerDownThisFrame = false;
-            inputData.isFingerUpThisFrame = false;
+            singleInputData.isFingerDownThisFrame = false;
+            singleInputData.isFingerUpThisFrame = false;
 
-            inputData.isOnUI = inputHandler.InputOnUI();
+            singleInputData.isOnUI = inputHandler.InputOnUI();
 
             if (inputHandler.FingerDownThisFrame())
             {
-                inputData.isFingerDownThisFrame = true;
-                inputData.totalDeltaMovementInInc = Vector2.zero;
-                inputData.inputDuration = 0;
+                singleInputData.isFingerDownThisFrame = true;
+                singleInputData.totalDeltaMovementInInc = Vec2.zero;
+                singleInputData.inputDuration = 0;
 
                 var fingerScreenPos = inputHandler.FingerScreenPos();
-                inputData.inputScreenPosStart = fingerScreenPos;
-                inputData.inputScreenPos = fingerScreenPos;
+                singleInputData.inputScreenPosStart = fingerScreenPos;
+                singleInputData.inputScreenPos = fingerScreenPos;
 
-                if (!inputData.isOnUI)
+                if (!singleInputData.isOnUI)
                 {
-                    inputData.isFingerDownNoUI = true;
+                    singleInputData.isFingerDownNoUI = true;
                 }
             }
 
-            inputData.isFingerDown = inputHandler.FingerDown();
+            singleInputData.isFingerDown = inputHandler.FingerDown();
 
             var inputScreenPos = inputHandler.FingerScreenPos();
-            inputData.deltaMovementInch = (inputScreenPos - inputData.inputScreenPos) / inputData.dpi;
-            inputData.totalDeltaMovementInInc += inputData.deltaMovementInch;
-            inputData.inputScreenPos = inputScreenPos;
+            singleInputData.deltaMovementInch = (inputScreenPos - singleInputData.inputScreenPos) / singleInputData.dpi;
+            singleInputData.totalDeltaMovementInInc += singleInputData.deltaMovementInch;
+            singleInputData.inputScreenPos = inputScreenPos;
             if (inputHandler.FingerDown())
             {
-                inputData.inputDuration += XTime.unscaledDeltaTime;
+                singleInputData.inputDuration += XTime.unscaledDeltaTime;
             }
                 
             if (inputHandler.IsFingerUpThisFrame())
             {
-                inputData.isFingerUpThisFrame = true;
-                inputData.isFingerDown = false;
-                inputData.isFingerDownNoUI = false;
+                singleInputData.isFingerUpThisFrame = true;
+                singleInputData.isFingerDown = false;
+                singleInputData.isFingerDownNoUI = false;
             }
         }
-        
+
+        void UpdateMultiInputData()
+        {
+            // 1. Cycle previous active touches
+            multiInputData.prevActiveTouches.Clear();
+            for (int i = 0; i < multiInputData.activeTouches.Count; i++)
+            {
+                multiInputData.prevActiveTouches.Add() = multiInputData.activeTouches[i];
+            }
+
+            int rawTouchCount = inputHandler.GetTouchCount();
+            multiInputData.touchCount = rawTouchCount;
+            multiInputData.hasActiveTouch = rawTouchCount > 0;
+            multiInputData.isAnyTouchDownThisFrame = false;
+            multiInputData.isAnyTouchUpThisFrame = false;
+            multiInputData.isAllTouchNoUI = true;
+
+            multiInputData.activeTouches.Clear();
+
+            // 2. Gather active touches
+            for (int i = 0; i < rawTouchCount; i++)
+            {
+                if (!inputHandler.TryGetTouch(i, out RawTouch rawTouch)) continue;
+
+                bool isOnUI = inputHandler.InputOnUI(rawTouch.fingerId);
+
+                TouchData touchData = new TouchData
+                {
+                    fingerId = rawTouch.fingerId,
+                    position = rawTouch.position,
+                    startPosition = rawTouch.position - rawTouch.deltaPosition,
+                    deltaPosition = rawTouch.deltaPosition,
+                    deltaMovementInch = rawTouch.deltaPosition / multiInputData.dpi,
+                    phase = rawTouch.phase,
+                    isOnUI = isOnUI
+                };
+
+                if (touchData.phase == InputTouchPhase.Began) multiInputData.isAnyTouchDownThisFrame = true;
+                if (touchData.phase == InputTouchPhase.Ended || touchData.phase == InputTouchPhase.Canceled) multiInputData.isAnyTouchUpThisFrame = true;
+                if (isOnUI) multiInputData.isAllTouchNoUI = false;
+
+                if (i < MultiInputData.MAX_TOUCHES)
+                {
+                    multiInputData.activeTouches.Add() = touchData;
+                }
+            }
+
+            // 3. Match touches that existed in BOTH frames to compute continuous, jump-free Centroid & Spread
+            Vec2 currMatchedCentroidSum = Vec2.zero;
+            Vec2 prevMatchedCentroidSum = Vec2.zero;
+            int matchedTouchCount = 0;
+
+            for (int i = 0; i < multiInputData.activeTouches.Count; i++)
+            {
+                ref readonly var currTouch = ref multiInputData.activeTouches[i];
+
+                // Skip newly down fingers for delta calculation this frame to avoid centroid jumps
+                if (currTouch.phase == InputTouchPhase.Began) continue;
+
+                if (multiInputData.TryGetPrevTouch(currTouch.fingerId, out TouchData prevTouch))
+                {
+                    currMatchedCentroidSum += currTouch.position;
+                    prevMatchedCentroidSum += prevTouch.position;
+                    matchedTouchCount++;
+                }
+            }
+
+            if (matchedTouchCount > 0)
+            {
+                Vec2 currCentroid = currMatchedCentroidSum / matchedTouchCount;
+                Vec2 prevCentroid = prevMatchedCentroidSum / matchedTouchCount;
+
+                multiInputData.centroidPosition = currCentroid;
+                multiInputData.prevCentroidPosition = prevCentroid;
+                multiInputData.centroidDeltaPixels = currCentroid - prevCentroid;
+                multiInputData.centroidDeltaInch = multiInputData.centroidDeltaPixels / multiInputData.dpi;
+
+                // Calculate spread relative to matched touches only
+                if (matchedTouchCount >= 2)
+                {
+                    float currSpreadSum = 0f;
+                    float prevSpreadSum = 0f;
+
+                    for (int i = 0; i < multiInputData.activeTouches.Count; i++)
+                    {
+                        ref readonly var currTouch = ref multiInputData.activeTouches[i];
+                        if (currTouch.phase == InputTouchPhase.Began) continue;
+
+                        if (multiInputData.TryGetPrevTouch(currTouch.fingerId, out TouchData prevTouch))
+                        {
+                            currSpreadSum += Vec2.Distance(currTouch.position, currCentroid);
+                            prevSpreadSum += Vec2.Distance(prevTouch.position, prevCentroid);
+                        }
+                    }
+
+                    multiInputData.averageSpreadPixels = currSpreadSum / matchedTouchCount;
+                    multiInputData.prevAverageSpreadPixels = prevSpreadSum / matchedTouchCount;
+                    multiInputData.spreadDeltaPixels = multiInputData.averageSpreadPixels - multiInputData.prevAverageSpreadPixels;
+                    multiInputData.spreadDeltaInch = multiInputData.spreadDeltaPixels / multiInputData.dpi;
+                }
+                else
+                {
+                    ResetSpreadDeltas();
+                }
+            }
+            else
+            {
+                ResetCentroidAndSpreadDeltas();
+            }
+        }
+
+        void ResetSpreadDeltas()
+        {
+            multiInputData.averageSpreadPixels = 0f;
+            multiInputData.prevAverageSpreadPixels = 0f;
+            multiInputData.spreadDeltaPixels = 0f;
+            multiInputData.spreadDeltaInch = 0f;
+        }
+
+        void ResetCentroidAndSpreadDeltas()
+        {
+            multiInputData.centroidPosition = Vec2.zero;
+            multiInputData.prevCentroidPosition = Vec2.zero;
+            multiInputData.centroidDeltaPixels = Vec2.zero;
+            multiInputData.centroidDeltaInch = Vec2.zero;
+            ResetSpreadDeltas();
+        }
 
         void UpdateJoystick(ref JoystickComp joystickComp)
         {
@@ -130,34 +265,34 @@ namespace XIV.Ecs
 
             Camera canvasCamera = joystickComp.screenSpaceOverlay ? null : Camera.main;
 
-            if (inputData.isFingerDownThisFrameNoUI)
+            if (singleInputData.isFingerDownThisFrameNoUI)
             {
                 if (joystickComp.joystickType == JoystickComp.JoystickType.Static)
                 {
                     if (RectTransformUtility.RectangleContainsScreenPoint(knobContainer,
-                            inputData.inputScreenPos,
+                            singleInputData.inputScreenPos.ToVector3(),
                             canvasCamera))
                     {
                         joystickInputData.inputStarted = true;
                         joystickInputData.inputStartedThisFrame = true;
                     }
                 }
-                else if (joystickComp.joystickType != JoystickComp.JoystickType.Static && inputData.isOnUI == false)
+                else if (joystickComp.joystickType != JoystickComp.JoystickType.Static && singleInputData.isOnUI == false)
                 {
                     joystickInputData.inputStarted = true;
                     joystickInputData.inputStartedThisFrame = true;
 
-                    RectTransformUtility.ScreenPointToLocalPointInRectangle(knobContainerContainer, inputData.inputScreenPos, canvasCamera, out var localPosInKnobContainer);
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(knobContainerContainer, singleInputData.inputScreenPos.ToVector3(), canvasCamera, out var localPosInKnobContainer);
                     knobContainer.localPosition = localPosInKnobContainer;
                     knobContainer.gameObject.SetActive(true);
                 }
             }
 
-            if (joystickInputData.inputStarted && !inputData.isFingerDown)
+            if (joystickInputData.inputStarted && !singleInputData.isFingerDown)
             {
                 joystickInputData.inputStarted = false;
                 joystickInputData.inputEndedThisFrame = true;
-                joystickInputData.inputEndedByFingerUp = inputData.isFingerUpThisFrame;
+                joystickInputData.inputEndedByFingerUp = singleInputData.isFingerUpThisFrame;
         
                 if (joystickComp.joystickType != JoystickComp.JoystickType.Static)
                 {
@@ -169,12 +304,11 @@ namespace XIV.Ecs
                 joystickInputData.inputDirection = Vector2.zero;
             }
             
-        
             if (joystickInputData.inputStarted)
             {
                 float knobContainerRadius = knobContainer.sizeDelta.x / 2;
                 
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(knobContainer, inputData.inputScreenPos,
+                RectTransformUtility.ScreenPointToLocalPointInRectangle(knobContainer, singleInputData.inputScreenPos.ToVector3(),
                     canvasCamera, out var localPosInKnobContainer);
                 
                 if (joystickComp.joystickType == JoystickComp.JoystickType.DynamicAndFloating
@@ -195,8 +329,5 @@ namespace XIV.Ecs
                 joystickInputData.inputDirection = input;
             }
         }
-        
-       
-       
     }
 }

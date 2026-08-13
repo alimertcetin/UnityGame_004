@@ -3,7 +3,8 @@ namespace XIV.Ecs
 {
     public struct InputListenerComp : IComponent
     {
-        public InputData input;
+        public SingleInputData singleInput;
+        public MultiInputData multiInput;
     }
     
     public class InputListenerSerialized : SerializedComponent<InputListenerComp>

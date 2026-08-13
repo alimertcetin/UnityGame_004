@@ -20,7 +20,7 @@ namespace TheGame
         readonly AssetReferences assetReferences = null;
         readonly LevelSettings levelSettings = null;
 
-        public override void Start()
+        public override void Update()
         {
             void CreateUnits(int nodeEntityCount)
             {
@@ -64,15 +64,17 @@ namespace TheGame
             var angleStep = 360f / unitEntityCount;
             int index = 0;
 #if UNITY_EDITOR
-            XIVDebug.DrawCircle(mapCenter, 0.25f, XIVColor.green, 10f);
+            XIVDebug.DrawCircle(mapCenter.ToVec3(), 0.25f, XIVColor.green, 10f);
 #endif
+            var prevSeed = XIVRandom.seed;
+            XIVRandom.InitState(levelSettings.levelGenerationSettings.seed);
             var startDir = (Vector3)XIVRandom.insideUnitCircle.ToVector2();
             unitFilter.ForEach((Entity e, ref UnitComp unitComp) =>
             {
                 var directionVector = mapCenter + (startDir.RotateAroundZ(angleStep * index, Vector3.zero).normalized * directionLen);
-                var nodeEntity = arr.XIVGetClosest(nodeEntityCount, directionVector, out _, out _, (n) => n.GetComponent<PositionComp>().position, excludeArr, index);
+                var nodeEntity = arr.XIVGetClosest(nodeEntityCount, directionVector.ToVec3(), out _, out _, (n) => n.GetComponent<PositionComp>().position, excludeArr, index);
 #if UNITY_EDITOR
-                XIVDebug.DrawLine(mapCenter, directionVector, XIVColor.red, 10f);
+                XIVDebug.DrawLine(mapCenter.ToVec3(), directionVector.ToVec3(), XIVColor.red, 10f);
                 XIVDebug.DrawCircle(nodeEntity.GetComponent<PositionComp>().position, 2f, XIVColor.red, 8f);
 #endif
                 unitComp.occupiedNodeEntities = new DynamicArray<Entity>();
@@ -85,6 +87,7 @@ namespace TheGame
                 });
                 excludeArr[index++] = nodeEntity;
             });
+            XIVRandom.InitState(prevSeed);
         }
 
         void InitializeNodes(Entity entity, ref TransformComp transformComp, ref NodeComp nodeComp)
@@ -93,7 +96,7 @@ namespace TheGame
             nodeComp.configIdx = 0;
             ref var instancedRendererComp = ref entity.GetComponent<InstancedRendererComp>();
             instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
-            instancedRendererComp.materialPropertyBlock.SetColor(ShaderConstants.Custom_SpriteWithShadow_Instanced.Color_ColorID, UnitIdLookup.GetColor(UnitIdLookup.UnitType.Black));
+            instancedRendererComp.materialPropertyBlock.SetColor(ShaderConstants.Custom_SpriteWithShadow_Instanced.Color_ColorID, UnitIdLookup.GetColor(UnitIdLookup.UnitType.Black).ToUnityColor());
             instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
             entity.AddComponent(new ResourceComp
             {

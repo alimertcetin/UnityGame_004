@@ -37,6 +37,7 @@ namespace TheGame
                         nodeEntity = highlightedNodeEntity,
                         penalty = 10,
                         unitEntity = highlightedNodeEntity.GetComponent<OccupiedNodeComp>().unitEntity,
+                        unitEpoch = highlightedNodeEntity.GetComponent<NodeComp>().unitEpoch,
                     });
                 }
                 
@@ -75,7 +76,7 @@ namespace TheGame
                 uiComp.highlightedNodeEntity = highlightedNodeEntity;
                 var isAlive = highlightedNodeEntity.IsAlive();
                 var pos = uiContainer.anchoredPosition;
-                var scale = uiContainer.sizeDelta;
+                var scale = uiContainer.sizeDelta * 2f;
                 
                 if (isAlive && isUiOpen == false)
                 {

@@ -56,7 +56,6 @@ namespace TheGame
 
         void SendResourceToFrontier(Entity entity, ref NodeComp nodeComp, ref OccupiedNodeComp occupiedNodeComp, ref NodeHelpFrontierComp nodeHelpFrontierComp)
         {
-            if (nodeComp.isChangingType) return;
             world.NewEntity().AddComponent(new StartContinuousResourceTransferEventComp
             {
                 fromUnitEntity = occupiedNodeComp.unitEntity,

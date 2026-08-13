@@ -97,13 +97,13 @@ namespace TheGame
             var conList1 = XIVPoolSystem.GetItem<DynamicArray<int>>();
             var conList2 = XIVPoolSystem.GetItem<DynamicArray<int>>();
             int connectionCount = 0;
-            void AddConnection(int i, int j, ref int connectionCount)
+            void AddConnection(int i, int j)
             {
                 conList1.Add() = i;
                 conList2.Add() = j;
                 connectionCount++;
             }
-            void RemoveConnection(int index, ref int connectionCount)
+            void RemoveConnection(int index)
             {
                 conList1.RemoveAt(index);
                 conList2.RemoveAt(index);
@@ -123,7 +123,7 @@ namespace TheGame
 
                     var distance = Vec3.Distance(currentNodeEntityPos, nextNodeEntityPos);
                     if (distance > generationSettings.linkDistance) continue;
-                    AddConnection(i, j, ref connectionCount);
+                    AddConnection(i, j);
                 }
             }
 
@@ -149,7 +149,7 @@ namespace TheGame
                     var p4 = positionBuffer[otherEnt2Idx];
                     if (LineMath.IsIntersect(p0, p1, p3, p4))
                     {
-                        RemoveConnection(j, ref connectionCount);
+                        RemoveConnection(j);
                     }
                 }
             }
@@ -183,12 +183,23 @@ namespace TheGame
                     {
                         // remove the longer link
                         int index = distAB > distAC ? i : j;
-                        RemoveConnection(index, ref connectionCount);
+                        RemoveConnection(index);
                         break;
                     }
                 }
             }
             
+            CreateLineRenderers(entityBuffer, positionBuffer, connectionCount, conList1, conList2);
+
+            conList1.Clear();
+            conList2.Clear();
+            XIVPoolSystem.ReleaseItem(conList1);
+            XIVPoolSystem.ReleaseItem(conList2);
+        }
+        
+        void CreateLineRenderers(Entity[] entityBuffer, Vec2[] positionBuffer, int connectionCount, DynamicArray<int> conList1, DynamicArray<int> conList2)
+        {
+
             const int LINERENDERER_POSITION_COUNT = 32; // link detail
             for (int connectionIdx = 0; connectionIdx < connectionCount; connectionIdx++)
             {
@@ -223,9 +234,6 @@ namespace TheGame
 
                 connectionDB.AddConnection(ent1, ent2, p0, p1, positions, lineRendererEntity);
             }
-            
-            XIVPoolSystem.ReleaseItem(conList1);
-            XIVPoolSystem.ReleaseItem(conList2);
         }
 
 

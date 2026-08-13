@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: InitializationScene
   m_EditorClassIdentifier: 
   sceneName: InitializationScene
-  sceneBuildIndex: 1
+  sceneBuildIndex: 0
   scenePath: Assets/Scenes/InitializationScene.unity
   sceneAsset: {fileID: 102900000, guid: d491378a30b7db34a9f0770f6d5264ec, type: 3}

@@ -22,14 +22,19 @@ namespace TheGame
         readonly Filter<DisableHighlightEventComp> disableHighlightFilter = null;
         readonly Filter<HighlightComp> highlightFilter = new Filter<HighlightComp>();
         readonly AssetReferences assetReferences;
-        Transform highlightEntityTransform;
+        Entity nodeHighlightEntity;
 
         public override void Awake()
         {
-            var nodeHighlightEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeHighlightEntity);
-            highlightEntityTransform = nodeHighlightEntity.GetComponent<TransformComp>().transform;
-            highlightEntityTransform.gameObject.SetActive(false);
-            nodeHighlightEntity.Unbind();
+            nodeHighlightEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeHighlightEntity);
+            nodeHighlightEntity.GetTransform().gameObject.SetActive(false);
+            nodeHighlightEntity.RemoveComponent<ScaleComp>();
+        }
+
+        public override void OnDestroy()
+        {
+            if (nodeHighlightEntity.IsAlive() == false) return;
+            nodeHighlightEntity.Destroy();
         }
 
         public override void Update()
@@ -38,14 +43,18 @@ namespace TheGame
             {
                 entity.Destroy();
 
-                var transform = enableHighlightEventComp.targetEntity.GetUnityComponent<Transform>();
+                var transform = enableHighlightEventComp.targetEntity.GetTransform();
                 var pos = transform.position;
                 var rot = transform.rotation;
+                var highlightEntityTransform = nodeHighlightEntity.GetTransform();
                 var scale = highlightEntityTransform.gameObject.activeSelf ? Vector3.one * 1.2f : Vector3.one;
-                highlightEntityTransform.position = pos;
-                highlightEntityTransform.rotation = rot;
+
+                ref var positionComp = ref nodeHighlightEntity.GetComponent<PositionComp>();
+                ref var rotationComp = ref nodeHighlightEntity.GetComponent<RotationComp>();
+                positionComp.Set(pos.ToVec3());
+                rotationComp.Set(rot.eulerAngles.ToVec3());
+                
                 highlightEntityTransform.localScale = scale;
-                var nodeHighlightEntity = GameObjectEntity.BindGameObjectToEntity(world, highlightEntityTransform.gameObject);
                 highlightEntityTransform.gameObject.SetActive(true);
 
                 ref var highlightComp = ref nodeHighlightEntity.GetComponent<HighlightComp>();
@@ -53,7 +62,7 @@ namespace TheGame
                 nodeHighlightEntity.CancelTween();
                 nodeHighlightEntity.XIVTween()
                     .Scale(scale, scale * 1.2f, 1f, EasingFunction.SmoothStop2, true, int.MaxValue)
-                    .UseCustomDeltaTime(() => XTime.deltaTime)
+                    .UseCustomDeltaTime(() => XTime.unscaledDeltaTime)
                     .Start();
             });
             
@@ -68,7 +77,7 @@ namespace TheGame
                     {
                         highlightComp.owner = Entity.Invalid;
                         highlightEntity.CancelTween();
-                        highlightEntityTransform.gameObject.SetActive(false);
+                        nodeHighlightEntity.GetTransform().gameObject.SetActive(false);
                     }
                 });
             });

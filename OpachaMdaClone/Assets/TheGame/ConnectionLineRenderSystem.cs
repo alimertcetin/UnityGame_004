@@ -162,7 +162,7 @@ namespace TheGame
             targetEntityInstancedRendererComp.renderer.GetPropertyBlock(targetEntityInstancedRendererComp.materialPropertyBlock);
             var colorPropId = ShaderConstants.Custom_SpriteWithShadow_Instanced.Color_ColorID;
             var ca = targetEntityInstancedRendererComp.materialPropertyBlock.GetColor(colorPropId);
-            var cb = UnitIdLookup.GetColor(attackerUnitComp.unitType);
+            var cb = UnitIdLookup.GetColor(attackerUnitComp.unitType).ToUnityColor();
             updateVisualLineConnectionEventComp.targetEntity.CancelTween();
             updateVisualLineConnectionEventComp.targetEntity.XIVTween()
                 .Mpb(targetEntityInstancedRendererComp.materialPropertyBlock, colorPropId, ca, cb, 0.5f, EasingFunction.SmoothStop3)
@@ -186,7 +186,7 @@ namespace TheGame
                 
                 if (neighborUnitType == attackerUnitComp.unitType)
                 {
-                    lineRendererComp.lineRenderer.XIVSetColor(UnitIdLookup.GetColor(attackerUnitComp.unitType));
+                    lineRendererComp.lineRenderer.XIVSetColor(UnitIdLookup.GetColor(attackerUnitComp.unitType).ToUnityColor());
                     
                     // lineRendererEntityInstancedRendererComp.renderer.GetPropertyBlock(lineRendererEntityInstancedRendererComp.materialPropertyBlock);
                     lineRendererEntityInstancedRendererComp.renderer.material = assetReferences.connectionLineMaterial;
@@ -197,13 +197,13 @@ namespace TheGame
 
                 if (updateVisualLineConnectionEventComp.targetEntity == connectionPair.entity1)
                 {
-                    lineRendererComp.lineRenderer.startColor = UnitIdLookup.GetColor(attackerUnitComp.unitType);
-                    lineRendererComp.lineRenderer.endColor = UnitIdLookup.GetColor(neighborUnitType);
+                    lineRendererComp.lineRenderer.startColor = UnitIdLookup.GetColor(attackerUnitComp.unitType).ToUnityColor();
+                    lineRendererComp.lineRenderer.endColor = UnitIdLookup.GetColor(neighborUnitType).ToUnityColor();
                 }
                 else
                 {
-                    lineRendererComp.lineRenderer.startColor = UnitIdLookup.GetColor(neighborUnitType);
-                    lineRendererComp.lineRenderer.endColor = UnitIdLookup.GetColor(attackerUnitComp.unitType);
+                    lineRendererComp.lineRenderer.startColor = UnitIdLookup.GetColor(neighborUnitType).ToUnityColor();
+                    lineRendererComp.lineRenderer.endColor = UnitIdLookup.GetColor(attackerUnitComp.unitType).ToUnityColor();
                 }
 
                 lineRendererEntityInstancedRendererComp.renderer.material = assetReferences.connectionLineSlicedMaterial;

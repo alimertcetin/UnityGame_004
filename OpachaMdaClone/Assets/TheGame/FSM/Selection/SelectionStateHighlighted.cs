@@ -16,18 +16,18 @@ namespace TheGame
             manager.Highlight(manager.first, true);
         }
 
-        public override void Update(ref InputData input, SwipeResult swipe)
+        public override void Update(ref SingleInputData singleInput, SwipeResult swipe)
         {
-            if (input.isFingerDownThisFrameNoUI)
+            if (singleInput.isFingerDownThisFrameNoUI)
             {
-                if (manager.TryGetEntityFromInput(ref input, out var entity) == false)
+                if (manager.TryGetEntityFromInput(ref singleInput, out var entity) == false)
                 {
                     // Clicked empty → unhighlight
                     manager.ChangeState<SelectionStateDeselectFirstSelected>();
                     return;
                 }
 
-                if (manager.TryGetSecondFromInput(ref input, out var second))
+                if (manager.TryGetSecondFromInput(ref singleInput, out var second))
                 {
                     // Clicked another → transfer half
                     manager.second = second;
@@ -41,7 +41,7 @@ namespace TheGame
             }
 
             // Swipe detection
-            if (input.isFingerUpThisFrame)
+            if (singleInput.isFingerUpThisFrame)
             {
                 if (swipe.direction != SwipeResult.Direction.None)
                 {

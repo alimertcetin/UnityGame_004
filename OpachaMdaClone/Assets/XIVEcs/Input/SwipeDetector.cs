@@ -1,11 +1,12 @@
 ﻿using UnityEngine;
+using XIV.Core.DataStructures;
 
 namespace XIV.Ecs
 {
     public struct SwipeResult
     {
         public Direction direction;
-        public Vector3 directionVector;
+        public Vec3 directionVector;
         
         public Vector2Int DirVec2i
         {
@@ -23,9 +24,9 @@ namespace XIV.Ecs
             }
         }
 
-        public Vector2 DirVec2 => new Vector2(DirVec2i.x, DirVec2i.y);
-        public Vector3 DirXZ => new Vector3(DirVec2i.x, 0, DirVec2i.y);
-        public Vector3 DirXY => new Vector3(DirVec2i.x,  DirVec2i.y,0);
+        public Vec2 DirVec2 => new Vec2(DirVec2i.x, DirVec2i.y);
+        public Vec3 DirXZ => new Vec3(DirVec2i.x, 0, DirVec2i.y);
+        public Vec3 DirXY => new Vec3(DirVec2i.x,  DirVec2i.y,0);
 
         public enum Direction
         {
@@ -45,8 +46,8 @@ namespace XIV.Ecs
         float timeThreshold;
 
         bool inputStarted;
-        Vector3 inputStartScreenPos;
-        Vector3 swipeDirection;
+        Vec3 inputStartScreenPos;
+        Vec3 swipeDirection;
         float timer;
 
         public static SwipeDetector New(bool onlyWhenFingerUp = true, float thresholdInInch = 0.16f, float timeThreshold = -1)
@@ -58,18 +59,18 @@ namespace XIV.Ecs
                 timeThreshold = timeThreshold,
 
                 inputStarted = false,
-                inputStartScreenPos = Vector3.zero,
-                swipeDirection = Vector3.zero,
+                inputStartScreenPos = Vec3.zero,
+                swipeDirection = Vec3.zero,
                 timer = 0,
             };
         }
 
-        // Call every frame, returns swipe direction when swipes occurs
-        public SwipeResult DetectSwipe(ref InputData inputData, float deltaTime)
+        // Call every frame, returns swipe direction when swipe occurs
+        public SwipeResult DetectSwipe(ref SingleInputData singleInputData, float deltaTime)
         {
-            var direction = onlyWhenFingerUp ? DetectSwipeOnlyWhenFingerUp(ref inputData, deltaTime) : DetectSwipeContinues(ref inputData, deltaTime);
-            var startScreenPos = inputData.inputScreenPosStart;
-            var endScreenPos = inputData.inputScreenPos;
+            var direction = onlyWhenFingerUp ? DetectSwipeOnlyWhenFingerUp(ref singleInputData, deltaTime) : DetectSwipeContinues(ref singleInputData, deltaTime);
+            var startScreenPos = singleInputData.inputScreenPosStart;
+            var endScreenPos = singleInputData.inputScreenPos;
             var screenPosDelta = endScreenPos - startScreenPos;
             var result = new SwipeResult
             {
@@ -79,12 +80,12 @@ namespace XIV.Ecs
             return result;
         }
 
-        SwipeResult.Direction DetectSwipeContinues(ref InputData inputData, float deltaTime)
+        SwipeResult.Direction DetectSwipeContinues(ref SingleInputData singleInputData, float deltaTime)
         {
-            if (inputData.isFingerDownThisFrameNoUI)
+            if (singleInputData.isFingerDownThisFrameNoUI)
             {
                 inputStarted = true;
-                inputStartScreenPos = inputData.inputScreenPos;
+                inputStartScreenPos = singleInputData.inputScreenPos;
             }
 
             if (!inputStarted)
@@ -100,7 +101,7 @@ namespace XIV.Ecs
                 return SwipeResult.Direction.None;
             }
 
-            var delta = (inputData.inputScreenPos - inputStartScreenPos) / inputData.dpi;
+            var delta = (singleInputData.inputScreenPos - inputStartScreenPos) / singleInputData.dpi;
             var horizontalDelta = Mathf.Abs(delta.x);
             var verticalDelta = Mathf.Abs(delta.y);
 
@@ -118,12 +119,12 @@ namespace XIV.Ecs
             return SwipeResult.Direction.None;
         }
 
-        SwipeResult.Direction DetectSwipeOnlyWhenFingerUp(ref InputData inputData, float deltaTime)
+        SwipeResult.Direction DetectSwipeOnlyWhenFingerUp(ref SingleInputData singleInputData, float deltaTime)
         {
-            if (inputData.isFingerDownThisFrameNoUI)
+            if (singleInputData.isFingerDownThisFrameNoUI)
             {
                 inputStarted = true;
-                inputStartScreenPos = inputData.inputScreenPos;
+                inputStartScreenPos = singleInputData.inputScreenPos;
                 timer = 0;
             }
 
@@ -139,19 +140,19 @@ namespace XIV.Ecs
                 return SwipeResult.Direction.None;
             }
 
-            if (inputData.isFingerUpThisFrame)
+            if (singleInputData.isFingerUpThisFrame)
             {
                 inputStarted = false;
                 timer = 0;
             }
 
-            var delta = (inputData.inputScreenPos - inputStartScreenPos) / inputData.dpi;
+            var delta = (singleInputData.inputScreenPos - inputStartScreenPos) / singleInputData.dpi;
             var horizontalDelta = Mathf.Abs(delta.x);
             var verticalDelta = Mathf.Abs(delta.y);
 
             if (horizontalDelta > thresholdInInch || verticalDelta > thresholdInInch)
             {
-                inputStartScreenPos = inputData.inputScreenPos;
+                inputStartScreenPos = singleInputData.inputScreenPos;
 
                 if (horizontalDelta > verticalDelta)
                 {

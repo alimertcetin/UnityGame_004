@@ -8,7 +8,7 @@ namespace TheGame
         {
         }
 
-        public override void Update(ref InputData input, SwipeResult swipe)
+        public override void Update(ref SingleInputData singleInput, SwipeResult swipe)
         {
             manager.TransferOnce();
 

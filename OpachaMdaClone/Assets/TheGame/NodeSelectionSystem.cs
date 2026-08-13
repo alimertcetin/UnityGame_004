@@ -17,12 +17,12 @@ namespace TheGame
 
         public override void Update()
         {
-            InputData input = default;
+            SingleInputData singleInput = default;
             nodeSelectorFilter.ForEach((Entity selectorEntity, ref UnitComp unitComp, ref InputListenerComp listener) =>
             {
-                input = listener.input;
+                singleInput = listener.singleInput;
             });
-            selectionFsmManager.Run(ref input);
+            selectionFsmManager.Run(ref singleInput);
         }
     }
 }

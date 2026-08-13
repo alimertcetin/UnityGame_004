@@ -40,7 +40,7 @@ namespace TheGame
             nodeOccupyEventComp.nodeEntity.RemoveComponent<NodeHelpFrontierComp>();
             
             ref var nodeComp = ref nodeOccupyEventComp.nodeEntity.GetComponent<NodeComp>();
-            nodeComp.isChangingType = nodeComp.configIdx != 0;
+            nodeComp.unitEpoch++;
             
             nodeOccupyEventComp.nodeEntity.AddComponent(new OccupiedNodeComp
             {
@@ -53,6 +53,7 @@ namespace TheGame
                 unitEntity = nodeOccupyEventComp.unitEntity,
                 penalty = 0f,
                 newConfig = 0,
+                unitEpoch = nodeComp.unitEpoch,
             });
             
             if (attackerUnitComp.unitType == UnitIdLookup.UnitType.Green)

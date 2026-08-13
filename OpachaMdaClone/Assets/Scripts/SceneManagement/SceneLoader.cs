@@ -8,74 +8,67 @@ namespace TheGame.SceneManagement
     public class SceneLoader : MonoBehaviour
     {
         [SerializeField] SceneListSO sceneListSO;
-        public static Action<SceneSO, SceneLoadSettings> loadScene;
-        public static event Action<SceneSO, SceneLoadSettings> onSceneLoadingStarted;
-        public static event Action<float> onSceneLoading;
-        public static event Action<SceneSO, SceneLoadSettings> onSceneLoadComplete;
+        public static SceneLoader instance { get; private set; }
+
+        public Action<SceneSO, SceneLoadSettings> sceneLoadStarted;
+        public Action<SceneSO, SceneLoadSettings, float> sceneLoadProgress;
+        public Action<SceneSO, SceneLoadSettings> sceneLoadCompleted;
         
-        SceneSO currentScene;
-        SceneSO sceneToLoad;
-        SceneLoadSettings sceneLoadSettings;
+        public Action<SceneSO, SceneUnloadSettings> sceneUnloadStarted;
+        public Action<SceneSO, SceneUnloadSettings, float> sceneUnloadProgress;
+        public Action<SceneSO, SceneUnloadSettings> sceneUnloadedCompleted;
+        
+        public SceneSO lastLoadedScene { get; private set; }
 
-        void Start()
+        void Awake()
         {
-            OnLoadSceneRequested(sceneListSO.GetSceneByContainingSceneName("mainMenu"), SceneLoadSettings.GetDefault());
+            if (instance != this) Destroy(instance);
+            instance = this;
         }
 
-        void OnEnable()
+        public void LoadScene(SceneSO sceneToLoad, SceneLoadSettings sceneLoadSettings)
         {
-            loadScene += OnLoadSceneRequested;
-        }
-
-        void OnDisable()
-        {
-            loadScene -= OnLoadSceneRequested;
-        }
-
-        void OnLoadSceneRequested(SceneSO sceneToLoad, SceneLoadSettings sceneLoadSettings)
-        {
-            this.sceneToLoad = sceneToLoad;
-            this.sceneLoadSettings = sceneLoadSettings;
-            var previousScene = sceneListSO.GetSceneByContainingSceneName(SceneManager.GetActiveScene().name);
-            
             AsyncOperation loadOperation = SceneManager.LoadSceneAsync(sceneToLoad.sceneBuildIndex, sceneLoadSettings.loadSceneMode);
             loadOperation.allowSceneActivation = false;
-            StartCoroutine(LoadNewScene(loadOperation));
-            onSceneLoadingStarted?.Invoke(sceneToLoad, sceneLoadSettings);
-            
-            if (sceneLoadSettings.unloadActiveScene)
-            {
-                if (previousScene)
-                {
-                    var unloadOperation = SceneManager.UnloadSceneAsync(previousScene.sceneBuildIndex);
-                    StartCoroutine(UnloadScene(unloadOperation));
-                }
-            }
+            StartCoroutine(LoadNewScene(sceneToLoad, sceneLoadSettings, loadOperation));
+            sceneLoadStarted?.Invoke(sceneToLoad, sceneLoadSettings);
         }
 
-        IEnumerator LoadNewScene(AsyncOperation obj)
+        public void UnloadScene(SceneSO sceneToUnload, SceneUnloadSettings sceneUnloadSettings)
+        {
+            AsyncOperation unloadOperation = SceneManager.UnloadSceneAsync(SceneManager.GetSceneByBuildIndex(sceneToUnload.sceneBuildIndex), sceneUnloadSettings.unloadSceneOptions);
+            StartCoroutine(UnloadScene(sceneToUnload, sceneUnloadSettings, unloadOperation));
+            sceneUnloadStarted?.Invoke(sceneToUnload, sceneUnloadSettings);
+        }
+
+        IEnumerator LoadNewScene(SceneSO sceneToLoad, SceneLoadSettings sceneLoadSettings, AsyncOperation obj)
         {
             while (obj.isDone == false)
             {
                 if (obj.progress >= 0.9f) obj.allowSceneActivation = true;
-                onSceneLoading?.Invoke(obj.progress);
+                sceneLoadProgress?.Invoke(sceneToLoad, sceneLoadSettings, obj.progress);
                 yield return null;
             }
-            onSceneLoading?.Invoke(obj.progress);
-            currentScene = sceneToLoad;
+            sceneLoadProgress?.Invoke(sceneToLoad, sceneLoadSettings, obj.progress);
+            lastLoadedScene = sceneToLoad;
+            
             if (sceneLoadSettings.activateSceneAfterLoad)
             {
-                SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(currentScene.sceneBuildIndex));
+                SceneManager.SetActiveScene(SceneManager.GetSceneByBuildIndex(lastLoadedScene.sceneBuildIndex));
             }
-            onSceneLoadComplete?.Invoke(currentScene, sceneLoadSettings);
+            
+            sceneLoadCompleted?.Invoke(sceneToLoad, sceneLoadSettings);
         }
 
-        IEnumerator UnloadScene(AsyncOperation obj)
+        IEnumerator UnloadScene(SceneSO sceneToUnload, SceneUnloadSettings sceneUnloadSettings, AsyncOperation obj)
         {
             while (obj.isDone == false)
             {
+                sceneUnloadProgress?.Invoke(sceneToUnload, sceneUnloadSettings, obj.progress);
                 yield return null;
             }
+            sceneUnloadProgress?.Invoke(sceneToUnload, sceneUnloadSettings, obj.progress);
+            sceneUnloadedCompleted?.Invoke(sceneToUnload, sceneUnloadSettings);
         }
     }
 }

@@ -11,9 +11,9 @@ namespace TheGame
         {
         }
 
-        public override void Update(ref InputData input, SwipeResult swipe)
+        public override void Update(ref SingleInputData singleInput, SwipeResult swipe)
         {
-            if (input.isFingerDownThisFrameNoUI && manager.TryGetFirstFromInput(ref input, out Entity first))
+            if (singleInput.isFingerDownThisFrameNoUI && manager.TryGetFirstFromInput(ref singleInput, out Entity first))
             {
                 manager.first = first;
                 manager.ChangeState<SelectionStateFirstSelected>();

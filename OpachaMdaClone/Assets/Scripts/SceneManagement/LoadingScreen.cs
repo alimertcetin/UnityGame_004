@@ -24,12 +24,12 @@ namespace TheGame.SceneManagement
 
         void OnEnable()
         {
-            SceneLoader.onSceneLoadingStarted += OnSceneLoadingStarted;
+            SceneLoader.instance.sceneLoadStarted += OnSceneLoadingStarted;
         }
 
         void OnDisable()
         {
-            SceneLoader.onSceneLoadingStarted -= OnSceneLoadingStarted;
+            SceneLoader.instance.sceneLoadStarted -= OnSceneLoadingStarted;
         }
 
         void OnSceneLoadingStarted(SceneSO sceneToLoad, SceneLoadSettings settings)
@@ -66,7 +66,7 @@ namespace TheGame.SceneManagement
             ToggleLoadingScreen(false);
         }
 
-        void OnSceneLoading(float percent01)
+        void OnSceneLoading(SceneSO sceneToLoad, SceneLoadSettings sceneLoadSettings, float percent01)
         {
             actualProgress = percent01;
         }
@@ -87,14 +87,14 @@ namespace TheGame.SceneManagement
 
         void RegisterSceneLoading()
         {
-            SceneLoader.onSceneLoading += OnSceneLoading;
-            SceneLoader.onSceneLoadComplete += OnSceneLoadComplete;
+            SceneLoader.instance.sceneLoadProgress += OnSceneLoading;
+            SceneLoader.instance.sceneLoadCompleted += OnSceneLoadComplete;
         }
 
         void UnregisterSceneLoading()
         {
-            SceneLoader.onSceneLoading -= OnSceneLoading;
-            SceneLoader.onSceneLoadComplete -= OnSceneLoadComplete;
+            SceneLoader.instance.sceneLoadProgress -= OnSceneLoading;
+            SceneLoader.instance.sceneLoadCompleted -= OnSceneLoadComplete;
         }
     }
 }

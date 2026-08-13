@@ -4,6 +4,7 @@ using UnityEngine;
 using XIV.Core.Collections;
 using XIV.Core.Utils;
 using XIV.Core.XIVMath;
+using XIVUnityEngineIntegration.Extensions;
 
 namespace XIV.Ecs
 {
@@ -121,12 +122,11 @@ namespace XIV.Ecs
         readonly Filter<ShieldRendererComp, ShieldRenderPropertyComp, ShieldRenderAnimationComp> shieldRenderAnimationFilter = null;
         
         readonly AssetReferences assetReferences = null;
-        readonly DynamicArray<Entity> rendererEntities = new DynamicArray<Entity>();
 
         public override void Update()
         {
             shieldFilter.ForEach(AddShieldRenderer);
-            DestroyRenderersWithNoShield();
+            shieldRendererPropertyFilter.ForEach(DestroyRenderersWithNoShield);
             
             shieldRendererPropertyFilter.ForEach(DetectChanges);
             shieldRenderAnimationFilter.ForEach(AnimateShieldRenderer);
@@ -135,9 +135,9 @@ namespace XIV.Ecs
 
         void AddShieldRenderer(Entity entity, ref PositionComp positionComp, ref ShieldComp shieldComp)
         {
-            if (HasRenderer(entity)) return;
+            if (shieldComp.shieldRendererEntity.IsAlive()) return;
 
-            var shieldRendererEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeShieldPrefab, positionComp.position, Quaternion.identity);
+            var shieldRendererEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeShieldPrefab, positionComp.position.ToVector3(), Quaternion.identity);
             var renderer = shieldRendererEntity.GetUnityComponent<Renderer>();
             var materialPropertyBlock = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(materialPropertyBlock);
@@ -167,35 +167,13 @@ namespace XIV.Ecs
 
             shieldRendererEntity.AddComponent(rendererComp);
             shieldRendererEntity.AddComponent(propComp);
-            rendererEntities.Add() = shieldRendererEntity;
+            shieldComp.shieldRendererEntity = shieldRendererEntity;
         }
 
-        bool HasRenderer(Entity entity)
+        void DestroyRenderersWithNoShield(Entity e, ref ShieldRendererComp shieldRendererComp, ref ShieldRenderPropertyComp shieldRenderPropertyComp)
         {
-            int len = rendererEntities.Count;
-            for (int i = 0; i < len; i++)
-            {
-                ref var shieldRendererEntity = ref rendererEntities[i];
-                ref var shieldRendererComp = ref shieldRendererEntity.GetComponent<ShieldRendererComp>();
-                if (shieldRendererComp.targetEntity == entity) return true;
-            }
-
-            return false;
-        }
-
-        void DestroyRenderersWithNoShield()
-        {
-            int len = rendererEntities.Count;
-            for (int i = len - 1; i >= 0; i--)
-            {
-                ref var shieldRendererEntity = ref rendererEntities[i];
-                ref var shieldRendererComp = ref shieldRendererEntity.GetComponent<ShieldRendererComp>();
-                if (shieldRendererComp.targetEntity.HasComponent<ShieldComp>() == false)
-                {
-                    shieldRendererEntity.Destroy();
-                    rendererEntities.RemoveAt(i);
-                }
-            }
+            if (shieldRendererComp.targetEntity.HasComponent<ShieldComp>()) return;
+            e.Destroy();
         }
 
         void DetectChanges(Entity rendererEntity, ref ShieldRendererComp shieldRendererComp, ref ShieldRenderPropertyComp shieldRenderPropertyComp)
@@ -245,7 +223,7 @@ namespace XIV.Ecs
             {
                 ref var occupiedNodeComp = ref shieldRendererComp.targetEntity.GetComponent<OccupiedNodeComp>();
                 ref var unitComp = ref occupiedNodeComp.unitEntity.GetComponent<UnitComp>();
-                var unitColor = UnitIdLookup.GetColor(unitComp.unitType);
+                var unitColor = UnitIdLookup.GetColor(unitComp.unitType).ToUnityColor();
                 if (shieldRenderPropertyComp.activeColor != unitColor)
                 {
                     changed = true;

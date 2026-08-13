@@ -2,11 +2,6 @@ using UnityEngine;
 
 namespace XIV.Ecs
 {
-    public struct CameraComp : IComponent
-    {
-        
-    }
-    
     public class DestroySystem : XIV.Ecs.System
     {
         readonly Filter<DestroyLaterComp> destroyLaterFilter = null;

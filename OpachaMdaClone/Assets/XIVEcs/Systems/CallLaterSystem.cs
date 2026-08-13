@@ -18,8 +18,8 @@ namespace XIV.Ecs
             {
                 if (callLaterComp.timer <= 0)
                 {
-                    callLaterComp.action?.Invoke(entity);
                     entity.RemoveComponent<CallLaterComp>();
+                    callLaterComp.action?.Invoke(entity);
                 }
                 else
                 {

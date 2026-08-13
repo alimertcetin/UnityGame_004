@@ -15,6 +15,7 @@ namespace TheGame
     
     public struct ShieldComp : IComponent
     {
+        public Entity shieldRendererEntity;
         public bool isGeneratingShield;
         public float max;
         public float current;
@@ -35,10 +36,11 @@ namespace TheGame
                     entity.Destroy();
                     return;
                 }
-                shieldGenerationDelayEventComp.shieldEntity.GetComponent<ShieldComp>().isGeneratingShield = false;
+                ref var shieldComp = ref shieldGenerationDelayEventComp.shieldEntity.GetComponent<ShieldComp>();
+                shieldComp.isGeneratingShield = false;
                 if (shieldGenerationDelayEventComp.timer.Update(XTime.deltaTime) == false) return;
                 entity.Destroy();
-                shieldGenerationDelayEventComp.shieldEntity.GetComponent<ShieldComp>().isGeneratingShield = true;
+                shieldComp.isGeneratingShield = true;
             });
             shieldGeneratorFilter.ForEach(GenerateShieldPoints);
         }

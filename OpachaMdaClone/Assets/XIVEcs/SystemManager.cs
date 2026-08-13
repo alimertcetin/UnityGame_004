@@ -11,13 +11,8 @@ namespace XIV.Ecs
         public readonly List<System> systems = new List<System>(128);
         public readonly Dictionary<Type, System> systemMap = new Dictionary<Type, System>();
 
-        public void ChangeState(int s)
-        {
-            newState = s;
-        }
-
+        public int State { get; private set; }
         int newState = 0;
-        public int State { private set; get;}
         
         readonly Dictionary<Type,object> injections = new Dictionary<Type, object>();
         readonly World world;
@@ -28,6 +23,11 @@ namespace XIV.Ecs
         public SystemManager(World world)
         {
             this.world = world;
+        }
+
+        public void ChangeState(int s)
+        {
+            newState = s;
         }
         
         public void AddSystem(System system, params int[] states)
@@ -130,9 +130,11 @@ namespace XIV.Ecs
             }
         }
 
+        // Gets called for every system
         public void PreAwake()
         {
             State = newState;
+            
             foreach (var system in systems)
             {
                 if (!system.active) { continue; }
@@ -146,6 +148,7 @@ namespace XIV.Ecs
             }
         }
         
+        // Gets called for every system
         public void Awake()
         {
             foreach (var system in systems)
@@ -161,9 +164,10 @@ namespace XIV.Ecs
             }
         }
 
+        // Gets called for only the systems in the current state
         public void Start()
         {
-            foreach (var system in systems)
+            foreach (var system in stateSystemGroups[State])
             {
                 if (!system.active) { continue; }
 #if UNITY_EDITOR
@@ -193,7 +197,25 @@ namespace XIV.Ecs
         
         public void Update()
         {
+            bool isStateChanged = State != newState;
+            int prevState = State;
             State = newState;
+
+            if (isStateChanged)
+            {
+                // call destroy for previous systems
+                foreach (var system in stateSystemGroups[prevState])
+                {
+                    system.OnDestroy();
+                }
+                
+                // call start for current systems since state has been changed
+                foreach (var system in stateSystemGroups[State])
+                {
+                    system.Start();
+                }
+            }
+            
             foreach (var system in stateSystemGroups[State])
             {
                 if (!system.active) { continue; }
