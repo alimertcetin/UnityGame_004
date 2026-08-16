@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using UnityEngine;
 using XIV.Core.Collections;
 using XIV.Core.DataStructures;
 using XIV.Core.Extensions;

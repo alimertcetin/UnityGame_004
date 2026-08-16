@@ -12,7 +12,11 @@ namespace TheGame.SceneManagement
         {
             return new SceneLoadSettings
             {
+#if UNITY_EDITOR
+                showLoadingScreen = false,
+#else          
                 showLoadingScreen = true,
+#endif
                 activateSceneAfterLoad = true,
                 loadSceneMode = LoadSceneMode.Additive,
             };
@@ -28,7 +32,12 @@ namespace TheGame.SceneManagement
         {
             return new SceneUnloadSettings
             {
+                
+#if UNITY_EDITOR
+                showLoadingScreen = false,
+#else          
                 showLoadingScreen = true,
+#endif
                 unloadSceneOptions = UnloadSceneOptions.None,
             };
         }

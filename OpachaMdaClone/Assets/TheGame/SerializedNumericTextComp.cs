@@ -1,7 +1,6 @@
-﻿using System;
-using TMPro;
-using UnityEngine.UI;
+﻿using TMPro;
 using XIV.Ecs;
+using XIV.UnityEngineIntegration;
 
 namespace TheGame
 {

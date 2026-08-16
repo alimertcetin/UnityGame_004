@@ -57,7 +57,7 @@ namespace TheGame
             resourceComp.resourceQuantity -= quantityToSend; // keep the fraction?
             world.NewEntity().AddComponent(new SendResourceEventComp
             {
-                fromUnitEntity = occupiedNodeComp.unitEntity,
+                fromUnitEpoch = nodeComp.unitEpoch,
                 fromEntity = entity,
                 toEntity = entityToCapture,
                 resourceQuantity = quantityToSend,

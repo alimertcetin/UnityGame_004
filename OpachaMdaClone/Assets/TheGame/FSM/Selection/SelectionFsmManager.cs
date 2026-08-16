@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using XIV.Core.DataStructures;
-using XIV.Core.Extensions;
 using XIV.Core.Utils;
 using XIV.Ecs;
 using XIVEcsUnityIntegration.Extensions;
@@ -127,7 +126,7 @@ namespace TheGame
             
             first.world.NewEntity().AddComponent(new SendResourceEventComp
             {
-                fromUnitEntity = first.GetComponent<OccupiedNodeComp>().unitEntity,
+                fromUnitEpoch = first.GetComponent<NodeComp>().unitEpoch,
                 fromEntity = first,
                 toEntity = second,
                 resourceQuantity = send,
@@ -138,9 +137,10 @@ namespace TheGame
         {
             if (first.IsAlive() == false || second.IsAlive() == false || connectionDB.IsConnected(first, second) == false) return;
             
+            first.RemoveComponent<SendResourceContinuouslyComp>();
             first.world.NewEntity().AddComponent(new StartContinuousResourceTransferEventComp
             {
-                fromUnitEntity = first.GetComponent<OccupiedNodeComp>().unitEntity,
+                fromUnitEpoch = first.GetComponent<NodeComp>().unitEpoch,
                 fromEntity = first,
                 targetEntity = second,
             });

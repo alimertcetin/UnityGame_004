@@ -2,7 +2,6 @@
 using UnityEngine;
 using XIV.Core.Utils;
 using XIV.Ecs;
-using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame
 {
@@ -49,11 +48,8 @@ namespace TheGame
                 var highlightEntityTransform = nodeHighlightEntity.GetTransform();
                 var scale = highlightEntityTransform.gameObject.activeSelf ? Vector3.one * 1.2f : Vector3.one;
 
-                ref var positionComp = ref nodeHighlightEntity.GetComponent<PositionComp>();
-                ref var rotationComp = ref nodeHighlightEntity.GetComponent<RotationComp>();
-                positionComp.Set(pos.ToVec3());
-                rotationComp.Set(rot.eulerAngles.ToVec3());
-                
+                highlightEntityTransform.position = pos;
+                highlightEntityTransform.rotation = rot;
                 highlightEntityTransform.localScale = scale;
                 highlightEntityTransform.gameObject.SetActive(true);
 

@@ -9,8 +9,8 @@ namespace TheGame
         
         readonly Filter<SliderComp> sliderFilter;
         // readonly Filter<SliderComp, SliderValueChangedComp> sliderValueChangeFilter;
-        readonly Filter<ResourceComp, OccupiedNodeComp> sendResourceToPlayerFilter = new Filter<ResourceComp, OccupiedNodeComp>().Tag<SendResourceToPlayerTag>();
-        readonly Filter<ResourceComp, OccupiedNodeComp> sendResourceToAllNeighborsFilter = new Filter<ResourceComp, OccupiedNodeComp>().Tag<SendResourceToAllNeighborsTag>();
+        readonly Filter<ResourceComp, NodeComp, OccupiedNodeComp> sendResourceToPlayerFilter = new Filter<ResourceComp, NodeComp, OccupiedNodeComp>().Tag<SendResourceToPlayerTag>();
+        readonly Filter<ResourceComp, NodeComp, OccupiedNodeComp> sendResourceToAllNeighborsFilter = new Filter<ResourceComp, NodeComp, OccupiedNodeComp>().Tag<SendResourceToAllNeighborsTag>();
         readonly ConnectionDB connectionDB;
 
         public override void Update()
@@ -21,7 +21,7 @@ namespace TheGame
             //     XTime.timeScale = sliderValueChangedComp.value;
             // });
             
-            sendResourceToPlayerFilter.ForEach((Entity nodeEntity, ref ResourceComp resourceComp, ref OccupiedNodeComp occupiedNodeComp) =>
+            sendResourceToPlayerFilter.ForEach((Entity nodeEntity, ref ResourceComp resourceComp, ref NodeComp nodeComp, ref OccupiedNodeComp occupiedNodeComp) =>
             {
                 nodeEntity.RemoveTag<SendResourceToPlayerTag>();
                 using var neighborBuffer = ArrayUtils.GetBuffer<Entity>();
@@ -38,7 +38,7 @@ namespace TheGame
                         {
                             world.NewEntity().AddComponent(new SendResourceEventComp
                             {
-                                fromUnitEntity = occupiedNodeComp.unitEntity,
+                                fromUnitEpoch = nodeComp.unitEpoch,
                                 fromEntity = nodeEntity,
                                 toEntity = neighbor,
                                 resourceQuantity = (int)(resourceComp.resourceQuantity * 0.5f),
@@ -48,7 +48,7 @@ namespace TheGame
                 }
             });
             
-            sendResourceToAllNeighborsFilter.ForEach((Entity nodeEntity, ref ResourceComp resourceComp, ref OccupiedNodeComp occupiedNodeComp) =>
+            sendResourceToAllNeighborsFilter.ForEach((Entity nodeEntity, ref ResourceComp resourceComp, ref NodeComp nodeComp, ref OccupiedNodeComp occupiedNodeComp) =>
             {
                 nodeEntity.RemoveTag<SendResourceToAllNeighborsTag>();
                 
@@ -61,7 +61,7 @@ namespace TheGame
                     var neighbor = neighborBuffer[i];
                     world.NewEntity().AddComponent(new SendResourceEventComp
                     {
-                        fromUnitEntity = occupiedNodeComp.unitEntity,
+                        fromUnitEpoch = nodeComp.unitEpoch,
                         fromEntity = nodeEntity,
                         toEntity = neighbor,
                         resourceQuantity = sendQuantity,

@@ -3,8 +3,9 @@ using System.Reflection;
 using UnityEngine;
 using UnityEngine.Scripting;
 using XIV.Core.Extensions;
+using XIV.Ecs;
 
-namespace XIV.Ecs
+namespace XIV.UnityEngineIntegration
 {
     [AttributeUsage((AttributeTargets.Method))]
     public class OnResetAttribute : Attribute {}

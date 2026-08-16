@@ -1,7 +1,4 @@
-﻿using UnityEngine;
-using XIV.Core.Utils;
-using XIV.Ecs;
-using XIVEcsUnityIntegration.Extensions;
+﻿using XIV.Ecs;
 
 namespace TheGame
 {
@@ -32,7 +29,6 @@ namespace TheGame
                 if (swipe.direction != SwipeResult.Direction.None)
                 {
                     manager.second = manager.GetPossibleTarget(swipe.directionVector);
-                    // TODO : SelectionStateFirstSelected -> Do we care if it is alive or not to change the state?
                     if (manager.second.IsAlive())
                     {
                         manager.StartContinuousTransfer();

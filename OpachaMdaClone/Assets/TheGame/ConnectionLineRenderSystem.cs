@@ -2,7 +2,6 @@
 using TheGame.Extensions;
 using UnityEngine;
 using XIV.Core.DataStructures;
-using XIV.Core.TweenSystem;
 using XIV.Core.Utils;
 using XIV.Core.XIVMath;
 using XIV.Ecs;

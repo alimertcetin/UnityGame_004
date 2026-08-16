@@ -1,4 +1,6 @@
-﻿namespace XIV.Ecs
+﻿using XIV.UnityEngineIntegration;
+
+namespace XIV.Ecs
 {
     public struct DestroyTogetherComp : IComponent
     {

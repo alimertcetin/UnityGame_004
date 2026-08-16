@@ -36,7 +36,7 @@ namespace TheGame
             resourceComp.resourceQuantity = XIVMathf.Min(resourceComp.resourceQuantity + XTime.deltaTime * speed, GameConstants.MAX_RESOURCE_QUANTITY);
             float t = resourceComp.resourceQuantity % 1f; // a little offset for shader
             instancedRendererComp.renderer.GetPropertyBlock(instancedRendererComp.materialPropertyBlock);
-            instancedRendererComp.materialPropertyBlock.SetFloat("_AnimTime", t);
+            instancedRendererComp.materialPropertyBlock.SetFloat(ShaderConstants.Custom_Node_Fluid.AnimTime_RangeID, t);
             instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
             if (XIVMathf.Abs(resourceComp.resourceQuantity - GameConstants.MAX_RESOURCE_QUANTITY) < XIVMathf.Epsilon)
             {

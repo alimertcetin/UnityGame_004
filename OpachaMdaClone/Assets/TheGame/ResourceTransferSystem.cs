@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using XIV.Core.DataStructures;
 using XIV.Core.Utils;
-using XIV.Core.XIVMath;
 using XIV.Ecs;
 using XIVEcsUnityIntegration.Extensions;
 using XIVUnityEngineIntegration.Extensions;
@@ -38,14 +37,14 @@ namespace TheGame
 
     public struct StartContinuousResourceTransferEventComp : IComponent
     {
-        public Entity fromUnitEntity;
+        public int fromUnitEpoch;
         public Entity fromEntity;
         public Entity targetEntity;
     }
     
     public struct SendResourceEventComp : IComponent
     {
-        public Entity fromUnitEntity;
+        public int fromUnitEpoch;
         public Entity fromEntity;
         public Entity toEntity;
         public int resourceQuantity;
@@ -55,7 +54,7 @@ namespace TheGame
     {
         readonly Filter<PositionComp, TransferableResourceComp> transferableResourceFilter = new Filter<PositionComp, TransferableResourceComp>().ExcludeTag<ReturnToPoolTag>();
         readonly Filter<SendResourceEventComp> sendResourceFilter = null;
-        readonly Filter<ResourceComp, OccupiedNodeComp, SendResourceContinuouslyComp> sendResourceContinuouslyFilter = null;
+        readonly Filter<ResourceComp, NodeComp, OccupiedNodeComp, SendResourceContinuouslyComp> sendResourceContinuouslyFilter = null;
         readonly Filter<StartContinuousResourceTransferEventComp> startContinuousResourceTransferFilter = null;
         readonly Filter<TransferableResourceComp, PooledComp> pooledResourceFilter = new  Filter<TransferableResourceComp, PooledComp>().Tag<ReturnToPoolTag>();
         
@@ -120,9 +119,8 @@ namespace TheGame
         void StartContinuousResourceTransfer(Entity entity, ref StartContinuousResourceTransferEventComp startContinuousResourceTransferComp)
         {
             entity.Destroy();
-            if (startContinuousResourceTransferComp.fromEntity.HasComponent<SendResourceContinuouslyComp>()) return;
             // this node is occupied after event fired
-            if (startContinuousResourceTransferComp.fromEntity.GetComponent<OccupiedNodeComp>().unitEntity != startContinuousResourceTransferComp.fromUnitEntity) return;
+            if (startContinuousResourceTransferComp.fromEntity.GetComponent<NodeComp>().unitEpoch != startContinuousResourceTransferComp.fromUnitEpoch) return;
             
             ref var resourceComp = ref startContinuousResourceTransferComp.fromEntity.GetComponent<ResourceComp>();
             var quantityToSend = (int)resourceComp.resourceQuantity;
@@ -132,7 +130,7 @@ namespace TheGame
             // send immediately
             world.NewEntity().AddComponent(new SendResourceEventComp
             {
-                fromUnitEntity = startContinuousResourceTransferComp.fromUnitEntity,
+                fromUnitEpoch = startContinuousResourceTransferComp.fromUnitEpoch,
                 fromEntity = startContinuousResourceTransferComp.fromEntity,
                 toEntity = startContinuousResourceTransferComp.targetEntity,
                 resourceQuantity = quantityToSend,
@@ -210,7 +208,8 @@ namespace TheGame
             entity.Destroy();
             // unit has been changed
             ref var occupiedNodeComp = ref sendResourceEventComp.fromEntity.GetComponent<OccupiedNodeComp>();
-            if (occupiedNodeComp.unitEntity != sendResourceEventComp.fromUnitEntity) return;
+            ref var nodeComp = ref sendResourceEventComp.fromEntity.GetComponent<NodeComp>();
+            if (nodeComp.unitEpoch != sendResourceEventComp.fromUnitEpoch) return;
             ref var positionComp = ref sendResourceEventComp.fromEntity.GetComponent<PositionComp>();
             
             var resourceEntity = GetResource(positionComp.position);
@@ -249,7 +248,7 @@ namespace TheGame
                 .Start();
         }
 
-        void SendResourceContinuously(Entity nodeEntity, ref ResourceComp resourceComp, ref OccupiedNodeComp occupiedNodeComp, ref SendResourceContinuouslyComp sendResourceContinuouslyComp)
+        void SendResourceContinuously(Entity nodeEntity, ref ResourceComp resourceComp, ref NodeComp nodeComp, ref OccupiedNodeComp occupiedNodeComp, ref SendResourceContinuouslyComp sendResourceContinuouslyComp)
         {
             ref var unitComp = ref occupiedNodeComp.unitEntity.GetComponent<UnitComp>();
             if (unitComp.resourceTransferTimer.IsDone == false) return;
@@ -260,7 +259,7 @@ namespace TheGame
             
             world.NewEntity().AddComponent(new SendResourceEventComp
             {
-                fromUnitEntity = occupiedNodeComp.unitEntity,
+                fromUnitEpoch = nodeComp.unitEpoch,
                 fromEntity = nodeEntity,
                 toEntity = sendResourceContinuouslyComp.toEntity,
                 resourceQuantity = quantityToSend,

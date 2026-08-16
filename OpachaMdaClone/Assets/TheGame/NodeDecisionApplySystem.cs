@@ -1,9 +1,4 @@
 ﻿using System;
-using System.Threading;
-using UnityEngine;
-using XIV.Core.Collections;
-using XIV.Core.DataStructures;
-using XIV.Core.Utils;
 using XIV.Ecs;
 
 namespace TheGame

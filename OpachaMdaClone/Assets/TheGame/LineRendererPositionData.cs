@@ -1,5 +1,4 @@
-﻿using UnityEngine;
-using XIV.Core.Collections;
+﻿using XIV.Core.Collections;
 using XIV.Core.DataStructures;
 
 namespace TheGame

@@ -58,7 +58,7 @@ namespace TheGame
         {
             world.NewEntity().AddComponent(new StartContinuousResourceTransferEventComp
             {
-                fromUnitEntity = occupiedNodeComp.unitEntity,
+                fromUnitEpoch = nodeComp.unitEpoch,
                 fromEntity = entity,
                 targetEntity = nodeHelpFrontierComp.neighborEntity,
             });

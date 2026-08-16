@@ -2,7 +2,6 @@
 using UnityEngine;
 using XIV.Core.Algorithm;
 using XIV.Core.XIVMath;
-using XIV.UnityEngineIntegration;
 using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame

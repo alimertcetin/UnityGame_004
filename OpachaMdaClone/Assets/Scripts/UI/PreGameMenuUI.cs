@@ -101,8 +101,7 @@ namespace TheGame
         void FetchSeed(LevelSettings levelSettings)
         {
             var txtSeed = inputField_Seed.text;
-            if (string.IsNullOrEmpty(txtSeed)) return;
-            if (int.TryParse(txtSeed, out var seed) == false) seed = (int)(XIVRandom.value * 64);
+            if (int.TryParse(txtSeed, out var seed) == false) seed = (int)(uint)(XIVRandom.value * uint.MaxValue);
             levelSettings.levelGenerationSettings.seed = seed;
         }
 

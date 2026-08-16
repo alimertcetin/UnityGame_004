@@ -19,7 +19,9 @@ namespace TheGame
             nodeBehaviourButtonClickedFilter.ForEach((Entity entity, ref ButtonComp buttonComp, ref NodeBehaviourButtonComp nodeBehaviourButtonComp) =>
             {
                 entity.CancelTween();
-                entity.XIVTween().ScaleBounceOnce();
+                entity.XIVTween()
+                    .ScaleBounceOnce()
+                    .Start();
                 
                 Entity highlightedNodeEntity = Entity.Invalid;
                 highlightedNodeFilter.ForEach((ref HighlightComp highlightComp) =>
@@ -84,7 +86,7 @@ namespace TheGame
                     uiContainer.gameObject.SetActive(true);
                     uiContainer.CancelTween();
                     uiContainer.XIVTween()
-                        .RectTransformMove(pos.SetY(pos.y - scale.y), pos, 0.5f, EasingFunction.EaseOutElastic)
+                        .RectTransformMove(pos.SetY(pos.y - scale.y), pos, 0.5f, EasingFunction.EaseOutExpo)
                         .Start();
                 }
 
@@ -93,7 +95,7 @@ namespace TheGame
                     // close ui
                     uiContainer.CancelTween();
                     uiContainer.XIVTween()
-                        .RectTransformMove(pos, pos.SetY(pos.y - scale.y), 0.5f, EasingFunction.EaseOutQuart)
+                        .RectTransformMove(pos, pos.SetY(pos.y - scale.y), 0.5f, EasingFunction.EaseOutExpo)
                         .OnComplete(() =>
                         {
                             uiContainer.anchoredPosition = pos;
@@ -104,4 +106,5 @@ namespace TheGame
             });
         }
     }
+
 }

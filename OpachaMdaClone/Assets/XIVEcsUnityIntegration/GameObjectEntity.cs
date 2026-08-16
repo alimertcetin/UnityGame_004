@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using XIV.UnityEngineIntegration;
 using UnityEngine;
 using XIVUnityEngineIntegration.Extensions;
 

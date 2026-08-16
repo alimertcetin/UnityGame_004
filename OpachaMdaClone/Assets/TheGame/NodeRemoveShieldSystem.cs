@@ -1,5 +1,4 @@
-﻿using UnityEngine;
-using XIV.Ecs;
+﻿using XIV.Ecs;
 
 namespace TheGame
 {

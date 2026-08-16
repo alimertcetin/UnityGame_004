@@ -1,8 +1,6 @@
-﻿using System;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 using XIV.Core.DataStructures;
-using XIV.Core.XIVMath;
 using XIV.UnityEngineIntegration;
 using XIVUnityEngineIntegration.Extensions;
 

@@ -2,7 +2,6 @@
 using System.IO;
 using UnityEditor;
 using UnityEngine;
-using XIV.Core.XIVMath;
 using XIV.Ecs;
 
 namespace TheGame

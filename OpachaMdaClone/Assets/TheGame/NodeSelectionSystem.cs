@@ -1,5 +1,4 @@
-﻿using UnityEngine;
-using XIV.Ecs;
+﻿using XIV.Ecs;
 
 namespace TheGame
 {
@@ -17,12 +16,10 @@ namespace TheGame
 
         public override void Update()
         {
-            SingleInputData singleInput = default;
             nodeSelectorFilter.ForEach((Entity selectorEntity, ref UnitComp unitComp, ref InputListenerComp listener) =>
             {
-                singleInput = listener.singleInput;
+                selectionFsmManager.Run(ref listener.singleInput);
             });
-            selectionFsmManager.Run(ref singleInput);
         }
     }
 }

@@ -1,4 +1,6 @@
 ﻿
+using XIV.UnityEngineIntegration;
+
 namespace XIV.Ecs
 {
     public struct InputListenerComp : IComponent

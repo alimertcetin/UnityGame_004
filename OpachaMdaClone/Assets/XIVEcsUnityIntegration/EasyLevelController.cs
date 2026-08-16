@@ -55,6 +55,8 @@ namespace XIV.Ecs
 
         public override void AddSystems()
         {
+            // TODO: Systems should ask: Do we need to do this? Instead asking other systems to do something.
+            
             manager.AddSystem(new LevelLoadingSystem(), States.All); // PreUpdate - Only Works During Start
             manager.AddSystem(new CallLaterSystem(), States.All); // PreUpdate
             manager.AddSystem(new UISystem(), States.All);
@@ -84,6 +86,7 @@ namespace XIV.Ecs
             
             // UI
             manager.AddSystem(new NodeBehaviourUISystem(), States.Game);
+            manager.AddSystem(new GameUISystem(), States.Game);
             
             manager.AddSystem(new NodeHighlightSystem(), States.Game);
             
