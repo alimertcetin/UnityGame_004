@@ -8,7 +8,7 @@ using XIV.Core.Utils;
 using XIV.Core.XIVMath;
 using XIV.Ecs;
 using XIV.PoolSystem;
-using XIVUnityEngineIntegration.Extensions;
+using XIV.UnityIntegration.Extensions;
 
 namespace TheGame
 {

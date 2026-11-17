@@ -3,6 +3,7 @@ using TheGame;
 using UnityEngine;
 using XIV.Core.XIVMath;
 using XIV.UnityEngineIntegration;
+using XIV.UnityIntegration;
 
 namespace XIV.Ecs
 {

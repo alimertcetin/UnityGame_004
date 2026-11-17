@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using XIV.UnityEngineIntegration;
 using UnityEngine;
-using XIVUnityEngineIntegration.Extensions;
+using XIV.UnityIntegration.Extensions;
 
 namespace XIV.Ecs
 {

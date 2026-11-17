@@ -4,6 +4,7 @@ using UnityEngine;
 using XIV.Core.XIVMath;
 using XIV.Ecs;
 using XIV.UnityEngineIntegration;
+using XIV.UnityIntegration;
 using Random = UnityEngine.Random;
 
 namespace TheGame

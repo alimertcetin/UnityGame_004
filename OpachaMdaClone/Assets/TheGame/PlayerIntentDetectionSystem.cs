@@ -4,8 +4,7 @@ using XIV.Core.DataStructures;
 using XIV.Core.Extensions;
 using XIV.Core.Utils;
 using XIV.Ecs;
-using XIVEcsUnityIntegration.Extensions;
-using XIVUnityEngineIntegration.Extensions;
+using XIV.UnityIntegration.Extensions;
 
 namespace TheGame
 {

@@ -2,7 +2,7 @@
 using UnityEngine;
 using XIV.Core.Utils;
 using XIV.Core.XIVMath;
-using XIVUnityEngineIntegration.Extensions;
+using XIV.UnityIntegration.Extensions;
 
 namespace XIV.Ecs
 {

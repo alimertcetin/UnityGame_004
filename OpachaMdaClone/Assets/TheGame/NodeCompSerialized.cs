@@ -2,6 +2,7 @@ using System;
 using XIV.Core.Extensions;
 using XIV.Ecs;
 using XIV.UnityEngineIntegration;
+using XIV.UnityIntegration;
 
 namespace TheGame
 {

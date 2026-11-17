@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using XIVUnityEngineIntegration.Extensions;
+using XIV.UnityIntegration.Extensions;
 
 namespace XIV.Ecs
 {

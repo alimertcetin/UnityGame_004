@@ -2,7 +2,7 @@
 using UnityEngine.EventSystems;
 using XIV.Core.Collections;
 using XIV.Core.DataStructures;
-using XIVUnityEngineIntegration.Extensions;
+using XIV.UnityIntegration.Extensions;
 
 namespace XIV.Ecs
 {

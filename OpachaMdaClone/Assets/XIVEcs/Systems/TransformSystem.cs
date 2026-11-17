@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
+using XIV.UnityIntegration.Extensions;
 using XIVEcsUnityIntegration.Extensions;
-using XIVUnityEngineIntegration.Extensions;
 
 namespace XIV.Ecs
 {

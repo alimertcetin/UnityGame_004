@@ -1,8 +1,8 @@
 ﻿using UnityEditor;
 using UnityEngine;
 using XIV.Core.DataStructures;
-using XIV.UnityEngineIntegration;
-using XIVUnityEngineIntegration.Extensions;
+using XIV.UnityIntegration;
+using XIV.UnityIntegration.Extensions;
 
 namespace TheGame
 {

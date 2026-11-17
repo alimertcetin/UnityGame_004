@@ -6,9 +6,9 @@ using UnityEditor;
 using UnityEngine;
 using XIV.Core.DataStructures;
 using XIV.Core.Extensions;
-using XIV.UnityEngineIntegration;
+using XIV.UnityIntegration;
+using XIV.UnityIntegration.XIVEditor.Utils;
 #if UNITY_EDITOR
-using XIV.UnityEngineIntegration.XIVEditor.Utils;
 using Directory = UnityEngine.Windows.Directory;
 #endif
 

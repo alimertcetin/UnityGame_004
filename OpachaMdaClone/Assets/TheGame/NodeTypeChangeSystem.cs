@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 using XIV.Ecs;
-using XIVUnityEngineIntegration.Extensions;
+using XIV.UnityIntegration.Extensions;
 
 namespace TheGame
 {

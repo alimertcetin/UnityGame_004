@@ -4,8 +4,8 @@ using XIV.Core.TweenSystem;
 using XIV.Core.Utils;
 using XIV.Core.XIVMath;
 using XIV.Ecs;
+using XIV.UnityIntegration.Extensions;
 using XIVEcsUnityIntegration.Extensions;
-using XIVUnityEngineIntegration.Extensions;
 
 namespace TheGame
 {
