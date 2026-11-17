@@ -303,8 +303,6 @@ MonoBehaviour:
   component:
     configIdx: 0
     unitEpoch: 0
-    test1Struct:
-      tmp: 40
 --- !u!114 &6766333932754527751
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -4,9 +4,16 @@ using XIV.Ecs;
 
 namespace TheGame
 {
+    public enum ResourceTransferState
+    {
+        Full,
+        Half,
+    }
+    
     public struct OccupiedNodeComp : IComponent
     {
         public Entity unitEntity;
+        public ResourceTransferState resourceTransferState;
     }
 
     public class NodeOccupySystem : XIV.Ecs.System

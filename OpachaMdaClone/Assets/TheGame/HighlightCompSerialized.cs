@@ -5,7 +5,8 @@ namespace TheGame
 {
     public struct HighlightComp : IComponent
     {
-        public Entity owner;
+        public Entity highlightedEntity;
+        public uint version;
     }
 
     public class HighlightCompSerialized : SerializedComponent<HighlightComp>

@@ -110,8 +110,8 @@ namespace TheGame
 
         public void Highlight(Entity selectedEntity, bool v)
         {
-            if (v) selectedEntity.world.NewEntity().AddComponent(new EnableHighlightEventComp { targetEntity = selectedEntity });
-            else selectedEntity.world.NewEntity().AddComponent(new DisableHighlightEventComp { targetEntity = selectedEntity });
+            // if (v) selectedEntity.world.NewEntity().AddComponent(new EnableHighlightEventComp { targetEntity = selectedEntity });
+            // else selectedEntity.world.NewEntity().AddComponent(new DisableHighlightEventComp { targetEntity = selectedEntity });
         }
         
 

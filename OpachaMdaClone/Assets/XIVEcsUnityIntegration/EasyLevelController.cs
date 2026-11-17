@@ -55,14 +55,15 @@ namespace XIV.Ecs
 
         public override void AddSystems()
         {
-            // TODO: Systems should ask: Do we need to do this? Instead asking other systems to do something.
-            
             manager.AddSystem(new LevelLoadingSystem(), States.All); // PreUpdate - Only Works During Start
             manager.AddSystem(new CallLaterSystem(), States.All); // PreUpdate
             manager.AddSystem(new UISystem(), States.All);
             
             manager.AddSystem(new StartGameSystem(), States.Start);
             manager.AddSystem(new InputSystem(), States.Game); // PreUpdate - Only Works During Game
+            
+            manager.AddSystem(new PlayerInputSystem(), States.Game);
+            manager.AddSystem(new PlayerIntentDetectionSystem(), States.Game);
             
             // Game
             manager.AddSystem(new NodeLevelGeneratorSystem(), States.InitializeNodes);
@@ -81,19 +82,19 @@ namespace XIV.Ecs
             manager.AddSystem(new NodeShieldSystem(), States.Game);
             manager.AddSystem(new NodeAddShieldSystem(), States.Game);
             manager.AddSystem(new NodeRemoveShieldSystem(), States.Game);
-            manager.AddSystem(new NodeSelectionSystem(), States.Game);
             manager.AddSystem(new UnitSystem(), States.Game);
-            
-            // UI
-            manager.AddSystem(new NodeBehaviourUISystem(), States.Game);
-            manager.AddSystem(new GameUISystem(), States.Game);
-            
-            manager.AddSystem(new NodeHighlightSystem(), States.Game);
             
             manager.AddSystem(new ResourceTransferSystem(), States.Game);
             manager.AddSystem(new ResourceCollisionSystem(), States.Game);
             
             manager.AddSystem(new NodeTypeChangeSystem(), States.Game);
+            manager.AddSystem(new NodeSelectionSystem(), States.Game);
+            
+            // UI
+            manager.AddSystem(new NodeBehaviourUISystem(), States.Game);
+            manager.AddSystem(new GameUISystem(), States.Game);
+            manager.AddSystem(new NodeHighlightSystem(), States.Game);
+            
             
             // Visuals
             manager.AddSystem(new ConnectionLineRenderSystem(), States.Game);

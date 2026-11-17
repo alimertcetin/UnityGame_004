@@ -25,18 +25,18 @@ MonoBehaviour:
     m_Scopes: []
     m_IsDefault: 1
     m_Capabilities: 7
-  - m_Id: scoped:XIV
-    m_Name: XIV
+  - m_Id: scoped:Npm
+    m_Name: Npm
     m_Url: https://registry.npmjs.org
     m_Scopes:
     - xiv.filo
     m_IsDefault: 0
     m_Capabilities: 0
-  m_UserSelectedRegistryName: XIV
+  m_UserSelectedRegistryName: Npm
   m_UserAddingNewScopedRegistry: 0
   m_RegistryInfoDraft:
     m_Modified: 0
     m_ErrorMessage: 
-    m_UserModificationsInstanceId: -846
-    m_OriginalInstanceId: -850
+    m_UserModificationsInstanceId: -830
+    m_OriginalInstanceId: -834
   m_LoadAssets: 0

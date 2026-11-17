@@ -239,11 +239,10 @@ namespace TheGame
             instancedRendererComp.materialPropertyBlock.SetColor(ShaderConstants.Custom_SpriteWithShadow_Instanced.Color_ColorID, UnitIdLookup.GetColor(occupiedNodeComp.unitEntity.GetComponent<UnitComp>().unitType).ToUnityColor());
             instancedRendererComp.renderer.SetPropertyBlock(instancedRendererComp.materialPropertyBlock);
 
-            ref var scaleComp = ref sendResourceEventComp.fromEntity.GetComponent<ScaleComp>();
-            var scale = scaleComp.scale.ToVector3();
             sendResourceEventComp.fromEntity.CancelTween();
+            // var scale = sendResourceEventComp.fromEntity.GetTransform().localScale;
             sendResourceEventComp.fromEntity.XIVTween()
-                .Scale(scale, scale * 1.1f, 0.5f, EasingFunction.EaseOutCubic, true)
+                .ScaleBounceOnce()
                 .UseCustomDeltaTime(() => XTime.deltaTime)
                 .Start();
         }

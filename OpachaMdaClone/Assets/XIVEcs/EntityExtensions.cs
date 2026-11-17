@@ -19,12 +19,20 @@ namespace XIV.Ecs
         
         public static RectTransform GetRectTransform(this Entity entity)
         {
-            return (RectTransform)entity.GetTransform();
+            return entity.GetComponent<RectTransformComp>().rectTransform;
         }
+        
         public static GameObject GetGameObject(this Entity entity)
         {
-            var transform = entity.GetTransform();
-            return transform == null ? null : transform.gameObject;
+            if (entity.HasComponent<TransformComp>())
+            {
+                return entity.GetTransform().gameObject;
+            }
+            if (entity.HasComponent<RectTransformComp>())
+            {
+                return entity.GetRectTransform().gameObject;
+            }
+            return null;
         }
 
         public static IEnumerable<Transform> GetChildren(this Entity entity)

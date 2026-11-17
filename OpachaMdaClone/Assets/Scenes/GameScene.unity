@@ -260,6 +260,7 @@ GameObject:
   - component: {fileID: 374810176}
   - component: {fileID: 374810175}
   - component: {fileID: 374810177}
+  - component: {fileID: 374810178}
   m_Layer: 5
   m_Name: btn_TypeChangeAdc
   m_TagString: Untagged
@@ -412,6 +413,19 @@ MonoBehaviour:
   add: 1
   buttons:
   - {fileID: 374810174}
+--- !u!114 &374810178
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 374810169}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78f5f006af254c55b4f82756bc1019a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  add: 1
 --- !u!1 &410071782
 GameObject:
   m_ObjectHideFlags: 0
@@ -1056,6 +1070,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 910110105}
+  - component: {fileID: 910110108}
+  - component: {fileID: 910110107}
+  - component: {fileID: 910110106}
   m_Layer: 5
   m_Name: UI_Bottom
   m_TagString: Untagged
@@ -1086,6 +1103,46 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 100}
   m_SizeDelta: {x: 0, y: 150}
   m_Pivot: {x: 0.5, y: 0}
+--- !u!114 &910110106
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910110104}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78f5f006af254c55b4f82756bc1019a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  add: 1
+--- !u!114 &910110107
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910110104}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0db4850668947e5a011ff3986ee9399, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  add: 1
+  uiContainer: {fileID: 910110105}
+  canvas: {fileID: 0}
+--- !u!114 &910110108
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 910110104}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 81b83b8b3ca846eeb54163be07a79ff8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &910917538
 GameObject:
   m_ObjectHideFlags: 0
@@ -1235,6 +1292,8 @@ GameObject:
   - component: {fileID: 963194230}
   - component: {fileID: 963194229}
   - component: {fileID: 963194231}
+  - component: {fileID: 963194232}
+  - component: {fileID: 963194233}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -1345,6 +1404,32 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e0c64c78c502422291bc409de7ada5ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  add: 1
+--- !u!114 &963194232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963194225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78f5f006af254c55b4f82756bc1019a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  add: 1
+--- !u!114 &963194233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 963194225}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b4279220fa3415ea011c700bb1c249c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   add: 1
@@ -1640,8 +1725,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1550513627}
-  - component: {fileID: 1550513629}
-  - component: {fileID: 1550513628}
   m_Layer: 5
   m_Name: UI
   m_TagString: Untagged
@@ -1671,32 +1754,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0.0000038146973}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1550513628
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1550513626}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f0db4850668947e5a011ff3986ee9399, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  add: 1
-  uiContainer: {fileID: 910110105}
---- !u!114 &1550513629
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1550513626}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 81b83b8b3ca846eeb54163be07a79ff8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1638567488
 GameObject:
   m_ObjectHideFlags: 0
@@ -1788,6 +1845,7 @@ GameObject:
   - component: {fileID: 1828359035}
   - component: {fileID: 1828359034}
   - component: {fileID: 1828359036}
+  - component: {fileID: 1828359037}
   m_Layer: 5
   m_Name: btn_TypeChangeTank
   m_TagString: Untagged
@@ -1941,6 +1999,19 @@ MonoBehaviour:
   add: 1
   buttons:
   - {fileID: 1828359033}
+--- !u!114 &1828359037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1828359028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 78f5f006af254c55b4f82756bc1019a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  add: 1
 --- !u!1 &2013901987
 GameObject:
   m_ObjectHideFlags: 0

@@ -57,6 +57,11 @@ namespace TheGame
                 });
             }
             nodeComp.configIdx = nodeChangeTypeEventComp.newConfig;
+            
+            world.NewEntity().AddComponent(new PlayerIntentDeselectNodeEventComp
+            {
+                targetNodeEntity = nodeChangeTypeEventComp.nodeEntity,
+            });
 
             ref var positionComp = ref nodeChangeTypeEventComp.nodeEntity.GetComponent<PositionComp>();
             var particleEntity = GameObjectEntity.CreateEntity(world, assetReferences.nodeTypeChangeParticle, positionComp.position.ToVector3(), Quaternion.identity);

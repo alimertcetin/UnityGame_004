@@ -45,7 +45,7 @@
   },
   "scopedRegistries": [
     {
-      "name": "XIV",
+      "name": "Npm",
       "url": "https://registry.npmjs.org",
       "scopes": [
         "xiv.filo"

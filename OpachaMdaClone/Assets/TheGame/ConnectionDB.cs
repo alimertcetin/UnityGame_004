@@ -100,6 +100,7 @@ namespace TheGame
 
         public int GetConnectionIndex(Entity ent1, Entity ent2)
         {
+            if (ent1 == ent2) return -1;
             if (entityConnectionLookup.TryGetValue(ent1, out var list1) == false) return -1;
             if (entityConnectionLookup.TryGetValue(ent2, out var list2) == false) return -1;
 
